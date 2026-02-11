@@ -21,10 +21,12 @@ export function AuthActions({ session }: { session: SessionLike }) {
   };
 
   return session ? (
-    <button className="secondary" onClick={signOut}>
-      Sign out
+    <button type="button" className="rb-btn rb-btn-dark" onClick={signOut}>
+      Sign Out
     </button>
   ) : (
-    <button onClick={signIn}>Sign in with X</button>
+    <button type="button" className="rb-btn rb-btn-primary" onClick={signIn}>
+      Sign In With X
+    </button>
   );
 }

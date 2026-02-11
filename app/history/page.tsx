@@ -19,12 +19,30 @@ export default async function HistoryPage() {
   const analyses = await listUserAnalyses(session.user.id);
 
   return (
-    <main>
-      <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
-        <h1>Your Analysis History</h1>
-        <Link href="/">Back</Link>
+    <main className="rb-page">
+      <div className="rb-shell rb-grid-pattern rb-history-shell">
+        <div className="rb-glow rb-glow-lime" aria-hidden />
+
+        <header className="rb-header rb-history-header">
+          <div className="rb-brand-wrap">
+            <div className="rb-brand-mark">R</div>
+            <div>
+              <div className="rb-brand-title">History</div>
+              <div className="rb-brand-subtitle">Saved topic classifications</div>
+            </div>
+          </div>
+
+          <div className="rb-header-actions">
+            <Link className="rb-btn rb-btn-ghost" href="/">
+              Back To Analyze
+            </Link>
+          </div>
+        </header>
+
+        <section className="rb-history-content">
+          <HistoryList analyses={analyses} />
+        </section>
       </div>
-      <HistoryList analyses={analyses} />
     </main>
   );
 }

@@ -2,18 +2,23 @@ import type { AnalysisHistoryItem } from "@/lib/convex";
 
 export function HistoryList({ analyses }: { analyses: AnalysisHistoryItem[] }) {
   if (!analyses.length) {
-    return <p className="muted">No analyses yet.</p>;
+    return (
+      <article className="rb-panel rb-empty-history">
+        <h2>No analyses yet</h2>
+        <p className="rb-muted">Run your first analysis from the main page and it will appear here.</p>
+      </article>
+    );
   }
 
   return (
-    <div className="row" style={{ flexDirection: "column" }}>
+    <div className="rb-history-stack">
       {analyses.map((item) => (
-        <article key={item._id} className="card">
-          <div className="row" style={{ justifyContent: "space-between", alignItems: "center" }}>
+        <article key={item._id} className="rb-panel rb-history-item">
+          <div className="rb-history-item-head">
             <strong>{item.topic}</strong>
-            <span className="muted">{new Date(item.createdAt).toLocaleString()}</span>
+            <span>{new Date(item.createdAt).toLocaleString()}</span>
           </div>
-          <p className="muted">Confidence: {(item.confidence * 100).toFixed(0)}%</p>
+          <p className="rb-muted">Confidence: {(item.confidence * 100).toFixed(0)}%</p>
           <p>{item.primaryText}</p>
           <a href={item.xUrl} target="_blank" rel="noreferrer">
             Open original post
