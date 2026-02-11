@@ -4,6 +4,7 @@ node_modules
 .env.local
 coverage
 vendor-skill
+.installed-skills
 *.tsbuildinfo
 .DS_Store
 

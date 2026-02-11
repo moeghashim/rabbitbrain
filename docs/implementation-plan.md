@@ -15,6 +15,7 @@
 - **Auth storage:** Postgres
 - **Classifier:** xAI chat completions
 - **X fetcher:** adapted from `x-research-skill` API layer
+- **Runtime mode:** embedded provider (`lib/xresearch/provider.ts`), not CLI subprocess execution
 
 ## API Contract
 

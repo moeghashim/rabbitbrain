@@ -3,8 +3,7 @@ import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { classifyLearningTopic, normalizeTopic } from "@/lib/classifier/topic";
 import { createAnalysis } from "@/lib/convex";
-import { getTweet } from "@/lib/xresearch/api";
-import { getRelatedPosts } from "@/lib/xresearch/enrich";
+import { embeddedXResearchProvider } from "@/lib/xresearch/provider";
 import { extractTweetId } from "@/lib/xresearch/url";
 
 const requestSchema = z.object({
@@ -59,12 +58,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid X post URL", code: "INVALID_URL" }, { status: 400 });
     }
 
-    const primary = await getTweet(tweetId);
+    const primary = await embeddedXResearchProvider.getPrimaryPost(tweetId);
     if (!primary) {
       return NextResponse.json({ error: "Post not found", code: "NOT_FOUND" }, { status: 404 });
     }
 
-    const relatedPosts = await getRelatedPosts(primary);
+    const relatedPosts = await embeddedXResearchProvider.getRelatedContext(primary);
     const classified = await classifyLearningTopic({
       primary,
       related: relatedPosts

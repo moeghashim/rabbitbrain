@@ -31,3 +31,9 @@ Paste an X post URL, enrich it with related posts, and classify it into a 1-2 wo
 ## Skill Provenance
 
 The app adapts X fetch/parsing logic from `rohunvora/x-research-skill` commit `c21149b272eb724d4f5a785a17a2f0312440c82b`, stored under `vendor/x-research-skill/`.
+
+## SaaS Integration Model
+
+- Production requests do **not** execute `SKILL.md` or `bun run x-search.ts`.
+- The app calls an embedded provider (`lib/xresearch/provider.ts`) built from adapted upstream logic.
+- This keeps runtime behavior deterministic for serverless/container deployment while preserving upstream provenance.

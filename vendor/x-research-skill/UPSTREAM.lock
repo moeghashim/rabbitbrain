@@ -1,0 +1,7 @@
+repo=rohunvora/x-research-skill
+ref=main
+commit=c21149b272eb724d4f5a785a17a2f0312440c82b
+snapshot_date=2026-02-11
+source_files=lib/api.ts,SKILL.md,README.md
+consumed_by=lib/xresearch/api.ts,lib/xresearch/provider.ts
+runtime_mode=embedded_library
