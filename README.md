@@ -37,3 +37,9 @@ The app adapts X fetch/parsing logic from `rohunvora/x-research-skill` commit `c
 - Production requests do **not** execute `SKILL.md` or `bun run x-search.ts`.
 - The app calls an embedded provider (`lib/xresearch/provider.ts`) built from adapted upstream logic.
 - This keeps runtime behavior deterministic for serverless/container deployment while preserving upstream provenance.
+
+## Upstream Update Workflow
+
+- Manual sync: `npm run sync:x-research`
+- Automated sync: `.github/workflows/sync-x-research.yml` runs weekly and opens a PR.
+- Each sync PR runs `typecheck`, `test`, and `lint` before creation.

@@ -76,6 +76,12 @@ Failure response shape:
 - Never expose API secrets to client.
 - Restrict X fetch to read-only endpoints.
 
+## Upstream Maintenance
+
+- Pin upstream source in `vendor/x-research-skill/UPSTREAM.lock`.
+- Refresh with `npm run sync:x-research`.
+- Weekly automation in `.github/workflows/sync-x-research.yml` creates validation PRs.
+
 ## Milestones
 
 1. Scaffold app and environment.
