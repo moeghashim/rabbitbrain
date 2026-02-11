@@ -92,11 +92,11 @@ a {
   position: relative;
   z-index: 4;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
   gap: 1rem;
   padding: 1.5rem;
-  flex-wrap: wrap;
 }
 
 .rb-brand-wrap {
@@ -130,15 +130,19 @@ a {
 .rb-nav {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.45rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 999px;
   padding: 0.26rem;
   backdrop-filter: blur(14px);
   background: rgba(255, 255, 255, 0.03);
+  width: 100%;
+  justify-content: space-between;
 }
 
 .rb-nav a {
+  flex: 1;
+  text-align: center;
   padding: 0.5rem 0.85rem;
   font-size: 0.8rem;
   color: rgba(255, 255, 255, 0.72);
@@ -155,6 +159,25 @@ a {
   display: flex;
   align-items: center;
   gap: 0.65rem;
+  width: 100%;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.rb-auth-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.rb-config-note {
+  margin: 0;
+  font-size: 0.66rem;
+  letter-spacing: 0.01em;
+  color: rgba(255, 255, 255, 0.62);
+  max-width: 240px;
+  line-height: 1.4;
 }
 
 .rb-status {
@@ -238,15 +261,23 @@ a {
 
 .rb-kicker {
   color: var(--neon-lime);
-  font-size: 0.7rem;
-  letter-spacing: 0.2em;
+  font-size: 0.66rem;
+  letter-spacing: 0.14em;
   font-family: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
   margin-bottom: 0.8rem;
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  max-width: 100%;
+}
+
+.rb-kicker::-webkit-scrollbar {
+  display: none;
 }
 
 .rb-hero-title {
   margin: 0;
-  font-size: clamp(2.2rem, 11vw, 5.8rem);
+  font-size: clamp(2rem, 18vw, 5.8rem);
   letter-spacing: -0.06em;
   line-height: 0.9;
 }
@@ -751,6 +782,27 @@ a {
     display: inline-flex;
   }
 
+  .rb-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .rb-nav {
+    width: auto;
+    justify-content: flex-start;
+  }
+
+  .rb-nav a {
+    flex: 0 0 auto;
+  }
+
+  .rb-header-actions {
+    width: auto;
+    justify-content: flex-end;
+    flex-wrap: nowrap;
+  }
+
   .rb-mini-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -765,6 +817,20 @@ a {
 
   .rb-contrast-points {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .rb-shell {
+    border-radius: 1.6rem;
+  }
+
+  .rb-page {
+    padding: 0.65rem;
+  }
+
+  .rb-floating-card {
+    display: none;
   }
 }
 

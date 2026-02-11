@@ -10,6 +10,9 @@ export default async function HomePage() {
   const session = await auth.api.getSession({
     headers: await headers()
   });
+  const twitterEnabled = Boolean(
+    process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET
+  );
 
   const identity = session?.user.email ?? session?.user.name ?? session?.user.id ?? "Guest";
 
@@ -39,7 +42,7 @@ export default async function HomePage() {
               <span className="rb-status-dot" />
               {session ? "Session Active" : "Awaiting Login"}
             </div>
-            <AuthActions session={session} />
+            <AuthActions session={session} twitterEnabled={twitterEnabled} />
           </div>
         </header>
 
@@ -109,7 +112,9 @@ export default async function HomePage() {
               </div>
             </div>
             <p className="rb-muted rb-tight">
-              Sign in with X to save analyses and view full personal history.
+              {twitterEnabled
+                ? "Sign in with X to save analyses and view full personal history."
+                : "X OAuth is not configured yet. Add Twitter credentials to enable sign-in."}
             </p>
           </article>
 
