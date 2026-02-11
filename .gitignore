@@ -1,0 +1,11 @@
+node_modules
+.next
+.env
+.env.local
+coverage
+vendor-skill
+*.tsbuildinfo
+.DS_Store
+
+# Convex
+.convex
