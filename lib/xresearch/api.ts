@@ -12,6 +12,8 @@ export type Tweet = {
   author_id: string;
   username: string;
   name: string;
+  profile_image_url?: string;
+  verified?: boolean;
   created_at: string;
   conversation_id: string;
   metrics: {
@@ -38,6 +40,8 @@ type RawUser = {
   id?: string;
   username?: string;
   name?: string;
+  profile_image_url?: string;
+  verified?: boolean;
 };
 
 type RawTweetMetrics = {
@@ -64,7 +68,7 @@ type RawTweetData = {
 };
 
 const FIELDS =
-  "tweet.fields=created_at,public_metrics,author_id,conversation_id,entities&expansions=author_id&user.fields=username,name,public_metrics";
+  "tweet.fields=created_at,public_metrics,author_id,conversation_id,entities&expansions=author_id&user.fields=username,name,profile_image_url,verified,public_metrics";
 
 function getToken(): string {
   if (process.env.X_BEARER_TOKEN) {
@@ -96,6 +100,8 @@ function parseTweets(raw: { data?: RawTweetData[]; includes?: { users?: RawUser[
       author_id: tweet.author_id,
       username: user?.username ?? "?",
       name: user?.name ?? "?",
+      profile_image_url: user?.profile_image_url,
+      verified: user?.verified ?? false,
       created_at: tweet.created_at,
       conversation_id: tweet.conversation_id,
       metrics: {

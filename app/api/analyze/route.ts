@@ -85,6 +85,8 @@ export async function POST(request: Request) {
         id: primary.id,
         username: primary.username,
         name: primary.name,
+        profileImageUrl: primary.profile_image_url ?? null,
+        verified: primary.verified ?? false,
         text: primary.text,
         tweet_url: primary.tweet_url
       }

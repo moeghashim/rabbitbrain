@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 
 type AnalysisResult = {
   id: string;
@@ -10,19 +10,42 @@ type AnalysisResult = {
     id: string;
     username: string;
     name: string;
+    profileImageUrl: string | null;
+    verified: boolean;
     text: string;
     tweet_url: string;
   };
 };
 
-declare global {
-  interface Window {
-    twttr?: {
-      widgets?: {
-        load: (element?: HTMLElement | null) => void;
-      };
-    };
+function normalizeTextUrl(raw: string): string {
+  if (raw.startsWith("http://") || raw.startsWith("https://")) {
+    return raw;
   }
+  return `https://${raw}`;
+}
+
+function renderPostText(text: string) {
+  const domainPattern = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z]{2,})+$/i;
+  const urlPattern = /^https?:\/\/\S+$/i;
+
+  return text.split("\n").map((line, lineIndex) => (
+    <p key={`${line}-${lineIndex}`}>
+      {line.split(/(\s+)/).map((token, tokenIndex) => {
+        if (!token.trim()) {
+          return token;
+        }
+        if (urlPattern.test(token) || domainPattern.test(token)) {
+          const href = normalizeTextUrl(token);
+          return (
+            <a key={`${token}-${tokenIndex}`} href={href} target="_blank" rel="noreferrer">
+              {token}
+            </a>
+          );
+        }
+        return token;
+      })}
+    </p>
+  ));
 }
 
 export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
@@ -30,30 +53,6 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
-  const embedRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!result?.primaryPost.tweet_url || !embedRef.current) {
-      return;
-    }
-
-    const render = () => {
-      window.twttr?.widgets?.load(embedRef.current);
-    };
-
-    const existing = document.getElementById("x-widgets-script");
-    if (existing) {
-      render();
-      return;
-    }
-
-    const script = document.createElement("script");
-    script.id = "x-widgets-script";
-    script.src = "https://platform.twitter.com/widgets.js";
-    script.async = true;
-    script.onload = render;
-    document.body.appendChild(script);
-  }, [result?.primaryPost.tweet_url]);
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -124,10 +123,36 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
               <h3>Post saved to your history</h3>
             </div>
           </div>
-          <div ref={embedRef}>
-            <blockquote className="twitter-tweet" data-dnt="true">
-              <a href={result.primaryPost.tweet_url}>{result.primaryPost.tweet_url}</a>
-            </blockquote>
+
+          <div className="rb-shared-post">
+            <div className="rb-shared-post-head">
+              {result.primaryPost.profileImageUrl ? (
+                <div
+                  className="rb-shared-post-avatar"
+                  role="img"
+                  aria-label={`${result.primaryPost.name} profile`}
+                  style={{ backgroundImage: `url(${result.primaryPost.profileImageUrl})` }}
+                />
+              ) : (
+                <div className="rb-shared-post-avatar rb-shared-post-avatar-fallback">
+                  {result.primaryPost.name.charAt(0).toUpperCase()}
+                </div>
+              )}
+
+              <div>
+                <div className="rb-shared-post-name-row">
+                  <strong>{result.primaryPost.name}</strong>
+                  {result.primaryPost.verified ? <span className="rb-verified-badge">✓</span> : null}
+                </div>
+                <p className="rb-shared-post-handle">@{result.primaryPost.username}</p>
+              </div>
+            </div>
+
+            <div className="rb-shared-post-text">{renderPostText(result.primaryPost.text)}</div>
+
+            <a className="rb-shared-post-link" href={result.primaryPost.tweet_url} target="_blank" rel="noreferrer">
+              Open on X
+            </a>
           </div>
         </div>
       ) : null}
