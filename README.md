@@ -18,6 +18,35 @@ Paste an X post URL, enrich it with related posts, and classify it into a 1-2 wo
 4. Start Convex in another terminal: `npx convex dev`
 5. Start app: `npm run dev`
 
+## CLI
+
+Rabbitbrain can also run as a CLI for service-to-service integration.
+
+### Usage
+
+```bash
+npm run cli -- share --url "https://x.com/<user>/status/<id>" --pretty
+```
+
+or (after install/link):
+
+```bash
+rabbitbrain share --url "https://x.com/<user>/status/<id>" --pretty
+```
+
+### Optional persistence
+
+If you pass `--user-id`, the CLI also saves the shared post to Convex:
+
+```bash
+rabbitbrain share --url "https://x.com/<user>/status/<id>" --user-id "user_123" --pretty
+```
+
+### CLI environment
+
+- `X_BEARER_TOKEN` is required.
+- `CONVEX_URL` (or `NEXT_PUBLIC_CONVEX_URL`) is required only when `--user-id` is used.
+
 ## Required Env Vars
 
 - `X_BEARER_TOKEN`

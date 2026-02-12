@@ -2,10 +2,14 @@
   "name": "rabbitbrain",
   "version": "0.1.0",
   "private": true,
+  "bin": {
+    "rabbitbrain": "./cli/index.mjs"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "cli": "node cli/index.mjs",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
