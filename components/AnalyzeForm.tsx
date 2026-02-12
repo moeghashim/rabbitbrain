@@ -1,29 +1,59 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type AnalysisResult = {
   id: string;
-  topic: string;
-  confidence: number;
+  xUrl: string;
+  sharedAt: number;
   primaryPost: {
     id: string;
+    username: string;
+    name: string;
     text: string;
     tweet_url: string;
   };
-  relatedPosts: {
-    id: string;
-    text: string;
-    tweet_url: string;
-  }[];
-  createdAt: number;
 };
+
+declare global {
+  interface Window {
+    twttr?: {
+      widgets?: {
+        load: (element?: HTMLElement | null) => void;
+      };
+    };
+  }
+}
 
 export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
   const [xUrl, setXUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const embedRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!result?.primaryPost.tweet_url || !embedRef.current) {
+      return;
+    }
+
+    const render = () => {
+      window.twttr?.widgets?.load(embedRef.current);
+    };
+
+    const existing = document.getElementById("x-widgets-script");
+    if (existing) {
+      render();
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = "x-widgets-script";
+    script.src = "https://platform.twitter.com/widgets.js";
+    script.async = true;
+    script.onload = render;
+    document.body.appendChild(script);
+  }, [result?.primaryPost.tweet_url]);
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -62,8 +92,8 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
   return (
     <section className="rb-panel rb-panel-analyze">
       <div className="rb-panel-head">
-        <h2>Analyze Shared Post</h2>
-        <p>Paste a public X URL to generate a 1-2 word learning topic.</p>
+        <h2>Share A Post</h2>
+        <p>Paste a public X URL and save it to your account.</p>
       </div>
 
       <form className="rb-form" onSubmit={onSubmit}>
@@ -78,9 +108,9 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
         />
         <div className="rb-form-actions">
           <button type="submit" className="rb-btn rb-btn-primary" disabled={loading}>
-            {loading ? "Analyzing..." : "Analyze Post"}
+            {loading ? "Sharing..." : "Share Post"}
           </button>
-          <span>{canAnalyze ? "Results are saved to your history." : "Sign in to enable analysis."}</span>
+          <span>{canAnalyze ? "Shared posts are saved to your history." : "Sign in to share posts."}</span>
         </div>
       </form>
 
@@ -90,18 +120,14 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
         <div className="rb-result-card">
           <div className="rb-result-top">
             <div>
-              <p className="rb-result-label">Learning topic</p>
-              <h3>{result.topic}</h3>
-            </div>
-            <div className="rb-confidence">
-              <span>Confidence</span>
-              <strong>{(result.confidence * 100).toFixed(0)}%</strong>
+              <p className="rb-result-label">Shared</p>
+              <h3>Post saved to your history</h3>
             </div>
           </div>
-
-          <div className="rb-source-block">
-            <p className="rb-result-label">Primary post</p>
-            <p>{result.primaryPost.text}</p>
+          <div ref={embedRef}>
+            <blockquote className="twitter-tweet" data-dnt="true">
+              <a href={result.primaryPost.tweet_url}>{result.primaryPost.tweet_url}</a>
+            </blockquote>
           </div>
         </div>
       ) : null}

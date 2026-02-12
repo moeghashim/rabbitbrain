@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Rabbitbrain",
-  description: "Classify shared X posts into learning topics"
+  description: "Save and revisit shared X posts"
 };
 
 export default function RootLayout({

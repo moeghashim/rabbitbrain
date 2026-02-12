@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { classifyLearningTopic, normalizeTopic } from "@/lib/classifier/topic";
 import { createAnalysis } from "@/lib/convex";
 import { embeddedXResearchProvider } from "@/lib/xresearch/provider";
 import { extractTweetId } from "@/lib/xresearch/url";
@@ -63,13 +62,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Post not found", code: "NOT_FOUND" }, { status: 404 });
     }
 
-    const relatedPosts = await embeddedXResearchProvider.getRelatedContext(primary);
-    const classified = await classifyLearningTopic({
-      primary,
-      related: relatedPosts
-    });
-
-    const topic = normalizeTopic(classified.topic);
     const createdAt = Date.now();
 
     const id = await createAnalysis({
@@ -78,34 +70,30 @@ export async function POST(request: Request) {
       tweetId: primary.id,
       authorUsername: primary.username,
       primaryText: primary.text,
-      relatedTexts: relatedPosts.map((post) => post.text),
-      topic,
-      confidence: classified.confidence,
-      model: classified.model,
+      relatedTexts: [],
+      topic: "Shared Post",
+      confidence: 1,
+      model: "share-only",
       createdAt
     });
 
     return NextResponse.json({
       id,
-      topic,
-      confidence: classified.confidence,
+      sharedAt: createdAt,
+      xUrl: parsedBody.data.xUrl,
       primaryPost: {
         id: primary.id,
+        username: primary.username,
+        name: primary.name,
         text: primary.text,
         tweet_url: primary.tweet_url
-      },
-      relatedPosts: relatedPosts.map((post) => ({
-        id: post.id,
-        text: post.text,
-        tweet_url: post.tweet_url
-      })),
-      createdAt
+      }
     });
   } catch (error) {
     if (error instanceof Error && error.message.includes("X API")) {
       return NextResponse.json({ error: "X API unavailable", code: "X_UPSTREAM_ERROR" }, { status: 503 });
     }
 
-    return NextResponse.json({ error: "Unexpected error", code: "INTERNAL_ERROR" }, { status: 500 });
+    return NextResponse.json({ error: "Unable to share post", code: "INTERNAL_ERROR" }, { status: 500 });
   }
 }
