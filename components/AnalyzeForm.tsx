@@ -103,19 +103,6 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
             <p className="rb-result-label">Primary post</p>
             <p>{result.primaryPost.text}</p>
           </div>
-
-          <div className="rb-related-list">
-            <p className="rb-result-label">Related context</p>
-            {result.relatedPosts.length ? (
-              <ul>
-                {result.relatedPosts.slice(0, 3).map((post) => (
-                  <li key={post.id}>{post.text}</li>
-                ))}
-              </ul>
-            ) : (
-              <p className="rb-muted">No additional related posts were found.</p>
-            )}
-          </div>
         </div>
       ) : null}
     </section>
