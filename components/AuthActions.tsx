@@ -46,9 +46,12 @@ export function AuthActions({
     return (
       <div className="rb-auth-wrap">
         <button type="button" className="rb-btn rb-btn-dark" disabled>
-          X OAuth Not Configured
+          Local Auth Not Configured
         </button>
-        <p className="rb-config-note">Set `TWITTER_CLIENT_ID` and `TWITTER_CLIENT_SECRET`.</p>
+        <p className="rb-config-note">
+          Set `TWITTER_CLIENT_ID`, `TWITTER_CLIENT_SECRET`, and a DB URL (`AUTH_DATABASE_URL` or
+          `DATABASE_URL`).
+        </p>
       </div>
     );
   }

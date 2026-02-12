@@ -14,8 +14,9 @@ Paste an X post URL, enrich it with related posts, and classify it into a 1-2 wo
 
 1. Copy `.env.local.example` to `.env.local` and fill values.
 2. Install dependencies: `npm install`
-3. Start Convex in another terminal: `npx convex dev`
-4. Start app: `npm run dev`
+3. Run auth DB migration once: `npm run auth:migrate`
+4. Start Convex in another terminal: `npx convex dev`
+5. Start app: `npm run dev`
 
 ## Required Env Vars
 
@@ -27,6 +28,19 @@ Paste an X post URL, enrich it with related posts, and classify it into a 1-2 wo
 - `TWITTER_CLIENT_SECRET`
 - `AUTH_DATABASE_URL`
 - `CONVEX_URL` and `NEXT_PUBLIC_CONVEX_URL`
+
+## X OAuth Setup
+
+- Callback URL (local): `http://localhost:3000/api/auth/callback/twitter`
+- Callback URL (prod): `https://<your-vercel-domain>/api/auth/callback/twitter`
+- Website URL: your deployed app URL (for local-only testing, use your Vercel URL here)
+
+## Vercel + Neon
+
+1. Attach Neon to Vercel (this creates `DATABASE_URL`/`POSTGRES_*` env vars).
+2. Pull development env vars locally: `vercel env pull .env.local`
+3. Ensure `BETTER_AUTH_URL`, `TWITTER_CLIENT_ID`, and `TWITTER_CLIENT_SECRET` are present.
+4. Run `npm run auth:migrate` to create Better Auth tables in Neon.
 
 ## Skill Provenance
 

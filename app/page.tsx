@@ -10,8 +10,14 @@ export default async function HomePage() {
   const session = await auth.api.getSession({
     headers: await headers()
   });
+  const hasAuthDatabase = Boolean(
+    process.env.AUTH_DATABASE_URL ??
+      process.env.DATABASE_URL ??
+      process.env.POSTGRES_URL ??
+      process.env.POSTGRES_PRISMA_URL
+  );
   const twitterEnabled = Boolean(
-    process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET
+    process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET && hasAuthDatabase
   );
 
   const identity = session?.user.email ?? session?.user.name ?? session?.user.id ?? "Guest";
@@ -114,7 +120,7 @@ export default async function HomePage() {
             <p className="rb-muted rb-tight">
               {twitterEnabled
                 ? "Sign in with X to save analyses and view full personal history."
-                : "X OAuth is not configured yet. Add Twitter credentials to enable sign-in."}
+                : "Local auth is not configured yet. Add Twitter credentials and a database URL (AUTH_DATABASE_URL or DATABASE_URL)."}
             </p>
           </article>
 
