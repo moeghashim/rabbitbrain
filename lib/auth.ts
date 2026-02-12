@@ -18,7 +18,7 @@ const socialProviders =
           clientId: twitterClientId,
           clientSecret: twitterClientSecret,
           disableDefaultScope: true,
-          scope: ["users.read", "tweet.read", "offline.access"]
+          scope: ["users.read", "tweet.read"]
         }
       }
     : undefined;
