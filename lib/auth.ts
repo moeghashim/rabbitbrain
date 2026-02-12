@@ -16,7 +16,9 @@ const socialProviders =
     ? {
         twitter: {
           clientId: twitterClientId,
-          clientSecret: twitterClientSecret
+          clientSecret: twitterClientSecret,
+          disableDefaultScope: true,
+          scope: ["users.read", "tweet.read", "offline.access"]
         }
       }
     : undefined;
