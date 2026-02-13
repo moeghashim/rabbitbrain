@@ -1,0 +1,6 @@
+# Rabbitbrain Implementation Progress
+
+## 2026-02-13T00:00:00Z - Milestone 1: Progress log scaffolding
+- Learning: Current app is share-only in CLI/API/UI, with no recommendation payload contract.
+- Changes: Added this `progress.txt` file with milestone logging structure.
+- Verification: File created and tracked in git.
