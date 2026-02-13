@@ -29,3 +29,8 @@
 - Learning: CLI contract clarity matters for downstream app integration more than UI-specific narratives.
 - Changes: Rewrote README to make `analyze` primary, documented `share` alias compatibility, and added structured output contract details.
 - Verification: README examples and env docs now match implemented command behavior.
+
+## 2026-02-13T00:00:00Z - Milestone 7: Regression tests
+- Learning: A direct test against the new engine module catches interface regressions independently of legacy URL utilities.
+- Changes: Added `tests/engine.test.ts` for shared analyze engine URL parsing.
+- Verification: `npm test` passes with 3 files and 9 total tests.
