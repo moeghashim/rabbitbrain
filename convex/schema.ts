@@ -10,8 +10,37 @@ export default defineSchema({
     primaryText: v.string(),
     relatedTexts: v.array(v.string()),
     topic: v.string(),
+    appAbout: v.optional(v.string()),
     confidence: v.number(),
     model: v.string(),
+    similarPeople: v.optional(
+      v.array(
+        v.object({
+          username: v.string(),
+          name: v.string(),
+          score: v.number(),
+          reason: v.string()
+        })
+      )
+    ),
+    topicsToFollow: v.optional(
+      v.array(
+        v.object({
+          topic: v.string(),
+          score: v.number(),
+          reason: v.string()
+        })
+      )
+    ),
+    creatorAnalysis: v.optional(
+      v.object({
+        username: v.string(),
+        shouldFollow: v.boolean(),
+        impactScore: v.number(),
+        reason: v.string()
+      })
+    ),
+    mode: v.optional(v.string()),
     createdAt: v.number()
   })
     .index("by_user", ["userId"])

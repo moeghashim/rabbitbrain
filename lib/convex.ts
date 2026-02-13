@@ -8,14 +8,20 @@ type AnalysisCreateArgs = {
   primaryText: string;
   relatedTexts: string[];
   topic: string;
+  appAbout?: string;
   confidence: number;
   model: string;
+  similarPeople?: Array<{ username: string; name: string; score: number; reason: string }>;
+  topicsToFollow?: Array<{ topic: string; score: number; reason: string }>;
+  creatorAnalysis?: { username: string; shouldFollow: boolean; impactScore: number; reason: string };
+  mode?: string;
   createdAt: number;
 };
 
 export type AnalysisHistoryItem = {
   _id: string;
   topic: string;
+  appAbout?: string;
   confidence: number;
   xUrl: string;
   primaryText: string;

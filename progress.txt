@@ -9,3 +9,8 @@
 - Learning: TypeScript `allowJs: false` requires a `.d.ts` contract for shared `.mjs` modules consumed by API code.
 - Changes: Added `lib/analysis/engine.mjs` and `lib/analysis/engine.d.ts` with deterministic analyze output schema.
 - Verification: Module exports cover URL validation, post/context fetch, analysis synthesis, and recommendation generation.
+
+## 2026-02-13T00:00:00Z - Milestone 3: API and persistence wiring
+- Learning: Importing `.mjs` into TS under path aliases required an explicit ambient module declaration (`types/analysis-engine.d.ts`).
+- Changes: Wired `app/api/analyze/route.ts` to shared engine and extended Convex schema/mutation/types for enriched analysis payloads.
+- Verification: `npm run typecheck` passes.
