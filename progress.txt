@@ -4,3 +4,8 @@
 - Learning: Current app is share-only in CLI/API/UI, with no recommendation payload contract.
 - Changes: Added this `progress.txt` file with milestone logging structure.
 - Verification: File created and tracked in git.
+
+## 2026-02-13T00:00:00Z - Milestone 2: Shared analyze engine contract
+- Learning: TypeScript `allowJs: false` requires a `.d.ts` contract for shared `.mjs` modules consumed by API code.
+- Changes: Added `lib/analysis/engine.mjs` and `lib/analysis/engine.d.ts` with deterministic analyze output schema.
+- Verification: Module exports cover URL validation, post/context fetch, analysis synthesis, and recommendation generation.
