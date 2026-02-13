@@ -24,3 +24,8 @@
 - Learning: Existing history card model was already compatible with richer display by extending `AnalysisHistoryItem` with optional `appAbout`.
 - Changes: Updated `AnalyzeForm`, `app/page.tsx`, `app/history/page.tsx`, `app/layout.tsx`, and `HistoryList` copy/rendering from share to analyze plus recommendation sections.
 - Verification: `npm run typecheck` and `npm test` pass.
+
+## 2026-02-13T00:00:00Z - Milestone 6: Documentation alignment
+- Learning: CLI contract clarity matters for downstream app integration more than UI-specific narratives.
+- Changes: Rewrote README to make `analyze` primary, documented `share` alias compatibility, and added structured output contract details.
+- Verification: README examples and env docs now match implemented command behavior.

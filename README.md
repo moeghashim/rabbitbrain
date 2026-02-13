@@ -1,13 +1,13 @@
-# Rabbitbrain: X Post Learning Topic Classifier
+# Rabbitbrain: CLI-First X Post Analyzer
 
-Paste an X post URL, enrich it with related posts, and classify it into a 1-2 word learning topic.
+Analyze an X post URL, enrich it with related context, and return machine-readable recommendations for integrator apps.
 
 ## Stack
 
 - Next.js App Router + TypeScript
 - better-auth (Twitter/X OAuth) + Postgres
 - Convex for analysis persistence
-- xAI for topic classification
+- xAI for topic + summary classification
 - Adapted `x-research-skill` API logic for X fetching
 
 ## Setup
@@ -20,27 +20,38 @@ Paste an X post URL, enrich it with related posts, and classify it into a 1-2 wo
 
 ## CLI
 
-Rabbitbrain can also run as a CLI for service-to-service integration.
+Rabbitbrain is built as a CLI-first tool for service-to-service integration.
 
 ### Usage
 
 ```bash
-npm run cli -- share --url "https://x.com/<user>/status/<id>" --pretty
+npm run cli -- analyze --url "https://x.com/<user>/status/<id>" --pretty
 ```
 
 or (after install/link):
 
 ```bash
-rabbitbrain share --url "https://x.com/<user>/status/<id>" --pretty
+rabbitbrain analyze --url "https://x.com/<user>/status/<id>" --pretty
 ```
+
+`share` is still supported as a compatibility alias and maps to `analyze`.
 
 ### Optional persistence
 
-If you pass `--user-id`, the CLI also saves the shared post to Convex:
+If you pass `--user-id`, the CLI also saves the enriched analysis to Convex:
 
 ```bash
-rabbitbrain share --url "https://x.com/<user>/status/<id>" --user-id "user_123" --pretty
+rabbitbrain analyze --url "https://x.com/<user>/status/<id>" --user-id "user_123" --pretty
 ```
+
+### CLI output contract
+
+The CLI returns one JSON object with:
+
+- `analysis.appAbout`: one-sentence description of what the app/post is about
+- `recommendations.similarPeople`: top 5 similar people to follow
+- `recommendations.topicsToFollow`: top 5 topics covered by the post
+- `recommendations.creator`: creator impact analysis and follow recommendation
 
 ### CLI environment
 
