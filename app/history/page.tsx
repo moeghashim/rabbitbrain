@@ -28,13 +28,13 @@ export default async function HistoryPage() {
             <div className="rb-brand-mark">R</div>
             <div>
               <div className="rb-brand-title">History</div>
-              <div className="rb-brand-subtitle">Saved shared posts</div>
+              <div className="rb-brand-subtitle">Saved analyses</div>
             </div>
           </div>
 
           <div className="rb-header-actions">
             <Link className="rb-btn rb-btn-ghost" href="/">
-              Back To Share
+              Back To Analyze
             </Link>
           </div>
         </header>

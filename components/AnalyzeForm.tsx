@@ -5,7 +5,7 @@ import { useState } from "react";
 type AnalysisResult = {
   id: string;
   xUrl: string;
-  sharedAt: number;
+  analyzedAt: number;
   primaryPost: {
     id: string;
     username: string;
@@ -14,6 +14,31 @@ type AnalysisResult = {
     verified: boolean;
     text: string;
     tweet_url: string;
+  };
+  analysis: {
+    appAbout: string;
+    topic: string;
+    confidence: number;
+    model: string;
+  };
+  recommendations: {
+    similarPeople: Array<{
+      username: string;
+      name: string;
+      reason: string;
+      score: number;
+    }>;
+    topicsToFollow: Array<{
+      topic: string;
+      reason: string;
+      score: number;
+    }>;
+    creator: {
+      username: string;
+      shouldFollow: boolean;
+      reason: string;
+      impactScore: number;
+    };
   };
 };
 
@@ -91,8 +116,8 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
   return (
     <section className="rb-panel rb-panel-analyze">
       <div className="rb-panel-head">
-        <h2>Share A Post</h2>
-        <p>Paste a public X URL and save it to your account.</p>
+        <h2>Analyze A Post</h2>
+        <p>Paste a public X URL and get analysis and follow recommendations.</p>
       </div>
 
       <form className="rb-form" onSubmit={onSubmit}>
@@ -107,9 +132,9 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
         />
         <div className="rb-form-actions">
           <button type="submit" className="rb-btn rb-btn-primary" disabled={loading}>
-            {loading ? "Sharing..." : "Share Post"}
+            {loading ? "Analyzing..." : "Analyze Post"}
           </button>
-          <span>{canAnalyze ? "Shared posts are saved to your history." : "Sign in to share posts."}</span>
+          <span>{canAnalyze ? "Analyses are saved to your history." : "Sign in to analyze posts."}</span>
         </div>
       </form>
 
@@ -119,8 +144,8 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
         <div className="rb-result-card">
           <div className="rb-result-top">
             <div>
-              <p className="rb-result-label">Shared</p>
-              <h3>Post saved to your history</h3>
+              <p className="rb-result-label">Analyzed</p>
+              <h3>Post analyzed and saved to your history</h3>
             </div>
           </div>
 
@@ -153,6 +178,64 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
             <a className="rb-shared-post-link" href={result.primaryPost.tweet_url} target="_blank" rel="noreferrer">
               Open on X
             </a>
+          </div>
+
+          <div className="rb-history-stack">
+            <article className="rb-panel rb-history-item">
+              <div className="rb-history-item-head">
+                <strong>{result.analysis.topic}</strong>
+                <span>{Math.round(result.analysis.confidence * 100)}% confidence</span>
+              </div>
+              <p>{result.analysis.appAbout}</p>
+            </article>
+
+            <article className="rb-panel rb-history-item">
+              <div className="rb-history-item-head">
+                <strong>People to follow</strong>
+              </div>
+              <ul>
+                {result.recommendations.similarPeople.length ? (
+                  result.recommendations.similarPeople.map((person) => (
+                    <li key={person.username}>
+                      <strong>@{person.username}</strong>: {person.reason} ({person.score})
+                    </li>
+                  ))
+                ) : (
+                  <li>No strong similar-person candidates found.</li>
+                )}
+              </ul>
+            </article>
+
+            <article className="rb-panel rb-history-item">
+              <div className="rb-history-item-head">
+                <strong>Topics to follow</strong>
+              </div>
+              <ul>
+                {result.recommendations.topicsToFollow.length ? (
+                  result.recommendations.topicsToFollow.map((topic) => (
+                    <li key={topic.topic}>
+                      <strong>{topic.topic}</strong>: {topic.reason} ({topic.score})
+                    </li>
+                  ))
+                ) : (
+                  <li>No strong topic candidates found.</li>
+                )}
+              </ul>
+            </article>
+
+            <article className="rb-panel rb-history-item">
+              <div className="rb-history-item-head">
+                <strong>Creator analysis</strong>
+              </div>
+              <p>
+                <strong>@{result.recommendations.creator.username}</strong>:{" "}
+                {result.recommendations.creator.reason}
+              </p>
+              <p>
+                Follow: {result.recommendations.creator.shouldFollow ? "Yes" : "No"} | Impact score:{" "}
+                {result.recommendations.creator.impactScore}
+              </p>
+            </article>
           </div>
         </div>
       ) : null}

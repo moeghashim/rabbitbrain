@@ -32,12 +32,12 @@ export default async function HomePage() {
             <div className="rb-brand-mark">R</div>
             <div>
               <div className="rb-brand-title">Rabbitbrain</div>
-              <div className="rb-brand-subtitle">Simple Post Sharing</div>
+              <div className="rb-brand-subtitle">CLI-First Post Analysis</div>
             </div>
           </div>
 
           <nav className="rb-nav">
-            <a href="#share">Share</a>
+            <a href="#share">Analyze</a>
             <Link href="/history">History</Link>
           </nav>
 
@@ -57,12 +57,12 @@ export default async function HomePage() {
             <h3>How It Works</h3>
             <ol>
               <li>Sign in with X.</li>
-              <li>Paste an X post URL and share it.</li>
-              <li>The exact post is embedded on the page and saved to your history.</li>
+              <li>Paste an X post URL and analyze it.</li>
+              <li>Get app summary, similar people, topics, and creator follow guidance.</li>
             </ol>
             <p className="rb-muted rb-tight">
               {twitterEnabled
-                ? "Use History to revisit your saved posts later."
+                ? "Use History to revisit your saved analyses later."
                 : "Local auth is not configured yet. Add Twitter credentials and a database URL (AUTH_DATABASE_URL or DATABASE_URL)."}
             </p>
             <Link className="rb-btn rb-btn-ghost" href="/history">
