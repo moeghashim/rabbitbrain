@@ -34,3 +34,8 @@
 - Learning: A direct test against the new engine module catches interface regressions independently of legacy URL utilities.
 - Changes: Added `tests/engine.test.ts` for shared analyze engine URL parsing.
 - Verification: `npm test` passes with 3 files and 9 total tests.
+
+## 2026-02-13T00:00:00Z - Milestone 8: Recommendation relevance hardening
+- Learning: Live X traffic can produce noisy related-post candidates; deterministic fallbacks are needed for stable relevance.
+- Changes: Tightened keyword/overlap filtering, added mention-based similar-people fallback, and guaranteed inclusion of classifier-derived core topic.
+- Verification: Live CLI run now returns directly relevant institutions and a core topical recommendation for the sample OpenAI post.
