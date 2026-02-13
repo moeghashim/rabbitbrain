@@ -14,3 +14,8 @@
 - Learning: Importing `.mjs` into TS under path aliases required an explicit ambient module declaration (`types/analysis-engine.d.ts`).
 - Changes: Wired `app/api/analyze/route.ts` to shared engine and extended Convex schema/mutation/types for enriched analysis payloads.
 - Verification: `npm run typecheck` passes.
+
+## 2026-02-13T00:00:00Z - Milestone 4: CLI analyze command
+- Learning: Keeping `share` as a compatibility alias avoids breaking existing scripts while shifting contract to `analyze`.
+- Changes: Refactored `cli/index.mjs` to use shared engine, output enriched JSON, and persist full analysis when `--user-id` is supplied.
+- Verification: `npm run cli -- --help` confirms command and help updates.

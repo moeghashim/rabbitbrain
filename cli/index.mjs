@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 
 import { ConvexHttpClient } from "convex/browser";
-
-const FIELDS =
-  "tweet.fields=created_at,public_metrics,author_id,conversation_id,entities&expansions=author_id&user.fields=username,name,profile_image_url,verified,public_metrics";
+import { analyzePost } from "../lib/analysis/engine.mjs";
 
 function printHelp() {
   process.stdout.write(
@@ -11,7 +9,8 @@ function printHelp() {
       "Rabbitbrain CLI",
       "",
       "Usage:",
-      "  rabbitbrain share --url <x-post-url> [--user-id <id>] [--pretty]",
+      "  rabbitbrain analyze --url <x-post-url> [--user-id <id>] [--pretty]",
+      "  rabbitbrain share --url <x-post-url> [--user-id <id>] [--pretty] (alias)",
       "  rabbitbrain --help",
       "",
       "Options:",
@@ -57,19 +56,6 @@ function parseArgs(argv) {
   return { positional, flags };
 }
 
-function extractTweetId(xUrl) {
-  const match = xUrl.trim().match(/(?:x|twitter)\.com\/[A-Za-z0-9_]+\/status\/(\d+)/i);
-  return match?.[1] ?? null;
-}
-
-function getBearerToken() {
-  const token = process.env.X_BEARER_TOKEN;
-  if (!token) {
-    throw new Error("Missing X_BEARER_TOKEN");
-  }
-  return token;
-}
-
 function getConvexUrl() {
   const url = process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
   if (!url) {
@@ -78,49 +64,24 @@ function getConvexUrl() {
   return url;
 }
 
-async function fetchPrimaryPost(tweetId) {
-  const response = await fetch(`https://api.x.com/2/tweets/${tweetId}?${FIELDS}`, {
-    headers: {
-      Authorization: `Bearer ${getBearerToken()}`
-    }
-  });
-
-  if (!response.ok) {
-    const body = await response.text();
-    throw new Error(`X API ${response.status}: ${body.slice(0, 200)}`);
-  }
-
-  const raw = await response.json();
-  const tweet = raw?.data;
-  const user = Array.isArray(raw?.includes?.users) ? raw.includes.users[0] : undefined;
-  if (!tweet) {
-    return null;
-  }
-
-  return {
-    id: tweet.id,
-    text: tweet.text,
-    username: user?.username ?? "?",
-    name: user?.name ?? "?",
-    profileImageUrl: user?.profile_image_url ?? null,
-    verified: user?.verified ?? false,
-    tweet_url: `https://x.com/${user?.username ?? "?"}/status/${tweet.id}`
-  };
-}
-
-async function saveSharedPost({ userId, xUrl, primaryPost, sharedAt }) {
+async function saveAnalysis({ userId, analyzed }) {
   const client = new ConvexHttpClient(getConvexUrl());
   const id = await client.mutation("analyses:create", {
     userId,
-    xUrl,
-    tweetId: primaryPost.id,
-    authorUsername: primaryPost.username,
-    primaryText: primaryPost.text,
-    relatedTexts: [],
-    topic: "Shared Post",
-    confidence: 1,
-    model: "share-only",
-    createdAt: sharedAt
+    xUrl: analyzed.xUrl,
+    tweetId: analyzed.internal.tweetId,
+    authorUsername: analyzed.internal.authorUsername,
+    primaryText: analyzed.internal.primaryText,
+    relatedTexts: analyzed.internal.relatedTexts,
+    topic: analyzed.analysis.topic,
+    appAbout: analyzed.analysis.appAbout,
+    confidence: analyzed.analysis.confidence,
+    model: analyzed.analysis.model,
+    similarPeople: analyzed.recommendations.similarPeople,
+    topicsToFollow: analyzed.recommendations.topicsToFollow,
+    creatorAnalysis: analyzed.recommendations.creator,
+    mode: "analyze",
+    createdAt: analyzed.analyzedAt
   });
   return String(id);
 }
@@ -134,7 +95,8 @@ async function main() {
     process.exit(0);
   }
 
-  if (command !== "share") {
+  const normalizedCommand = command === "share" ? "analyze" : command;
+  if (normalizedCommand !== "analyze") {
     throw new Error(`Unknown command: ${command}`);
   }
 
@@ -143,32 +105,18 @@ async function main() {
     throw new Error("Missing --url");
   }
 
-  const tweetId = extractTweetId(xUrl);
-  if (!tweetId) {
-    throw new Error("Invalid X post URL");
+  if (command === "share") {
+    process.stderr.write("`share` is deprecated. Use `analyze`.\n");
   }
 
-  const primaryPost = await fetchPrimaryPost(tweetId);
-  if (!primaryPost) {
-    throw new Error("Post not found");
-  }
+  const analyzed = await analyzePost({ xUrl });
 
-  const sharedAt = Date.now();
   const userId = flags["user-id"] ?? null;
-  const id = userId
-    ? await saveSharedPost({
-        userId,
-        xUrl,
-        primaryPost,
-        sharedAt
-      })
-    : null;
+  const id = userId ? await saveAnalysis({ userId, analyzed }) : null;
 
   const output = {
     id,
-    xUrl,
-    sharedAt,
-    primaryPost
+    ...analyzed
   };
 
   process.stdout.write(`${JSON.stringify(output, null, flags.pretty ? 2 : 0)}\n`);
