@@ -677,6 +677,23 @@ a {
   font-size: 0.9rem;
 }
 
+.rb-discovery-meta {
+  margin-top: 0.35rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.88rem;
+}
+
+.rb-discovery-evidence {
+  margin: 0.45rem 0 0;
+  padding-left: 1.15rem;
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.5;
+}
+
+.rb-discovery-evidence li + li {
+  margin-top: 0.25rem;
+}
+
 @media (max-width: 520px) {
   .rb-shared-post {
     padding: 0.78rem 0.85rem;

@@ -345,6 +345,22 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
                   discovered.results.users.map((user) => (
                     <li key={user.username}>
                       <strong>@{user.username}</strong>: {user.reason} ({user.score})
+                      <div className="rb-discovery-meta">
+                        Posts: {user.postCount} | Likes: {user.metricsTotal.likes} | Retweets: {user.metricsTotal.retweets}
+                      </div>
+                      {user.evidencePosts.length ? (
+                        <ul className="rb-discovery-evidence">
+                          {user.evidencePosts.map((post) => (
+                            <li key={post.id}>
+                              <a href={post.tweet_url} target="_blank" rel="noreferrer">
+                                Evidence post
+                              </a>
+                              : {post.text.slice(0, 140)}
+                              {"... "}({post.score})
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
                     </li>
                   ))
                 ) : (

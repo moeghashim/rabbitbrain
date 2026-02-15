@@ -82,6 +82,15 @@ export type TopicDiscoveryUser = {
   profileImageUrl: string | null;
   verified: boolean;
   score: number;
+  postCount: number;
+  metricsTotal: TopicDiscoveryPost["metrics"];
+  evidencePosts: Array<{
+    id: string;
+    tweet_url: string;
+    text: string;
+    metrics: TopicDiscoveryPost["metrics"];
+    score: number;
+  }>;
   reason: string;
 };
 
