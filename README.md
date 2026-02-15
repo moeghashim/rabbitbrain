@@ -34,8 +34,6 @@ or (after install/link):
 rabbitbrain analyze --url "https://x.com/<user>/status/<id>" --pretty
 ```
 
-`share` is still supported as a compatibility alias and maps to `analyze`.
-
 ### Optional persistence
 
 If you pass `--user-id`, the CLI also saves the enriched analysis to Convex:

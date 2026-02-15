@@ -10,7 +10,6 @@ function printHelp() {
       "",
       "Usage:",
       "  rabbitbrain analyze --url <x-post-url> [--user-id <id>] [--pretty]",
-      "  rabbitbrain share --url <x-post-url> [--user-id <id>] [--pretty] (alias)",
       "  rabbitbrain --help",
       "",
       "Options:",
@@ -95,18 +94,17 @@ async function main() {
     process.exit(0);
   }
 
-  const normalizedCommand = command === "share" ? "analyze" : command;
-  if (normalizedCommand !== "analyze") {
+  if (command === "share") {
+    throw new Error("Command `share` has been removed. Use `analyze`.");
+  }
+
+  if (command !== "analyze") {
     throw new Error(`Unknown command: ${command}`);
   }
 
   const xUrl = flags.url;
   if (!xUrl) {
     throw new Error("Missing --url");
-  }
-
-  if (command === "share") {
-    process.stderr.write("`share` is deprecated. Use `analyze`.\n");
   }
 
   const analyzed = await analyzePost({ xUrl });
