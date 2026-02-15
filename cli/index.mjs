@@ -1,21 +1,30 @@
 #!/usr/bin/env node
 
+import { readFileSync } from "node:fs";
 import { ConvexHttpClient } from "convex/browser";
 import { analyzePost } from "../lib/analysis/engine.mjs";
+
+function getCliVersion() {
+  const pkgUrl = new URL("../package.json", import.meta.url);
+  const pkg = JSON.parse(readFileSync(pkgUrl, "utf8"));
+  return String(pkg.version ?? "0.0.0");
+}
 
 function printHelp() {
   process.stdout.write(
     [
-      "Rabbitbrain CLI",
+      `Rabbitbrain CLI v${getCliVersion()}`,
       "",
       "Usage:",
       "  rabbitbrain analyze --url <x-post-url> [--user-id <id>] [--pretty]",
+      "  rabbitbrain --version",
       "  rabbitbrain --help",
       "",
       "Options:",
       "  --url <url>        Required X/Twitter post URL",
       "  --user-id <id>     Optional user id. If provided, save result to Convex",
       "  --pretty           Pretty-print JSON output",
+      "  --version          Print CLI version",
       "  --help             Show this help",
       "",
       "Env:",
@@ -33,6 +42,10 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (arg === "--help" || arg === "-h") {
       flags.help = true;
+      continue;
+    }
+    if (arg === "--version" || arg === "-v") {
+      flags.version = true;
       continue;
     }
     if (arg === "--pretty") {
@@ -88,6 +101,11 @@ async function saveAnalysis({ userId, analyzed }) {
 async function main() {
   const { positional, flags } = parseArgs(process.argv.slice(2));
   const command = positional[0];
+
+  if (flags.version) {
+    process.stdout.write(`${getCliVersion()}\n`);
+    process.exit(0);
+  }
 
   if (flags.help || !command) {
     printHelp();
