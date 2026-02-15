@@ -35,6 +35,11 @@
 - Changes: Removed `rabbitbrain share` alias support from CLI and removed alias mention from README.
 - Verification: `npm run cli -- --help`, `npm test`, and `npm run typecheck` pass.
 
+## 2026-02-15T00:00:00Z - Milestone 10: Follow actions from analyzed post
+- Learning: Integrations want actionable follow/explore links, not just recommendations.
+- Changes: Added `follow` actions (`topic`, `user`, `userTopic`) to analyze output and surfaced them in the web result + history UI.
+- Verification: `npm test` and `npm run typecheck` pass.
+
 ## 2026-02-13T00:00:00Z - Milestone 7: Regression tests
 - Learning: A direct test against the new engine module catches interface regressions independently of legacy URL utilities.
 - Changes: Added `tests/engine.test.ts` for shared analyze engine URL parsing.

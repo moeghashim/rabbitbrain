@@ -21,6 +21,7 @@ type AnalysisCreateArgs = {
 export type AnalysisHistoryItem = {
   _id: string;
   topic: string;
+  authorUsername: string;
   appAbout?: string;
   confidence: number;
   xUrl: string;

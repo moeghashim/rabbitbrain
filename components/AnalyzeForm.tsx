@@ -1,46 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import type { AnalyzeResult } from "@/lib/analysis/engine.mjs";
 
-type AnalysisResult = {
-  id: string;
-  xUrl: string;
-  analyzedAt: number;
-  primaryPost: {
-    id: string;
-    username: string;
-    name: string;
-    profileImageUrl: string | null;
-    verified: boolean;
-    text: string;
-    tweet_url: string;
-  };
-  analysis: {
-    appAbout: string;
-    topic: string;
-    confidence: number;
-    model: string;
-  };
-  recommendations: {
-    similarPeople: Array<{
-      username: string;
-      name: string;
-      reason: string;
-      score: number;
-    }>;
-    topicsToFollow: Array<{
-      topic: string;
-      reason: string;
-      score: number;
-    }>;
-    creator: {
-      username: string;
-      shouldFollow: boolean;
-      reason: string;
-      impactScore: number;
-    };
-  };
-};
+type AnalysisResult = AnalyzeResult & { id: string };
 
 function normalizeTextUrl(raw: string): string {
   if (raw.startsWith("http://") || raw.startsWith("https://")) {
@@ -174,6 +137,33 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
             </div>
 
             <div className="rb-shared-post-text">{renderPostText(result.primaryPost.text)}</div>
+
+            <div className="rb-follow-actions">
+              <a
+                className="rb-btn rb-btn-ghost"
+                href={result.follow.user.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Follow @{result.follow.user.username}
+              </a>
+              <a
+                className="rb-btn rb-btn-ghost"
+                href={result.follow.topic.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Explore {result.follow.topic.topic}
+              </a>
+              <a
+                className="rb-btn rb-btn-ghost"
+                href={result.follow.userTopic.url}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Explore @{result.follow.userTopic.username} + {result.follow.userTopic.topic}
+              </a>
+            </div>
 
             <a className="rb-shared-post-link" href={result.primaryPost.tweet_url} target="_blank" rel="noreferrer">
               Open on X

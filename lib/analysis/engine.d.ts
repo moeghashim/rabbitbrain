@@ -18,6 +18,24 @@ export type CreatorRecommendation = {
   reason: string;
 };
 
+export type FollowActions = {
+  topic: {
+    topic: string;
+    query: string;
+    url: string;
+  };
+  user: {
+    username: string;
+    url: string;
+  };
+  userTopic: {
+    username: string;
+    topic: string;
+    query: string;
+    url: string;
+  };
+};
+
 export type AnalyzeResult = {
   version: string;
   xUrl: string;
@@ -37,6 +55,7 @@ export type AnalyzeResult = {
     confidence: number;
     model: string;
   };
+  follow: FollowActions;
   recommendations: {
     similarPeople: SimilarPerson[];
     topicsToFollow: TopicRecommendation[];

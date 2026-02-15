@@ -637,6 +637,18 @@ a {
   text-decoration: underline;
 }
 
+.rb-follow-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rb-follow-actions-compact .rb-btn {
+  padding: 0.62rem 0.85rem;
+  font-size: 0.9rem;
+}
+
 @media (max-width: 520px) {
   .rb-shared-post {
     padding: 0.78rem 0.85rem;
@@ -650,6 +662,12 @@ a {
 
   .rb-shared-post-text {
     font-size: 1.05rem;
+  }
+
+  .rb-follow-actions-compact .rb-btn {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
   }
 }
 

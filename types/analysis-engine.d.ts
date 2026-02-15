@@ -19,6 +19,24 @@ declare module "@/lib/analysis/engine.mjs" {
     reason: string;
   };
 
+  export type FollowActions = {
+    topic: {
+      topic: string;
+      query: string;
+      url: string;
+    };
+    user: {
+      username: string;
+      url: string;
+    };
+    userTopic: {
+      username: string;
+      topic: string;
+      query: string;
+      url: string;
+    };
+  };
+
   export type AnalyzeResult = {
     version: string;
     xUrl: string;
@@ -38,6 +56,7 @@ declare module "@/lib/analysis/engine.mjs" {
       confidence: number;
       model: string;
     };
+    follow: FollowActions;
     recommendations: {
       similarPeople: SimilarPerson[];
       topicsToFollow: TopicRecommendation[];

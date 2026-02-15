@@ -47,6 +47,7 @@ rabbitbrain analyze --url "https://x.com/<user>/status/<id>" --user-id "user_123
 The CLI returns one JSON object with:
 
 - `analysis.appAbout`: one-sentence description of what the app/post is about
+- `follow`: X links to follow the creator, explore the topic, and explore creator+topic
 - `recommendations.similarPeople`: top 5 similar people to follow
 - `recommendations.topicsToFollow`: top 5 topics covered by the post
 - `recommendations.creator`: creator impact analysis and follow recommendation

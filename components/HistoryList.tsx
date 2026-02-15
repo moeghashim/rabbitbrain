@@ -1,5 +1,13 @@
 import type { AnalysisHistoryItem } from "@/lib/convex";
 
+function buildXSearchUrl(query: string): string {
+  return `https://x.com/search?q=${encodeURIComponent(query)}&src=typed_query`;
+}
+
+function buildXFollowIntentUrl(username: string): string {
+  return `https://x.com/intent/follow?screen_name=${encodeURIComponent(username)}`;
+}
+
 export function HistoryList({ analyses }: { analyses: AnalysisHistoryItem[] }) {
   if (!analyses.length) {
     return (
@@ -20,6 +28,22 @@ export function HistoryList({ analyses }: { analyses: AnalysisHistoryItem[] }) {
           </div>
           {item.appAbout ? <p>{item.appAbout}</p> : null}
           <p>{item.primaryText}</p>
+          <div className="rb-follow-actions rb-follow-actions-compact">
+            <a className="rb-btn rb-btn-ghost" href={buildXFollowIntentUrl(item.authorUsername)} target="_blank" rel="noreferrer">
+              Follow @{item.authorUsername}
+            </a>
+            <a className="rb-btn rb-btn-ghost" href={buildXSearchUrl(item.topic)} target="_blank" rel="noreferrer">
+              Explore {item.topic}
+            </a>
+            <a
+              className="rb-btn rb-btn-ghost"
+              href={buildXSearchUrl(`from:${item.authorUsername} ${item.topic}`)}
+              target="_blank"
+              rel="noreferrer"
+            >
+              Explore @{item.authorUsername} + {item.topic}
+            </a>
+          </div>
           <a href={item.xUrl} target="_blank" rel="noreferrer">
             Open original post
           </a>
