@@ -460,6 +460,34 @@ a {
   color: rgba(255, 255, 255, 0.45);
 }
 
+.rb-mode-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin: 0.75rem 0 0.5rem;
+}
+
+.rb-tab {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.86);
+  border-radius: 999px;
+  padding: 0.55rem 0.85rem;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.rb-tab:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.rb-tab-active {
+  background: rgba(204, 255, 0, 0.12);
+  border-color: rgba(204, 255, 0, 0.35);
+  color: #fff;
+}
+
 .rb-form-actions {
   margin-top: 0.45rem;
   display: flex;

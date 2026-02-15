@@ -34,6 +34,12 @@ or (after install/link):
 rabbitbrain analyze --url "https://x.com/<user>/status/<id>" --pretty
 ```
 
+Topic discovery:
+
+```bash
+rabbitbrain discover --topic "AI agents" --pretty
+```
+
 ### Optional persistence
 
 If you pass `--user-id`, the CLI also saves the enriched analysis to Convex:

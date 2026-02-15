@@ -2,7 +2,7 @@
 
 import { readFileSync } from "node:fs";
 import { ConvexHttpClient } from "convex/browser";
-import { analyzePost } from "../lib/analysis/engine.mjs";
+import { analyzePost, discoverTopic } from "../lib/analysis/engine.mjs";
 
 function getCliVersion() {
   const pkgUrl = new URL("../package.json", import.meta.url);
@@ -17,11 +17,13 @@ function printHelp() {
       "",
       "Usage:",
       "  rabbitbrain analyze --url <x-post-url> [--user-id <id>] [--pretty]",
+      "  rabbitbrain discover --topic <topic> [--pretty]",
       "  rabbitbrain --version",
       "  rabbitbrain --help",
       "",
       "Options:",
       "  --url <url>        Required X/Twitter post URL",
+      "  --topic <topic>    Required topic for discovery",
       "  --user-id <id>     Optional user id. If provided, save result to Convex",
       "  --pretty           Pretty-print JSON output",
       "  --version          Print CLI version",
@@ -116,26 +118,38 @@ async function main() {
     throw new Error("Command `share` has been removed. Use `analyze`.");
   }
 
-  if (command !== "analyze") {
+  if (command !== "analyze" && command !== "discover") {
     throw new Error(`Unknown command: ${command}`);
   }
 
-  const xUrl = flags.url;
-  if (!xUrl) {
-    throw new Error("Missing --url");
+  if (command === "analyze") {
+    const xUrl = flags.url;
+    if (!xUrl) {
+      throw new Error("Missing --url");
+    }
+
+    const analyzed = await analyzePost({ xUrl });
+
+    const userId = flags["user-id"] ?? null;
+    const id = userId ? await saveAnalysis({ userId, analyzed }) : null;
+
+    const output = {
+      id,
+      ...analyzed
+    };
+
+    process.stdout.write(`${JSON.stringify(output, null, flags.pretty ? 2 : 0)}\n`);
+    return;
   }
 
-  const analyzed = await analyzePost({ xUrl });
+  const topic = flags.topic;
+  if (!topic) {
+    throw new Error("Missing --topic");
+  }
 
-  const userId = flags["user-id"] ?? null;
-  const id = userId ? await saveAnalysis({ userId, analyzed }) : null;
-
-  const output = {
-    id,
-    ...analyzed
-  };
-
-  process.stdout.write(`${JSON.stringify(output, null, flags.pretty ? 2 : 0)}\n`);
+  // Discovery is currently output-only (no Convex persistence).
+  const discovered = await discoverTopic({ topic });
+  process.stdout.write(`${JSON.stringify(discovered, null, flags.pretty ? 2 : 0)}\n`);
 }
 
 main().catch((error) => {

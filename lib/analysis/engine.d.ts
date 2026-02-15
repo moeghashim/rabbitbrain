@@ -70,7 +70,68 @@ export type AnalyzeResult = {
 };
 
 export const ANALYZE_OUTPUT_VERSION: string;
+export const DISCOVER_OUTPUT_VERSION: string;
 
 export function extractTweetId(xUrl: string): string | null;
 
 export function analyzePost(args: { xUrl: string }): Promise<AnalyzeResult>;
+
+export type TopicDiscoveryUser = {
+  username: string;
+  name: string;
+  profileImageUrl: string | null;
+  verified: boolean;
+  score: number;
+  reason: string;
+};
+
+export type TopicDiscoveryPost = {
+  id: string;
+  tweet_url: string;
+  username: string;
+  name: string;
+  profileImageUrl: string | null;
+  verified: boolean;
+  text: string;
+  metrics: {
+    likes: number;
+    retweets: number;
+    replies: number;
+    quotes: number;
+    impressions: number;
+    bookmarks: number;
+  };
+  score: number;
+};
+
+export type TopicDiscoveryArticle = {
+  url: string;
+  domain: string;
+  score: number;
+  reason: string;
+};
+
+export type DiscoverTopicResult = {
+  version: string;
+  topic: string;
+  query: string;
+  discoveredAt: number;
+  follow: {
+    topic: {
+      topic: string;
+      query: string;
+      url: string;
+    };
+  };
+  results: {
+    users: TopicDiscoveryUser[];
+    posts: TopicDiscoveryPost[];
+    articles: TopicDiscoveryArticle[];
+  };
+  internal: {
+    rawTopic: string;
+    tweetCount: number;
+  };
+};
+
+export function discoverTopic(args: { topic: string }): Promise<DiscoverTopicResult>;

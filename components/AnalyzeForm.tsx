@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import type { AnalyzeResult } from "@/lib/analysis/engine.mjs";
+import type { AnalyzeResult, DiscoverTopicResult } from "@/lib/analysis/engine.mjs";
 
 type AnalysisResult = AnalyzeResult & { id: string };
+type DiscoverResult = DiscoverTopicResult & { id: string | null };
 
 function normalizeTextUrl(raw: string): string {
   if (raw.startsWith("http://") || raw.startsWith("https://")) {
@@ -37,15 +38,19 @@ function renderPostText(text: string) {
 }
 
 export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
+  const [mode, setMode] = useState<"analyze" | "discover">("analyze");
   const [xUrl, setXUrl] = useState("");
+  const [topic, setTopic] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<AnalysisResult | null>(null);
+  const [discovered, setDiscovered] = useState<DiscoverResult | null>(null);
 
-  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const onSubmitAnalyze = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     setResult(null);
+    setDiscovered(null);
 
     if (!canAnalyze) {
       setError("Sign in first.");
@@ -76,30 +81,114 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
     }
   };
 
+  const onSubmitDiscover = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    setResult(null);
+    setDiscovered(null);
+
+    if (!canAnalyze) {
+      setError("Sign in first.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await fetch("/api/discover", {
+        method: "POST",
+        headers: {
+          "content-type": "application/json"
+        },
+        body: JSON.stringify({ topic })
+      });
+
+      const payload = await response.json();
+      if (!response.ok) {
+        setError(payload.error ?? "Discovery failed");
+        return;
+      }
+
+      setDiscovered(payload);
+    } catch {
+      setError("Network error while discovering.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <section className="rb-panel rb-panel-analyze">
       <div className="rb-panel-head">
-        <h2>Analyze A Post</h2>
-        <p>Paste a public X URL and get analysis and follow recommendations.</p>
+        <h2>{mode === "analyze" ? "Analyze A Post" : "Discover A Topic"}</h2>
+        <p>
+          {mode === "analyze"
+            ? "Paste a public X URL and get analysis and follow recommendations."
+            : "Share a topic and get the best users, posts, and linked articles about it."}
+        </p>
       </div>
 
-      <form className="rb-form" onSubmit={onSubmit}>
-        <label htmlFor="xUrl">X post URL</label>
-        <input
-          id="xUrl"
-          type="url"
-          required
-          placeholder="https://x.com/user/status/123..."
-          value={xUrl}
-          onChange={(event) => setXUrl(event.target.value)}
-        />
-        <div className="rb-form-actions">
-          <button type="submit" className="rb-btn rb-btn-primary" disabled={loading}>
-            {loading ? "Analyzing..." : "Analyze Post"}
-          </button>
-          <span>{canAnalyze ? "Analyses are saved to your history." : "Sign in to analyze posts."}</span>
-        </div>
-      </form>
+      <div className="rb-mode-tabs" role="tablist" aria-label="Mode">
+        <button
+          type="button"
+          className={`rb-tab ${mode === "analyze" ? "rb-tab-active" : ""}`}
+          onClick={() => {
+            setMode("analyze");
+            setError(null);
+            setDiscovered(null);
+          }}
+        >
+          Analyze
+        </button>
+        <button
+          type="button"
+          className={`rb-tab ${mode === "discover" ? "rb-tab-active" : ""}`}
+          onClick={() => {
+            setMode("discover");
+            setError(null);
+            setResult(null);
+          }}
+        >
+          Discover
+        </button>
+      </div>
+
+      {mode === "analyze" ? (
+        <form className="rb-form" onSubmit={onSubmitAnalyze}>
+          <label htmlFor="xUrl">X post URL</label>
+          <input
+            id="xUrl"
+            type="url"
+            required
+            placeholder="https://x.com/user/status/123..."
+            value={xUrl}
+            onChange={(event) => setXUrl(event.target.value)}
+          />
+          <div className="rb-form-actions">
+            <button type="submit" className="rb-btn rb-btn-primary" disabled={loading}>
+              {loading ? "Analyzing..." : "Analyze Post"}
+            </button>
+            <span>{canAnalyze ? "Analyses are saved to your history." : "Sign in to analyze posts."}</span>
+          </div>
+        </form>
+      ) : (
+        <form className="rb-form" onSubmit={onSubmitDiscover}>
+          <label htmlFor="topic">Topic</label>
+          <input
+            id="topic"
+            type="text"
+            required
+            placeholder="AI agents, chip design, NYC restaurants..."
+            value={topic}
+            onChange={(event) => setTopic(event.target.value)}
+          />
+          <div className="rb-form-actions">
+            <button type="submit" className="rb-btn rb-btn-primary" disabled={loading}>
+              {loading ? "Searching..." : "Discover Topic"}
+            </button>
+            <span>{canAnalyze ? "Discovery uses your X API token." : "Sign in to discover topics."}</span>
+          </div>
+        </form>
+      )}
 
       {error ? <p className="rb-error">{error}</p> : null}
 
@@ -225,6 +314,88 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
                 Follow: {result.recommendations.creator.shouldFollow ? "Yes" : "No"} | Impact score:{" "}
                 {result.recommendations.creator.impactScore}
               </p>
+            </article>
+          </div>
+        </div>
+      ) : null}
+
+      {discovered ? (
+        <div className="rb-result-card">
+          <div className="rb-result-top">
+            <div>
+              <p className="rb-result-label">Discovered</p>
+              <h3>Top results for {discovered.topic}</h3>
+            </div>
+          </div>
+
+          <div className="rb-follow-actions">
+            <a className="rb-btn rb-btn-ghost" href={discovered.follow.topic.url} target="_blank" rel="noreferrer">
+              Explore on X
+            </a>
+          </div>
+
+          <div className="rb-history-stack">
+            <article className="rb-panel rb-history-item">
+              <div className="rb-history-item-head">
+                <strong>Best users</strong>
+                <span>{discovered.results.users.length} found</span>
+              </div>
+              <ul>
+                {discovered.results.users.length ? (
+                  discovered.results.users.map((user) => (
+                    <li key={user.username}>
+                      <strong>@{user.username}</strong>: {user.reason} ({user.score})
+                    </li>
+                  ))
+                ) : (
+                  <li>No strong user candidates found.</li>
+                )}
+              </ul>
+            </article>
+
+            <article className="rb-panel rb-history-item">
+              <div className="rb-history-item-head">
+                <strong>Best posts</strong>
+                <span>{discovered.results.posts.length} found</span>
+              </div>
+              <ul>
+                {discovered.results.posts.length ? (
+                  discovered.results.posts.map((post) => (
+                    <li key={post.id}>
+                      <strong>@{post.username}</strong>: {post.text.slice(0, 140)}
+                      {"... "}
+                      <a href={post.tweet_url} target="_blank" rel="noreferrer">
+                        Open
+                      </a>{" "}
+                      ({post.score})
+                    </li>
+                  ))
+                ) : (
+                  <li>No strong post candidates found.</li>
+                )}
+              </ul>
+            </article>
+
+            <article className="rb-panel rb-history-item">
+              <div className="rb-history-item-head">
+                <strong>Linked articles</strong>
+                <span>{discovered.results.articles.length} found</span>
+              </div>
+              <ul>
+                {discovered.results.articles.length ? (
+                  discovered.results.articles.map((article) => (
+                    <li key={article.url}>
+                      <strong>{article.domain}</strong>:{" "}
+                      <a href={article.url} target="_blank" rel="noreferrer">
+                        {article.url}
+                      </a>{" "}
+                      ({article.score})
+                    </li>
+                  ))
+                ) : (
+                  <li>No strong article candidates found.</li>
+                )}
+              </ul>
             </article>
           </div>
         </div>
