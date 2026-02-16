@@ -36,8 +36,11 @@ jobs:
           npm run lint
 
       - name: Create Pull Request
+        id: create_pr
+        continue-on-error: true
         uses: peter-evans/create-pull-request@v7
         with:
+          token: ${{ secrets.SYNC_PR_TOKEN != '' && secrets.SYNC_PR_TOKEN || github.token }}
           branch: chore/sync-x-research
           title: "chore: sync x-research-skill upstream"
           commit-message: "chore: sync x-research-skill upstream"
@@ -48,3 +51,8 @@ jobs:
           labels: |
             dependencies
             automation
+
+      - name: PR fallback notice
+        if: steps.create_pr.outcome == 'failure'
+        run: |
+          echo "::warning::PR creation failed. Enable repository setting 'Allow GitHub Actions to create and approve pull requests' or set secret SYNC_PR_TOKEN (PAT with repo scope)."

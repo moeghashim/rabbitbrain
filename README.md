@@ -102,3 +102,4 @@ The app adapts X fetch/parsing logic from `rohunvora/x-research-skill` commit `c
 - Manual sync: `npm run sync:x-research`
 - Automated sync: `.github/workflows/sync-x-research.yml` runs weekly and opens a PR.
 - Each sync PR runs `typecheck`, `test`, and `lint` before creation.
+- If automated PR creation is blocked, enable repository setting `Allow GitHub Actions to create and approve pull requests`, or add `SYNC_PR_TOKEN` (PAT with `repo` scope) as a repository secret.

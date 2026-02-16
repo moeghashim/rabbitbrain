@@ -17,6 +17,12 @@ echo "Syncing $REPO@$REF"
 git clone --depth 1 --branch "$REF" "https://github.com/$REPO.git" "$TMP_DIR/repo"
 UPSTREAM_COMMIT="$(git -C "$TMP_DIR/repo" rev-parse HEAD)"
 SNAPSHOT_DATE="$(date -u +%F)"
+CURRENT_COMMIT="$(awk -F= '$1=="commit"{print $2}' "$VENDOR_DIR/UPSTREAM.lock" 2>/dev/null || true)"
+
+if [[ "$CURRENT_COMMIT" == "$UPSTREAM_COMMIT" ]]; then
+  echo "Already up to date at commit $UPSTREAM_COMMIT"
+  exit 0
+fi
 
 cp "$TMP_DIR/repo/lib/api.ts" "$VENDOR_DIR/upstream-api.ts"
 cp "$TMP_DIR/repo/SKILL.md" "$VENDOR_DIR/SKILL.md"
