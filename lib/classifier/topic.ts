@@ -3,16 +3,31 @@ import type { Tweet } from "@/lib/xresearch/api";
 
 const classifierOutputSchema = z.object({
   topic: z.string().min(1),
-  confidence: z.number().min(0).max(1).optional()
+  confidence: z.number().min(0).max(1).optional(),
 });
 
 const commonTopicMap: Array<{ topic: string; patterns: RegExp[] }> = [
   { topic: "AI Agents", patterns: [/\bagent(s)?\b/i, /workflow/i, /autonom/i] },
-  { topic: "Prompt Engineering", patterns: [/\bprompt(s)?\b/i, /instruction/i, /context window/i] },
-  { topic: "Model Evaluation", patterns: [/benchmark/i, /eval(s|uation)?/i, /leaderboard/i] },
-  { topic: "Product Strategy", patterns: [/go-to-market/i, /positioning/i, /strategy/i] },
-  { topic: "Developer Tools", patterns: [/sdk/i, /framework/i, /library/i, /tooling/i] },
-  { topic: "Growth Marketing", patterns: [/funnel/i, /acquisition/i, /retention/i, /conversion/i] }
+  {
+    topic: "Prompt Engineering",
+    patterns: [/\bprompt(s)?\b/i, /instruction/i, /context window/i],
+  },
+  {
+    topic: "Model Evaluation",
+    patterns: [/benchmark/i, /eval(s|uation)?/i, /leaderboard/i],
+  },
+  {
+    topic: "Product Strategy",
+    patterns: [/go-to-market/i, /positioning/i, /strategy/i],
+  },
+  {
+    topic: "Developer Tools",
+    patterns: [/sdk/i, /framework/i, /library/i, /tooling/i],
+  },
+  {
+    topic: "Growth Marketing",
+    patterns: [/funnel/i, /acquisition/i, /retention/i, /conversion/i],
+  },
 ];
 
 function toTitleCase(value: string): string {
@@ -24,7 +39,10 @@ function toTitleCase(value: string): string {
 }
 
 export function normalizeTopic(raw: string): string {
-  const cleaned = raw.replace(/[^a-zA-Z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+  const cleaned = raw
+    .replace(/[^a-zA-Z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   if (!cleaned) {
     return "General Learning";
   }
@@ -61,13 +79,16 @@ export async function classifyLearningTopic(args: {
 }): Promise<{ topic: string; confidence: number; model: string }> {
   const model = process.env.XAI_MODEL ?? "grok-4-fast";
   const apiKey = process.env.XAI_API_KEY;
-  const allText = [args.primary.text, ...args.related.map((tweet) => tweet.text)].join("\n\n");
+  const allText = [
+    args.primary.text,
+    ...args.related.map((tweet) => tweet.text),
+  ].join("\n\n");
 
   if (!apiKey) {
     return {
       topic: fallbackTopicFromText(allText),
       confidence: 0.45,
-      model: `${model}-fallback`
+      model: `${model}-fallback`,
     };
   }
 
@@ -75,14 +96,14 @@ export async function classifyLearningTopic(args: {
 
   const userPayload = {
     primaryPost: args.primary.text,
-    relatedPosts: args.related.map((tweet) => tweet.text).slice(0, 8)
+    relatedPosts: args.related.map((tweet) => tweet.text).slice(0, 8),
   };
 
   const response = await fetch("https://api.x.ai/v1/chat/completions", {
     method: "POST",
     headers: {
       "content-type": "application/json",
-      authorization: `Bearer ${apiKey}`
+      authorization: `Bearer ${apiKey}`,
     },
     body: JSON.stringify({
       model,
@@ -90,9 +111,9 @@ export async function classifyLearningTopic(args: {
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: prompt },
-        { role: "user", content: JSON.stringify(userPayload) }
-      ]
-    })
+        { role: "user", content: JSON.stringify(userPayload) },
+      ],
+    }),
   });
 
   if (!response.ok) {
@@ -100,7 +121,7 @@ export async function classifyLearningTopic(args: {
     return {
       topic: fallback,
       confidence: 0.5,
-      model: `${model}-fallback`
+      model: `${model}-fallback`,
     };
   }
 
@@ -113,7 +134,7 @@ export async function classifyLearningTopic(args: {
     return {
       topic: fallbackTopicFromText(allText),
       confidence: 0.5,
-      model: `${model}-fallback`
+      model: `${model}-fallback`,
     };
   }
 
@@ -124,13 +145,13 @@ export async function classifyLearningTopic(args: {
     return {
       topic: normalizeTopic(validated.topic),
       confidence: validated.confidence ?? 0.78,
-      model
+      model,
     };
   } catch {
     return {
       topic: fallbackTopicFromText(allText),
       confidence: 0.55,
-      model: `${model}-fallback`
+      model: `${model}-fallback`,
     };
   }
 }

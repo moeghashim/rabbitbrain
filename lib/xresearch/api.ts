@@ -78,7 +78,10 @@ function getToken(): string {
   throw new Error("Missing X_BEARER_TOKEN");
 }
 
-function parseTweets(raw: { data?: RawTweetData[]; includes?: { users?: RawUser[] } }): Tweet[] {
+function parseTweets(raw: {
+  data?: RawTweetData[];
+  includes?: { users?: RawUser[] };
+}): Tweet[] {
   if (!raw.data) {
     return [];
   }
@@ -110,7 +113,7 @@ function parseTweets(raw: { data?: RawTweetData[]; includes?: { users?: RawUser[
         replies: metrics?.reply_count ?? 0,
         quotes: metrics?.quote_count ?? 0,
         impressions: metrics?.impression_count ?? 0,
-        bookmarks: metrics?.bookmark_count ?? 0
+        bookmarks: metrics?.bookmark_count ?? 0,
       },
       urls: (tweet.entities?.urls ?? [])
         .map((entry) => entry.expanded_url)
@@ -121,7 +124,7 @@ function parseTweets(raw: { data?: RawTweetData[]; includes?: { users?: RawUser[
       hashtags: (tweet.entities?.hashtags ?? [])
         .map((entry) => entry.tag)
         .filter((value): value is string => Boolean(value)),
-      tweet_url: `https://x.com/${user?.username ?? "?"}/status/${tweet.id}`
+      tweet_url: `https://x.com/${user?.username ?? "?"}/status/${tweet.id}`,
     };
   });
 }
@@ -132,7 +135,11 @@ function parseSince(since: string): string | null {
     const amount = Number.parseInt(match[1], 10);
     const unit = match[2];
     const ms =
-      unit === "m" ? amount * 60_000 : unit === "h" ? amount * 3_600_000 : amount * 86_400_000;
+      unit === "m"
+        ? amount * 60_000
+        : unit === "h"
+          ? amount * 3_600_000
+          : amount * 86_400_000;
     return new Date(Date.now() - ms).toISOString();
   }
 
@@ -149,8 +156,8 @@ function parseSince(since: string): string | null {
 async function apiGet(url: string): Promise<RawResponse> {
   const response = await fetch(url, {
     headers: {
-      Authorization: `Bearer ${getToken()}`
-    }
+      Authorization: `Bearer ${getToken()}`,
+    },
   });
 
   if (!response.ok) {
@@ -172,7 +179,7 @@ export async function search(
     pages?: number;
     sortOrder?: "relevancy" | "recency";
     since?: string;
-  } = {}
+  } = {},
 ): Promise<Tweet[]> {
   const maxResults = Math.max(Math.min(opts.maxResults ?? 100, 100), 10);
   const pages = opts.pages ?? 1;
@@ -198,8 +205,8 @@ export async function search(
     allTweets = allTweets.concat(
       parseTweets({
         data: Array.isArray(raw.data) ? raw.data : [],
-        includes: raw.includes
-      })
+        includes: raw.includes,
+      }),
     );
 
     nextToken = raw.meta?.next_token;
@@ -222,7 +229,7 @@ export async function getTweet(tweetId: string): Promise<Tweet | null> {
   if (raw.data && !Array.isArray(raw.data)) {
     const parsed = parseTweets({
       ...raw,
-      data: [raw.data]
+      data: [raw.data],
     });
     return parsed[0] ?? null;
   }
@@ -243,7 +250,7 @@ export function dedupe(tweets: Tweet[]): Tweet[] {
 
 export function sortBy(
   tweets: Tweet[],
-  metric: "likes" | "impressions" | "retweets" | "replies" = "likes"
+  metric: "likes" | "impressions" | "retweets" | "replies" = "likes",
 ): Tweet[] {
   return [...tweets].sort((a, b) => b.metrics[metric] - a.metrics[metric]);
 }

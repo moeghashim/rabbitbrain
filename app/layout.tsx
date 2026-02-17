@@ -3,11 +3,11 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Rabbitbrain",
-  description: "Analyze X posts and save recommendations"
+  description: "Analyze X posts and save recommendations",
 };
 
 export default function RootLayout({
-  children
+  children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {

@@ -143,4 +143,6 @@ export type DiscoverTopicResult = {
   };
 };
 
-export function discoverTopic(args: { topic: string }): Promise<DiscoverTopicResult>;
+export function discoverTopic(args: {
+  topic: string;
+}): Promise<DiscoverTopicResult>;

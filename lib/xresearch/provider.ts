@@ -16,5 +16,5 @@ export const embeddedXResearchProvider: XResearchProvider = {
   },
   async getRelatedContext(primaryPost: Tweet): Promise<Tweet[]> {
     return getRelatedPosts(primaryPost);
-  }
+  },
 };

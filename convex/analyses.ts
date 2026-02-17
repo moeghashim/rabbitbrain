@@ -19,39 +19,39 @@ export const create = mutationGeneric({
           username: v.string(),
           name: v.string(),
           score: v.number(),
-          reason: v.string()
-        })
-      )
+          reason: v.string(),
+        }),
+      ),
     ),
     topicsToFollow: v.optional(
       v.array(
         v.object({
           topic: v.string(),
           score: v.number(),
-          reason: v.string()
-        })
-      )
+          reason: v.string(),
+        }),
+      ),
     ),
     creatorAnalysis: v.optional(
       v.object({
         username: v.string(),
         shouldFollow: v.boolean(),
         impactScore: v.number(),
-        reason: v.string()
-      })
+        reason: v.string(),
+      }),
     ),
     mode: v.optional(v.string()),
-    createdAt: v.number()
+    createdAt: v.number(),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("analyses", args);
-  }
+  },
 });
 
 export const listByUser = queryGeneric({
   args: {
     userId: v.string(),
-    limit: v.optional(v.number())
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     return await ctx.db
@@ -59,13 +59,13 @@ export const listByUser = queryGeneric({
       .withIndex("by_user_created", (q) => q.eq("userId", args.userId))
       .order("desc")
       .take(args.limit ?? 25);
-  }
+  },
 });
 
 export const getById = queryGeneric({
   args: {
     id: v.id("analyses"),
-    userId: v.string()
+    userId: v.string(),
   },
   handler: async (ctx, args) => {
     const record = await ctx.db.get(args.id);
@@ -74,5 +74,5 @@ export const getById = queryGeneric({
     }
 
     return record;
-  }
+  },
 });

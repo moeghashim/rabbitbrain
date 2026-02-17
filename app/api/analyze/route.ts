@@ -5,7 +5,7 @@ import { createAnalysis } from "@/lib/convex";
 import { analyzePost } from "@/lib/analysis/engine.mjs";
 
 const requestSchema = z.object({
-  xUrl: z.string().url()
+  xUrl: z.string().url(),
 });
 
 const rateWindowMs = 60_000;
@@ -32,23 +32,29 @@ function checkRateLimit(userId: string): boolean {
 export async function POST(request: Request) {
   try {
     const session = await auth.api.getSession({
-      headers: request.headers
+      headers: request.headers,
     });
 
     if (!session) {
       return NextResponse.json(
         { error: "Sign in required", code: "UNAUTHORIZED" },
-        { status: 401 }
+        { status: 401 },
       );
     }
 
     if (!checkRateLimit(session.user.id)) {
-      return NextResponse.json({ error: "Rate limit exceeded", code: "RATE_LIMIT" }, { status: 429 });
+      return NextResponse.json(
+        { error: "Rate limit exceeded", code: "RATE_LIMIT" },
+        { status: 429 },
+      );
     }
 
     const parsedBody = requestSchema.safeParse(await request.json());
     if (!parsedBody.success) {
-      return NextResponse.json({ error: "Invalid X post URL", code: "INVALID_URL" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Invalid X post URL", code: "INVALID_URL" },
+        { status: 400 },
+      );
     }
 
     const analyzed = await analyzePost({ xUrl: parsedBody.data.xUrl });
@@ -68,28 +74,40 @@ export async function POST(request: Request) {
       topicsToFollow: analyzed.recommendations.topicsToFollow,
       creatorAnalysis: analyzed.recommendations.creator,
       mode: "analyze",
-      createdAt: analyzed.analyzedAt
+      createdAt: analyzed.analyzedAt,
     });
 
     return NextResponse.json({
       id,
-      ...analyzed
+      ...analyzed,
     });
   } catch (error) {
     if (error && typeof error === "object" && "code" in error) {
       const code = String(error.code);
       if (code === "INVALID_URL") {
-        return NextResponse.json({ error: "Invalid X post URL", code }, { status: 400 });
+        return NextResponse.json(
+          { error: "Invalid X post URL", code },
+          { status: 400 },
+        );
       }
       if (code === "NOT_FOUND") {
-        return NextResponse.json({ error: "Post not found", code }, { status: 404 });
+        return NextResponse.json(
+          { error: "Post not found", code },
+          { status: 404 },
+        );
       }
     }
 
     if (error instanceof Error && error.message.includes("X API")) {
-      return NextResponse.json({ error: "X API unavailable", code: "X_UPSTREAM_ERROR" }, { status: 503 });
+      return NextResponse.json(
+        { error: "X API unavailable", code: "X_UPSTREAM_ERROR" },
+        { status: 503 },
+      );
     }
 
-    return NextResponse.json({ error: "Unable to analyze post", code: "INTERNAL_ERROR" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Unable to analyze post", code: "INTERNAL_ERROR" },
+      { status: 500 },
+    );
   }
 }

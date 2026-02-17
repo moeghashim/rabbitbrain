@@ -2,8 +2,13 @@ import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 import { Pool } from "pg";
 
-const baseURL = process.env.BETTER_AUTH_URL ?? process.env.BETTER_AUTH_BASE_URL ?? "http://localhost:3000";
-const secret = process.env.BETTER_AUTH_SECRET ?? "dev-only-change-me-to-a-strong-secret-32chars";
+const baseURL =
+  process.env.BETTER_AUTH_URL ??
+  process.env.BETTER_AUTH_BASE_URL ??
+  "http://localhost:3000";
+const secret =
+  process.env.BETTER_AUTH_SECRET ??
+  "dev-only-change-me-to-a-strong-secret-32chars";
 const authDatabaseUrl =
   process.env.AUTH_DATABASE_URL ??
   process.env.DATABASE_URL ??
@@ -18,13 +23,13 @@ const socialProviders =
           clientId: twitterClientId,
           clientSecret: twitterClientSecret,
           disableDefaultScope: true,
-          scope: ["users.read", "tweet.read"]
-        }
+          scope: ["users.read", "tweet.read"],
+        },
       }
     : undefined;
 
 const authDb = new Pool({
-  connectionString: authDatabaseUrl
+  connectionString: authDatabaseUrl,
 });
 
 export const auth = betterAuth({
@@ -32,5 +37,5 @@ export const auth = betterAuth({
   baseURL,
   secret,
   socialProviders,
-  plugins: [nextCookies()]
+  plugins: [nextCookies()],
 });

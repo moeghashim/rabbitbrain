@@ -10,9 +10,15 @@
     "build": "next build",
     "start": "next start",
     "cli": "node cli/index.mjs",
-    "lint": "next lint",
+    "lint": "eslint app components lib cli tests convex --max-warnings=0",
+    "lint:fix": "npm run lint -- --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build",
+    "smoke:cli": "bash scripts/smoke-cli.sh",
     "auth:migrate": "bash scripts/migrate-auth.sh",
     "sync:x-research": "bash scripts/sync-x-research.sh"
   },
@@ -31,8 +37,10 @@
     "@types/pg": "^8.11.10",
     "@types/react": "^19.0.2",
     "@types/react-dom": "^19.0.2",
+    "@vitest/coverage-v8": "^2.1.9",
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.2.0",
+    "prettier": "^3.8.1",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
   }

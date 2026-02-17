@@ -35,7 +35,7 @@ Raise Rabbitbrain from prototype-level quality to production-grade CLI quality, 
 
 ## Phase 1: CI Gate and Local Quality Contract
 
-Status: not started
+Status: completed (2026-02-17)
 
 Work:
 
@@ -56,7 +56,7 @@ Acceptance criteria:
 
 ## Phase 2: Test Expansion and Coverage Guardrails
 
-Status: not started
+Status: completed (2026-02-17)
 
 Work:
 
@@ -78,7 +78,7 @@ Acceptance criteria:
 
 ## Phase 3: Core Refactor for Maintainability
 
-Status: not started
+Status: completed (2026-02-17)
 
 Work:
 
@@ -99,7 +99,7 @@ Acceptance criteria:
 
 ## Phase 4: Linting and Formatting Hardening
 
-Status: not started
+Status: completed (2026-02-17)
 
 Work:
 
@@ -115,7 +115,7 @@ Acceptance criteria:
 
 ## Phase 5: Release and Operational Discipline
 
-Status: not started
+Status: completed (2026-02-17)
 
 Work:
 
@@ -133,17 +133,17 @@ Acceptance criteria:
 
 Use this table when implementing each phase.
 
-| Item | Owner | Status | PR | Notes |
-|---|---|---|---|---|
-| CI workflow (`ci.yml`) |  | not started |  |  |
-| `npm run check` |  | not started |  |  |
-| Coverage thresholds |  | not started |  |  |
-| CLI tests expansion |  | not started |  |  |
-| Engine modularization |  | not started |  |  |
-| ESLint CLI migration |  | not started |  |  |
-| Formatting check in CI |  | not started |  |  |
-| Release docs/checklist |  | not started |  |  |
+| Item                   | Owner                   | Status    | PR    | Notes                                                              |
+| ---------------------- | ----------------------- | --------- | ----- | ------------------------------------------------------------------ |
+| CI workflow (`ci.yml`) | Rabbitbrain engineering | completed | local | Added push/PR CI workflow with full quality gates.                 |
+| `npm run check`        | Rabbitbrain engineering | completed | local | Includes format, lint, typecheck, coverage, and build.             |
+| Coverage thresholds    | Rabbitbrain engineering | completed | local | Vitest coverage enabled with CI upload + thresholds.               |
+| CLI tests expansion    | Rabbitbrain engineering | completed | local | Added CLI behavior tests, including persistence failure paths.     |
+| Engine modularization  | Rabbitbrain engineering | completed | local | Split monolithic engine into internal modules with stable exports. |
+| ESLint CLI migration   | Rabbitbrain engineering | completed | local | Replaced `next lint` wrapper with direct ESLint CLI.               |
+| Formatting check in CI | Rabbitbrain engineering | completed | local | Added `format:check` in CI and local scripts.                      |
+| Release docs/checklist | Rabbitbrain engineering | completed | local | Added `CHANGELOG.md`, `docs/releasing.md`, and smoke command docs. |
 
 ## Next Recommended Step
 
-Start with Phase 1 in a single PR: add PR/push CI + `npm run check` + README quality command docs.
+All phases were implemented locally on 2026-02-17. Next step: split changes into reviewable PRs if you want incremental rollout.

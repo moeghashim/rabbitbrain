@@ -31,9 +31,10 @@ jobs:
 
       - name: Validate
         run: |
+          npm run format:check
+          npm run lint
           npm run typecheck
           npm run test
-          npm run lint
 
       - name: Create Pull Request
         id: create_pr

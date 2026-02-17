@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 
 export default async function HistoryPage() {
   const session = await auth.api.getSession({
-    headers: await headers()
+    headers: await headers(),
   });
 
   if (!session) {

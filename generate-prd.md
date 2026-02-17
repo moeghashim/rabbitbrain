@@ -46,14 +46,18 @@ For UI stories, include a browser verification requirement for:
 ## Quality Gates
 
 ## User Stories
+
 ### US-001: [Title]
+
 **Description:** As a [user], I want [feature] so that [benefit].
 
 **Acceptance Criteria:**
+
 - [ ] ...
 - [ ] ...
 
 ## Functional Requirements
+
 1. FR-1: ...
 2. FR-2: ...
 

@@ -3,7 +3,9 @@ import { fallbackTopicFromText, normalizeTopic } from "@/lib/classifier/topic";
 
 describe("normalizeTopic", () => {
   test("keeps one or two words and title-cases them", () => {
-    expect(normalizeTopic("prompt engineering techniques")).toBe("Prompt Engineering");
+    expect(normalizeTopic("prompt engineering techniques")).toBe(
+      "Prompt Engineering",
+    );
     expect(normalizeTopic("AI")).toBe("Ai");
   });
 
@@ -14,11 +16,14 @@ describe("normalizeTopic", () => {
 
 describe("fallbackTopicFromText", () => {
   test("maps common agent language", () => {
-    expect(fallbackTopicFromText("This workflow uses multiple AI agents")).toBe("AI Agents");
+    expect(fallbackTopicFromText("This workflow uses multiple AI agents")).toBe(
+      "AI Agents",
+    );
   });
 
   test("returns generated fallback when no strong pattern", () => {
-    expect(fallbackTopicFromText("knowledge transfer and mentorship loops"))
-      .toBe("Knowledge Transfer");
+    expect(
+      fallbackTopicFromText("knowledge transfer and mentorship loops"),
+    ).toBe("Knowledge Transfer");
   });
 });

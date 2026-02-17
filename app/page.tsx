@@ -8,19 +8,22 @@ export const dynamic = "force-dynamic";
 
 export default async function HomePage() {
   const session = await auth.api.getSession({
-    headers: await headers()
+    headers: await headers(),
   });
   const hasAuthDatabase = Boolean(
     process.env.AUTH_DATABASE_URL ??
-      process.env.DATABASE_URL ??
-      process.env.POSTGRES_URL ??
-      process.env.POSTGRES_PRISMA_URL
+    process.env.DATABASE_URL ??
+    process.env.POSTGRES_URL ??
+    process.env.POSTGRES_PRISMA_URL,
   );
   const twitterEnabled = Boolean(
-    process.env.TWITTER_CLIENT_ID && process.env.TWITTER_CLIENT_SECRET && hasAuthDatabase
+    process.env.TWITTER_CLIENT_ID &&
+    process.env.TWITTER_CLIENT_SECRET &&
+    hasAuthDatabase,
   );
 
-  const identity = session?.user.email ?? session?.user.name ?? session?.user.id ?? "Guest";
+  const identity =
+    session?.user.email ?? session?.user.name ?? session?.user.id ?? "Guest";
 
   return (
     <main className="rb-page">
@@ -58,7 +61,10 @@ export default async function HomePage() {
             <ol>
               <li>Sign in with X.</li>
               <li>Paste an X post URL and analyze it.</li>
-              <li>Get app summary, similar people, topics, and creator follow guidance.</li>
+              <li>
+                Get app summary, similar people, topics, and creator follow
+                guidance.
+              </li>
             </ol>
             <p className="rb-muted rb-tight">
               {twitterEnabled

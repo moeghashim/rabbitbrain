@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import type { AnalyzeResult, DiscoverTopicResult } from "@/lib/analysis/engine.mjs";
+import type {
+  AnalyzeResult,
+  DiscoverTopicResult,
+} from "@/lib/analysis/engine.mjs";
 
 type AnalysisResult = AnalyzeResult & { id: string };
 type DiscoverResult = DiscoverTopicResult & { id: string | null };
@@ -14,7 +17,8 @@ function normalizeTextUrl(raw: string): string {
 }
 
 function renderPostText(text: string) {
-  const domainPattern = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z]{2,})+$/i;
+  const domainPattern =
+    /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z]{2,})+$/i;
   const urlPattern = /^https?:\/\/\S+$/i;
 
   return text.split("\n").map((line, lineIndex) => (
@@ -26,7 +30,12 @@ function renderPostText(text: string) {
         if (urlPattern.test(token) || domainPattern.test(token)) {
           const href = normalizeTextUrl(token);
           return (
-            <a key={`${token}-${tokenIndex}`} href={href} target="_blank" rel="noreferrer">
+            <a
+              key={`${token}-${tokenIndex}`}
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+            >
               {token}
             </a>
           );
@@ -62,9 +71,9 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
       const response = await fetch("/api/analyze", {
         method: "POST",
         headers: {
-          "content-type": "application/json"
+          "content-type": "application/json",
         },
-        body: JSON.stringify({ xUrl })
+        body: JSON.stringify({ xUrl }),
       });
 
       const payload = await response.json();
@@ -97,9 +106,9 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
       const response = await fetch("/api/discover", {
         method: "POST",
         headers: {
-          "content-type": "application/json"
+          "content-type": "application/json",
         },
-        body: JSON.stringify({ topic })
+        body: JSON.stringify({ topic }),
       });
 
       const payload = await response.json();
@@ -164,10 +173,18 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
             onChange={(event) => setXUrl(event.target.value)}
           />
           <div className="rb-form-actions">
-            <button type="submit" className="rb-btn rb-btn-primary" disabled={loading}>
+            <button
+              type="submit"
+              className="rb-btn rb-btn-primary"
+              disabled={loading}
+            >
               {loading ? "Analyzing..." : "Analyze Post"}
             </button>
-            <span>{canAnalyze ? "Analyses are saved to your history." : "Sign in to analyze posts."}</span>
+            <span>
+              {canAnalyze
+                ? "Analyses are saved to your history."
+                : "Sign in to analyze posts."}
+            </span>
           </div>
         </form>
       ) : (
@@ -182,10 +199,18 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
             onChange={(event) => setTopic(event.target.value)}
           />
           <div className="rb-form-actions">
-            <button type="submit" className="rb-btn rb-btn-primary" disabled={loading}>
+            <button
+              type="submit"
+              className="rb-btn rb-btn-primary"
+              disabled={loading}
+            >
               {loading ? "Searching..." : "Discover Topic"}
             </button>
-            <span>{canAnalyze ? "Discovery uses your X API token." : "Sign in to discover topics."}</span>
+            <span>
+              {canAnalyze
+                ? "Discovery uses your X API token."
+                : "Sign in to discover topics."}
+            </span>
           </div>
         </form>
       )}
@@ -208,7 +233,9 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
                   className="rb-shared-post-avatar"
                   role="img"
                   aria-label={`${result.primaryPost.name} profile`}
-                  style={{ backgroundImage: `url(${result.primaryPost.profileImageUrl})` }}
+                  style={{
+                    backgroundImage: `url(${result.primaryPost.profileImageUrl})`,
+                  }}
                 />
               ) : (
                 <div className="rb-shared-post-avatar rb-shared-post-avatar-fallback">
@@ -219,13 +246,19 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
               <div>
                 <div className="rb-shared-post-name-row">
                   <strong>{result.primaryPost.name}</strong>
-                  {result.primaryPost.verified ? <span className="rb-verified-badge">✓</span> : null}
+                  {result.primaryPost.verified ? (
+                    <span className="rb-verified-badge">✓</span>
+                  ) : null}
                 </div>
-                <p className="rb-shared-post-handle">@{result.primaryPost.username}</p>
+                <p className="rb-shared-post-handle">
+                  @{result.primaryPost.username}
+                </p>
               </div>
             </div>
 
-            <div className="rb-shared-post-text">{renderPostText(result.primaryPost.text)}</div>
+            <div className="rb-shared-post-text">
+              {renderPostText(result.primaryPost.text)}
+            </div>
 
             <div className="rb-follow-actions">
               <a
@@ -250,11 +283,17 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
                 target="_blank"
                 rel="noreferrer"
               >
-                Explore @{result.follow.userTopic.username} + {result.follow.userTopic.topic}
+                Explore @{result.follow.userTopic.username} +{" "}
+                {result.follow.userTopic.topic}
               </a>
             </div>
 
-            <a className="rb-shared-post-link" href={result.primaryPost.tweet_url} target="_blank" rel="noreferrer">
+            <a
+              className="rb-shared-post-link"
+              href={result.primaryPost.tweet_url}
+              target="_blank"
+              rel="noreferrer"
+            >
               Open on X
             </a>
           </div>
@@ -263,7 +302,9 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
             <article className="rb-panel rb-history-item">
               <div className="rb-history-item-head">
                 <strong>{result.analysis.topic}</strong>
-                <span>{Math.round(result.analysis.confidence * 100)}% confidence</span>
+                <span>
+                  {Math.round(result.analysis.confidence * 100)}% confidence
+                </span>
               </div>
               <p>{result.analysis.appAbout}</p>
             </article>
@@ -276,7 +317,8 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
                 {result.recommendations.similarPeople.length ? (
                   result.recommendations.similarPeople.map((person) => (
                     <li key={person.username}>
-                      <strong>@{person.username}</strong>: {person.reason} ({person.score})
+                      <strong>@{person.username}</strong>: {person.reason} (
+                      {person.score})
                     </li>
                   ))
                 ) : (
@@ -293,7 +335,8 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
                 {result.recommendations.topicsToFollow.length ? (
                   result.recommendations.topicsToFollow.map((topic) => (
                     <li key={topic.topic}>
-                      <strong>{topic.topic}</strong>: {topic.reason} ({topic.score})
+                      <strong>{topic.topic}</strong>: {topic.reason} (
+                      {topic.score})
                     </li>
                   ))
                 ) : (
@@ -311,8 +354,9 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
                 {result.recommendations.creator.reason}
               </p>
               <p>
-                Follow: {result.recommendations.creator.shouldFollow ? "Yes" : "No"} | Impact score:{" "}
-                {result.recommendations.creator.impactScore}
+                Follow:{" "}
+                {result.recommendations.creator.shouldFollow ? "Yes" : "No"} |
+                Impact score: {result.recommendations.creator.impactScore}
               </p>
             </article>
           </div>
@@ -329,7 +373,12 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
           </div>
 
           <div className="rb-follow-actions">
-            <a className="rb-btn rb-btn-ghost" href={discovered.follow.topic.url} target="_blank" rel="noreferrer">
+            <a
+              className="rb-btn rb-btn-ghost"
+              href={discovered.follow.topic.url}
+              target="_blank"
+              rel="noreferrer"
+            >
               Explore on X
             </a>
           </div>
@@ -344,15 +393,22 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
                 {discovered.results.users.length ? (
                   discovered.results.users.map((user) => (
                     <li key={user.username}>
-                      <strong>@{user.username}</strong>: {user.reason} ({user.score})
+                      <strong>@{user.username}</strong>: {user.reason} (
+                      {user.score})
                       <div className="rb-discovery-meta">
-                        Posts: {user.postCount} | Likes: {user.metricsTotal.likes} | Retweets: {user.metricsTotal.retweets}
+                        Posts: {user.postCount} | Likes:{" "}
+                        {user.metricsTotal.likes} | Retweets:{" "}
+                        {user.metricsTotal.retweets}
                       </div>
                       {user.evidencePosts.length ? (
                         <ul className="rb-discovery-evidence">
                           {user.evidencePosts.map((post) => (
                             <li key={post.id}>
-                              <a href={post.tweet_url} target="_blank" rel="noreferrer">
+                              <a
+                                href={post.tweet_url}
+                                target="_blank"
+                                rel="noreferrer"
+                              >
                                 Evidence post
                               </a>
                               : {post.text.slice(0, 140)}
@@ -378,7 +434,8 @@ export function AnalyzeForm({ canAnalyze }: { canAnalyze: boolean }) {
                 {discovered.results.posts.length ? (
                   discovered.results.posts.map((post) => (
                     <li key={post.id}>
-                      <strong>@{post.username}</strong>: {post.text.slice(0, 140)}
+                      <strong>@{post.username}</strong>:{" "}
+                      {post.text.slice(0, 140)}
                       {"... "}
                       <a href={post.tweet_url} target="_blank" rel="noreferrer">
                         Open

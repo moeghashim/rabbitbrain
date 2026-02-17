@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const rootDir = dirname(fileURLToPath(import.meta.url));
 
 const nextConfig: NextConfig = {
-  outputFileTracingRoot: rootDir
+  outputFileTracingRoot: rootDir,
 };
 
 export default nextConfig;

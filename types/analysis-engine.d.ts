@@ -142,5 +142,7 @@ declare module "@/lib/analysis/engine.mjs" {
     };
   };
 
-  export function discoverTopic(args: { topic: string }): Promise<DiscoverTopicResult>;
+  export function discoverTopic(args: {
+    topic: string;
+  }): Promise<DiscoverTopicResult>;
 }

@@ -5,8 +5,12 @@
   --ink: #050505;
   --text: #ebebeb;
   --muted: rgba(235, 235, 235, 0.62);
-  --font-space-grotesk: "Space Grotesk", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  --font-jetbrains-mono: "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  --font-space-grotesk:
+    "Space Grotesk", "Avenir Next", "Segoe UI", "Helvetica Neue", Arial,
+    sans-serif;
+  --font-jetbrains-mono:
+    "JetBrains Mono", "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono",
+    monospace;
 }
 
 * {
@@ -785,7 +789,11 @@ a {
   position: absolute;
   inset: 0;
   opacity: 0.1;
-  background-image: radial-gradient(circle at 20% 30%, #000 1px, transparent 1px);
+  background-image: radial-gradient(
+    circle at 20% 30%,
+    #000 1px,
+    transparent 1px
+  );
   background-size: 9px 9px;
 }
 

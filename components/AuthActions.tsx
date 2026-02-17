@@ -11,7 +11,7 @@ type SessionLike = {
 
 export function AuthActions({
   session,
-  twitterEnabled
+  twitterEnabled,
 }: {
   session: SessionLike;
   twitterEnabled: boolean;
@@ -22,10 +22,12 @@ export function AuthActions({
     setAuthError(null);
     try {
       await authClient.signIn.social({
-        provider: "twitter"
+        provider: "twitter",
       });
     } catch {
-      setAuthError("X OAuth is not configured. Set TWITTER_CLIENT_ID and TWITTER_CLIENT_SECRET.");
+      setAuthError(
+        "X OAuth is not configured. Set TWITTER_CLIENT_ID and TWITTER_CLIENT_SECRET.",
+      );
     }
   };
 
@@ -49,8 +51,8 @@ export function AuthActions({
           Local Auth Not Configured
         </button>
         <p className="rb-config-note">
-          Set `TWITTER_CLIENT_ID`, `TWITTER_CLIENT_SECRET`, and a DB URL (`AUTH_DATABASE_URL` or
-          `DATABASE_URL`).
+          Set `TWITTER_CLIENT_ID`, `TWITTER_CLIENT_SECRET`, and a DB URL
+          (`AUTH_DATABASE_URL` or `DATABASE_URL`).
         </p>
       </div>
     );
