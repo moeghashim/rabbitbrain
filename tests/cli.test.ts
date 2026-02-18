@@ -82,6 +82,59 @@ function buildAnalyzeResult(
 }
 
 describe("runCli", () => {
+  test("prints init guidance for local mode and passes when required env is set", async () => {
+    const output = createOutputCapture();
+
+    const code = await runCli(["init", "--mode", "local"], {
+      ...output,
+      env: {
+        X_BEARER_TOKEN: "token",
+      },
+    });
+
+    expect(code).toBe(0);
+    expect(output.getStdout()).toContain("Rabbitbrain CLI Onboarding");
+    expect(output.getStdout()).toContain("Selected mode: local");
+    expect(output.getStdout()).toContain("--storage local");
+  });
+
+  test("fails init for local mode when bearer token is missing", async () => {
+    const output = createOutputCapture();
+    const code = await runCli(["init", "--mode", "local"], {
+      ...output,
+      env: {},
+    });
+
+    expect(code).toBe(1);
+    expect(output.getStdout()).toContain("Missing setup: X_BEARER_TOKEN");
+  });
+
+  test("fails init for convex mode when convex url is missing", async () => {
+    const output = createOutputCapture();
+    const code = await runCli(["init", "--mode", "convex"], {
+      ...output,
+      env: {
+        X_BEARER_TOKEN: "token",
+      },
+    });
+
+    expect(code).toBe(1);
+    expect(output.getStdout()).toContain("CONVEX_URL: missing");
+    expect(output.getStdout()).toContain(
+      "Missing setup: CONVEX_URL (or NEXT_PUBLIC_CONVEX_URL)",
+    );
+  });
+
+  test("errors when init mode is invalid", async () => {
+    const output = createOutputCapture();
+    const code = await runCli(["init", "--mode", "wat"], {
+      ...output,
+    });
+
+    expect(code).toBe(1);
+    expect(output.getStderr()).toContain("Invalid --mode value");
+  });
+
   test("prints help when no command is provided", async () => {
     const output = createOutputCapture();
     const code = await runCli([], output);
@@ -166,5 +219,78 @@ describe("runCli", () => {
     expect(code).toBe(0);
     const parsed = JSON.parse(output.getStdout());
     expect(parsed.topic).toBe("AI Agents");
+  });
+
+  test("routes analyze persistence to local backend", async () => {
+    const output = createOutputCapture();
+    const analyzePostFn = vi.fn().mockResolvedValue(buildAnalyzeResult());
+    const saveAnalysisFn = vi.fn();
+    const saveAnalysisLocalFn = vi.fn().mockResolvedValue("local_1");
+
+    const code = await runCli(
+      [
+        "analyze",
+        "--url",
+        "https://x.com/dev/status/123",
+        "--storage",
+        "local",
+      ],
+      {
+        ...output,
+        analyzePostFn,
+        saveAnalysisFn,
+        saveAnalysisLocalFn,
+      },
+    );
+
+    expect(code).toBe(0);
+    const parsed = JSON.parse(output.getStdout());
+    expect(parsed.id).toBe("local_1");
+    expect(saveAnalysisLocalFn).toHaveBeenCalledTimes(1);
+    expect(saveAnalysisFn).not.toHaveBeenCalled();
+  });
+
+  test("errors when storage mode is invalid", async () => {
+    const output = createOutputCapture();
+    const analyzePostFn = vi.fn().mockResolvedValue(buildAnalyzeResult());
+
+    const code = await runCli(
+      [
+        "analyze",
+        "--url",
+        "https://x.com/dev/status/123",
+        "--storage",
+        "unknown",
+      ],
+      {
+        ...output,
+        analyzePostFn,
+      },
+    );
+
+    expect(code).toBe(1);
+    expect(output.getStderr()).toContain("Invalid --storage value");
+  });
+
+  test("errors when convex storage is selected without a user id", async () => {
+    const output = createOutputCapture();
+    const analyzePostFn = vi.fn().mockResolvedValue(buildAnalyzeResult());
+
+    const code = await runCli(
+      [
+        "analyze",
+        "--url",
+        "https://x.com/dev/status/123",
+        "--storage",
+        "convex",
+      ],
+      {
+        ...output,
+        analyzePostFn,
+      },
+    );
+
+    expect(code).toBe(1);
+    expect(output.getStderr()).toContain("Missing --user-id");
   });
 });

@@ -17,22 +17,29 @@ function renderHelp(version) {
     `Rabbitbrain CLI v${version}`,
     "",
     "Usage:",
-    "  rabbitbrain analyze --url <x-post-url> [--user-id <id>] [--pretty]",
+    "  rabbitbrain analyze --url <x-post-url> [--user-id <id>] [--storage <convex|local|none>] [--pretty]",
     "  rabbitbrain discover --topic <topic> [--pretty]",
+    "  rabbitbrain init [--mode <local|convex>]",
     "  rabbitbrain --version",
     "  rabbitbrain --help",
     "",
     "Options:",
     "  --url <url>        Required X/Twitter post URL",
     "  --topic <topic>    Required topic for discovery",
-    "  --user-id <id>     Optional user id. If provided, save result to Convex",
+    "  --mode <mode>      Onboarding mode for init: local | convex",
+    "  --user-id <id>     Optional user id",
+    "  --storage <mode>   Optional persistence mode: convex | local | none",
     "  --pretty           Pretty-print JSON output",
     "  --version          Print CLI version",
     "  --help             Show this help",
     "",
     "Env:",
     "  X_BEARER_TOKEN     Required",
-    "  CONVEX_URL         Required only when --user-id is provided",
+    "  CONVEX_URL         Required for convex persistence",
+    "  RABBITBRAIN_STORAGE Optional default storage mode",
+    "  RABBITBRAIN_USER_ID Optional default user id",
+    "  RABBITBRAIN_LOCAL_DB_PATH  Optional local SQLite path",
+    "  RABBITBRAIN_LOCAL_MD_DIR   Optional local Markdown output path",
   ].join("\n");
 }
 
@@ -105,10 +112,77 @@ export async function saveAnalysis({
   return String(id);
 }
 
+async function saveAnalysisLocalLazy(args) {
+  const { saveAnalysisLocal } = await import("./local-store.mjs");
+  return saveAnalysisLocal(args);
+}
+
+function createInitOutput({ mode, env }) {
+  const hasBearerToken = Boolean(env.X_BEARER_TOKEN);
+  const hasConvexUrl = Boolean(env.CONVEX_URL ?? env.NEXT_PUBLIC_CONVEX_URL);
+  const localDbPath =
+    env.RABBITBRAIN_LOCAL_DB_PATH ?? ".rabbitbrain/local-analyses.db";
+  const localMarkdownDir =
+    env.RABBITBRAIN_LOCAL_MD_DIR ?? ".rabbitbrain/analyses-markdown";
+  const defaultUserId = env.RABBITBRAIN_USER_ID ?? "local-cli-user";
+
+  const missing = [];
+  if (!hasBearerToken) {
+    missing.push("X_BEARER_TOKEN");
+  }
+  if (mode === "convex" && !hasConvexUrl) {
+    missing.push("CONVEX_URL (or NEXT_PUBLIC_CONVEX_URL)");
+  }
+
+  const setupStatus = missing.length === 0 ? "ready" : "needs_setup";
+  const command =
+    mode === "convex"
+      ? 'rabbitbrain analyze --url "https://x.com/<user>/status/<id>" --storage convex --user-id "user_123" --pretty'
+      : 'rabbitbrain analyze --url "https://x.com/<user>/status/<id>" --storage local --user-id "local_user" --pretty';
+  const modeSummary =
+    mode === "convex"
+      ? "- Convex cloud persistence for multi-device access."
+      : "- Local persistence only (SQLite + Markdown), no Convex required.";
+
+  const lines = [
+    "Rabbitbrain CLI Onboarding",
+    "",
+    `Selected mode: ${mode}`,
+    "",
+    "1) Environment checks",
+    `- X_BEARER_TOKEN: ${hasBearerToken ? "set" : "missing"}`,
+    `- CONVEX_URL: ${mode === "convex" ? (hasConvexUrl ? "set" : "missing") : "not required in local mode"}`,
+    `- RABBITBRAIN_USER_ID: ${env.RABBITBRAIN_USER_ID ? "set" : `not set (default: ${defaultUserId})`}`,
+    "",
+    "2) Storage behavior",
+    modeSummary,
+    `- Local DB path: ${localDbPath}`,
+    `- Local Markdown dir: ${localMarkdownDir}`,
+    "",
+    "3) First command to run",
+    command,
+  ];
+
+  if (missing.length > 0) {
+    lines.push("");
+    lines.push(`Missing setup: ${missing.join(", ")}`);
+    lines.push(
+      "Fill these in .env.local (or export them in your shell), then rerun.",
+    );
+  }
+
+  return {
+    text: `${lines.join("\n")}\n`,
+    exitCode: setupStatus === "ready" ? 0 : 1,
+  };
+}
+
 export async function runCli(argv, options = {}) {
   const analyzePostFn = options.analyzePostFn ?? analyzePost;
   const discoverTopicFn = options.discoverTopicFn ?? discoverTopic;
   const saveAnalysisFn = options.saveAnalysisFn ?? saveAnalysis;
+  const saveAnalysisLocalFn =
+    options.saveAnalysisLocalFn ?? saveAnalysisLocalLazy;
   const env = options.env ?? process.env;
   const writeStdout =
     options.writeStdout ?? ((content) => process.stdout.write(content));
@@ -134,7 +208,7 @@ export async function runCli(argv, options = {}) {
       throw new Error("Command `share` has been removed. Use `analyze`.");
     }
 
-    if (command !== "analyze" && command !== "discover") {
+    if (command !== "analyze" && command !== "discover" && command !== "init") {
       throw new Error(`Unknown command: ${command}`);
     }
 
@@ -143,12 +217,29 @@ export async function runCli(argv, options = {}) {
       if (!xUrl) {
         throw new Error("Missing --url");
       }
+      const storageFlag = flags.storage ?? null;
+      const supportedStorage = ["convex", "local", "none"];
+      if (storageFlag && !supportedStorage.includes(storageFlag)) {
+        throw new Error(
+          `Invalid --storage value: ${storageFlag}. Expected convex, local, or none.`,
+        );
+      }
 
       const analyzed = await analyzePostFn({ xUrl });
-      const userId = flags["user-id"] ?? null;
-      const id = userId
-        ? await saveAnalysisFn({ userId, analyzed, env })
-        : null;
+      const userId = flags["user-id"] ?? env.RABBITBRAIN_USER_ID ?? null;
+
+      // Backward-compatible behavior: passing --user-id without --storage saves to Convex.
+      const effectiveStorage = storageFlag ?? (userId ? "convex" : "none");
+      let id = null;
+      if (effectiveStorage === "convex") {
+        if (!userId) {
+          throw new Error("Missing --user-id for convex persistence");
+        }
+        id = await saveAnalysisFn({ userId, analyzed, env });
+      } else if (effectiveStorage === "local") {
+        const localUserId = userId ?? "local-cli-user";
+        id = await saveAnalysisLocalFn({ userId: localUserId, analyzed, env });
+      }
 
       writeStdout(
         `${JSON.stringify(
@@ -161,6 +252,19 @@ export async function runCli(argv, options = {}) {
         )}\n`,
       );
       return 0;
+    }
+
+    if (command === "init") {
+      const modeFlag = flags.mode ?? env.RABBITBRAIN_STORAGE ?? "local";
+      if (modeFlag !== "local" && modeFlag !== "convex") {
+        throw new Error(
+          `Invalid --mode value: ${modeFlag}. Expected local or convex.`,
+        );
+      }
+
+      const init = createInitOutput({ mode: modeFlag, env });
+      writeStdout(init.text);
+      return init.exitCode;
     }
 
     const topic = flags.topic;

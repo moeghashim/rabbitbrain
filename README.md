@@ -34,6 +34,20 @@ or (after install/link):
 rabbitbrain analyze --url "https://x.com/<user>/status/<id>" --pretty
 ```
 
+Guided onboarding:
+
+```bash
+rabbitbrain init
+rabbitbrain init --mode local
+rabbitbrain init --mode convex
+```
+
+Local persistence (SQLite + Markdown, no Convex required):
+
+```bash
+rabbitbrain analyze --url "https://x.com/<user>/status/<id>" --storage local --pretty
+```
+
 Topic discovery:
 
 ```bash
@@ -48,6 +62,21 @@ If you pass `--user-id`, the CLI also saves the enriched analysis to Convex:
 rabbitbrain analyze --url "https://x.com/<user>/status/<id>" --user-id "user_123" --pretty
 ```
 
+You can also choose storage explicitly:
+
+```bash
+rabbitbrain analyze --url "https://x.com/<user>/status/<id>" --storage convex --user-id "user_123" --pretty
+rabbitbrain analyze --url "https://x.com/<user>/status/<id>" --storage local --user-id "local_user" --pretty
+```
+
+### CLI Onboarding Flow
+
+Use `rabbitbrain init` to run a guided setup check. It validates required env vars for your selected mode and prints the exact first command to run.
+
+- Default mode: `local`
+- Supported modes: `local`, `convex`
+- Exit code: `0` when setup is ready, `1` when required config is missing
+
 ### CLI output contract
 
 The CLI returns one JSON object with:
@@ -61,7 +90,11 @@ The CLI returns one JSON object with:
 ### CLI environment
 
 - `X_BEARER_TOKEN` is required.
-- `CONVEX_URL` (or `NEXT_PUBLIC_CONVEX_URL`) is required only when `--user-id` is used.
+- `CONVEX_URL` (or `NEXT_PUBLIC_CONVEX_URL`) is required for Convex persistence.
+- `RABBITBRAIN_STORAGE` is optional default mode for onboarding and analyze behavior (`local` or `convex`).
+- `RABBITBRAIN_USER_ID` is optional default user id for analyze persistence.
+- `RABBITBRAIN_LOCAL_DB_PATH` is optional for local storage path (default: `.rabbitbrain/local-analyses.db`).
+- `RABBITBRAIN_LOCAL_MD_DIR` is optional for local Markdown path (default: `.rabbitbrain/analyses-markdown`).
 
 ## Required Env Vars
 
@@ -73,6 +106,10 @@ The CLI returns one JSON object with:
 - `TWITTER_CLIENT_SECRET`
 - `AUTH_DATABASE_URL`
 - `CONVEX_URL` and `NEXT_PUBLIC_CONVEX_URL`
+- `RABBITBRAIN_STORAGE` (optional)
+- `RABBITBRAIN_USER_ID` (optional)
+- `RABBITBRAIN_LOCAL_DB_PATH` (optional)
+- `RABBITBRAIN_LOCAL_MD_DIR` (optional)
 
 ## X OAuth Setup
 
