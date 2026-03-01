@@ -17,6 +17,9 @@
 		"release:patch": "node scripts/release.mjs patch",
 		"release:minor": "node scripts/release.mjs minor",
 		"release:major": "node scripts/release.mjs major",
+		"xurl:status": "xurl auth status",
+		"xurl:whoami": "xurl whoami",
+		"xurl:search": "xurl search \"from:XDevelopers\" -n 10",
 		"prepare": "husky"
 	},
 	"devDependencies": {
