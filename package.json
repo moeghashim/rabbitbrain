@@ -22,7 +22,7 @@
 		"xurl:whoami": "xurl whoami",
 		"xurl:search": "xurl search \"from:XDevelopers\" -n 10",
 		"xurl:analyze:auth": "node scripts/configure-openai.mjs",
-		"xurl:analyze": "node scripts/analyze-tweet.mjs",
+		"xurl:analyze": "tsx scripts/analyze-tweet.ts",
 		"prepare": "husky"
 	},
 	"devDependencies": {

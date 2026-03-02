@@ -9,6 +9,9 @@
 		}
 	},
 	"include": [
+		"scripts/**/*.d.mts",
+		"scripts/**/*.d.ts",
+		"scripts/**/*.ts",
 		"packages/*/src/**/*",
 		"packages/*/test/**/*"
 	],

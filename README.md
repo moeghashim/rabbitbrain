@@ -26,3 +26,25 @@ npm test
 ## Packages
 
 - `@pi-starter/core`
+
+## Tweet Analysis CLI
+
+Configure once:
+
+```bash
+npm run xurl:analyze:auth
+```
+
+Analyze a tweet:
+
+```bash
+npm run xurl:analyze -- "https://x.com/user/status/1234567890"
+```
+
+Analyze + learning mode (`--learn`):
+
+```bash
+npm run xurl:analyze -- "https://x.com/user/status/1234567890" --learn
+```
+
+`--learn` asks you to rate 5 novel concepts from the tweet (familiarity + interest) and then prints a personalized 7-day Feynman learning track.

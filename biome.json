@@ -29,6 +29,7 @@
 			"packages/*/test/**/*.ts",
 			"scripts/**/*.js",
 			"scripts/**/*.mjs",
+			"scripts/**/*.ts",
 			"!**/node_modules/**/*",
 			"!**/dist/**/*"
 		]
