@@ -1,39 +1,37 @@
-# pi-starter
+# Rabbitbrain
 
-Monorepo template following the pi-mono style:
-- ESM TypeScript
-- Biome formatting/linting (tabs, indentWidth 3, lineWidth 120)
-- Strict TypeScript
-- `npm run check` gates formatting, linting, and type checking
-- Optional max-lines-per-file check
+Rabbitbrain is a CLI-focused project for analyzing tweets and turning them into personalized learning tracks.
 
-Inspired by [badlogic/pi-mono](https://github.com/badlogic/pi-mono).
+## Features
 
-## Agent Rules
+- Tweet analysis from X URLs/IDs via `xurl`
+- OpenAI-powered extraction of:
+  - Topic
+  - Summary
+  - Intent
+  - 5 novel concepts from each tweet
+- Interactive learning mode (`--learn`) that:
+  - Collects concept familiarity and interest scores (1-5)
+  - Prioritizes concepts by novelty and interest
+  - Generates a 7-day Feynman learning track (10 min/day, Learn/Explain/Check)
+- Model selection per run (`--model`, `--choose-model`)
+- Onboarding helper for local setup (`npm run onboarding`)
 
-- Canonical source of agent instructions: `AGENTS.md` at repo root.
-- Keep tool-specific agent config optional and manual.
-- Do not depend on symlink managers for this starter by default.
+## Requirements
+
+- Node.js 20+
+- `xurl` installed and authenticated for X API access
+- OpenAI API key configured
 
 ## Setup
 
 ```bash
 npm install
-npm run check
-npm test
-```
-
-## Packages
-
-- `@pi-starter/core`
-
-## Tweet Analysis CLI
-
-Configure once:
-
-```bash
+npm run onboarding
 npm run xurl:analyze:auth
 ```
+
+## Usage
 
 Analyze a tweet:
 
@@ -41,10 +39,36 @@ Analyze a tweet:
 npm run xurl:analyze -- "https://x.com/user/status/1234567890"
 ```
 
-Analyze + learning mode (`--learn`):
+Analyze and generate a learning track:
 
 ```bash
 npm run xurl:analyze -- "https://x.com/user/status/1234567890" --learn
 ```
 
-`--learn` asks you to rate 5 novel concepts from the tweet (familiarity + interest) and then prints a personalized 7-day Feynman learning track.
+Choose a model interactively:
+
+```bash
+npm run xurl:analyze -- "https://x.com/user/status/1234567890" --choose-model
+```
+
+Use a specific model:
+
+```bash
+npm run xurl:analyze -- "https://x.com/user/status/1234567890" --model gpt-4.1
+```
+
+## Development
+
+```bash
+npm run check
+npm test
+```
+
+## Documentation
+
+- xurl setup and safety notes: `docs/xurl.md`
+- Agent instructions: `AGENTS.md`
+
+## License
+
+MIT. See [LICENSE](./LICENSE).
