@@ -17,9 +17,12 @@
 		"release:patch": "node scripts/release.mjs patch",
 		"release:minor": "node scripts/release.mjs minor",
 		"release:major": "node scripts/release.mjs major",
+		"onboarding": "node scripts/onboarding.mjs",
 		"xurl:status": "xurl auth status",
 		"xurl:whoami": "xurl whoami",
 		"xurl:search": "xurl search \"from:XDevelopers\" -n 10",
+		"xurl:analyze:auth": "node scripts/configure-openai.mjs",
+		"xurl:analyze": "node scripts/analyze-tweet.mjs",
 		"prepare": "husky"
 	},
 	"devDependencies": {
