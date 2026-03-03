@@ -79,16 +79,13 @@ export default function LandingPage({ searchParams }: Readonly<LandingPageProps>
 					))}
 				</div>
 
-				<div className="flex items-center gap-6">
-					<Link href="/sign-in" className="hidden text-sm font-medium text-white transition-colors duration-300 hover:text-coral md:block">
-						Login with Twitter
-					</Link>
+				<div className="flex items-center">
 					<Link
 						href="/sign-in"
 						id="nav-cta"
 						className="rounded-[48px] bg-coral px-7 py-3 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(239,70,35,0.4)] transition-all duration-300 ease-redsun hover:-translate-y-0.5 hover:bg-coral-hover hover:shadow-[0_6px_20px_rgba(239,70,35,0.6)]"
 					>
-						Analyze with Twitter
+						Login with Twitter
 					</Link>
 				</div>
 			</nav>

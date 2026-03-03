@@ -13,6 +13,8 @@ test("isPublicPath allows marketing and auth routes", () => {
 	assert.equal(isPublicPath("/sign-in/welcome"), true);
 	assert.equal(isPublicPath("/sign-up"), true);
 	assert.equal(isPublicPath("/sign-up/new"), true);
+	assert.equal(isPublicPath("/auth/popup-start"), true);
+	assert.equal(isPublicPath("/auth/popup-complete"), true);
 });
 
 test("isPublicPath blocks app and account routes", () => {

@@ -1,17 +1,10 @@
 import React from "react";
 
 import { TwitterSignInButton } from "../../../components/twitter-sign-in-button.js";
+import { resolveInternalRedirectUrl } from "../../../src/auth/redirect-url.js";
 
 function resolveCallbackUrl(searchParams: { redirect_url?: string | string[] }): string {
-	const raw = searchParams.redirect_url;
-	const value = Array.isArray(raw) ? raw[0] : raw;
-	if (!value || value.trim().length === 0) {
-		return "/app";
-	}
-	if (!value.startsWith("/")) {
-		return "/app";
-	}
-	return value;
+	return resolveInternalRedirectUrl(searchParams.redirect_url, "/app");
 }
 
 export default function SignInPage({

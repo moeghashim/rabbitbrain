@@ -181,3 +181,11 @@ Bugs/issues found: GitHub CI `next build` failed while local checks passed.
 Root cause: `AuthProvider` is a union and direct `provider.authorization` access is invalid for non-OAuth provider types under stricter build-time checking.
 Fix applied: Narrowed provider shape before authorization access and reran web test/build/check gates.
 What to do differently next feature: Include `npm run -w @pi-starter/web build` in local hotfix validation before opening PR to catch Next.js type-check differences earlier.
+
+Date/Time (America/Chicago): 2026-03-03 16:58:15 CST
+Feature: UX/Auth - Popup Twitter login and hero analyze auto-resume
+What was implemented: Switched sign-in flow to popup start/complete pages, added shared popup client helper, updated hero Analyze Tweet flow to open login popup on 401 and automatically retry analysis for the same tweet after auth, and aligned nav CTA copy to "Login with Twitter" without duplicate adjacent text.
+Bugs/issues found: Next.js build failed for new popup routes due missing .js re-export and Suspense requirement around useSearchParams in app router static generation.
+Root cause: New helper module lacked ESM bridge file used by existing import pattern; client hooks on route pages require Suspense wrapper under current Next.js build behavior.
+Fix applied: Added `redirect-url.js`/`popup-client.js` re-exports and wrapped popup pages in Suspense with stable fallbacks.
+What to do differently next feature: Always run `npm run -w @pi-starter/web build` immediately after adding new app routes/hooks to catch app-router prerender constraints before commit.
