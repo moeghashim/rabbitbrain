@@ -53,3 +53,11 @@ Bugs/issues found: Needed explicit ownership validation before track generation 
 Root cause: Track creation depends on a saved analysis ID that could be supplied across accounts.
 Fix applied: Added analysis ownership checks in pipeline and Convex mutation before inserting learningTracks.
 What to do differently next feature: Reuse protected-user helper modules for UI data reads to keep authorization checks consistent across screens.
+
+Date/Time (America/Chicago): 2026-03-02 22:47:44 CST
+Feature: 7 - Account UI (/app + /account)
+What was implemented: Replaced placeholder authenticated pages with a styled dashboard and account settings UI, including analysis form actions, preferences form controls, and sign-out action path. Added UI integration render tests for key actions.
+Bugs/issues found: None blocking.
+Root cause: N/A.
+Fix applied: N/A.
+What to do differently next feature: Keep UI action endpoints aligned with backend route implementations to avoid temporary dead links.
