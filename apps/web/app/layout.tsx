@@ -1,4 +1,3 @@
-import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Instrument_Serif, Manrope } from "next/font/google";
 import type { ReactNode } from "react";
@@ -26,9 +25,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
 	return (
 		<html lang="en" className={`${instrumentSerif.variable} ${manrope.variable} scroll-smooth`}>
-			<body className="antialiased">
-				<ClerkProvider>{children}</ClerkProvider>
-			</body>
+			<body className="antialiased">{children}</body>
 		</html>
 	);
 }
