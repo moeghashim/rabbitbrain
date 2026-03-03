@@ -12,10 +12,21 @@ interface TwitterProviderInit {
 	clientId: string;
 	clientSecret: string;
 	version: "2.0";
+	authorization?: {
+		params?: {
+			scope?: string;
+		};
+	};
 }
 
 type AuthProvider = NonNullable<NextAuthOptions["providers"]>[number];
 type TwitterProviderFactory = (options: TwitterProviderInit) => AuthProvider;
+const TWITTER_OAUTH_SCOPE = "users.read tweet.read";
+
+interface ProviderAuthorization {
+	url: string;
+	params?: Record<string, string>;
+}
 
 function readRequiredEnv(name: keyof AuthEnv, env: AuthEnv, strictEnv: boolean): string {
 	const value = env[name];
@@ -47,25 +58,53 @@ function resolveTwitterProviderFactory(): TwitterProviderFactory {
 	throw new Error("Unable to initialize next-auth twitter provider");
 }
 
+function enforceTwitterOauthScope(provider: AuthProvider): AuthProvider {
+	if (!("authorization" in provider)) {
+		return provider;
+	}
+
+	const providerWithAuthorization = provider as AuthProvider & { authorization?: unknown };
+	const authorization = providerWithAuthorization.authorization;
+	if (typeof authorization !== "object" || authorization === null || !("url" in authorization)) {
+		return provider;
+	}
+
+	const typedAuthorization = authorization as ProviderAuthorization;
+	providerWithAuthorization.authorization = {
+		...typedAuthorization,
+		params: {
+			...(typedAuthorization.params ?? {}),
+			scope: TWITTER_OAUTH_SCOPE,
+		},
+	};
+	return provider;
+}
+
 export function buildAuthOptions(
 	env: AuthEnv = process.env,
 	options: { strictEnv?: boolean } = {},
 ): NextAuthOptions {
 	const strictEnv = options.strictEnv ?? true;
 	const twitterProvider = resolveTwitterProviderFactory();
+	const provider = enforceTwitterOauthScope(
+		twitterProvider({
+			clientId: readRequiredEnv("AUTH_X_ID", env, strictEnv),
+			clientSecret: readRequiredEnv("AUTH_X_SECRET", env, strictEnv),
+			version: "2.0",
+			authorization: {
+				params: {
+					scope: TWITTER_OAUTH_SCOPE,
+				},
+			},
+		}),
+	);
 
 	return {
 		secret: readRequiredEnv("AUTH_SECRET", env, strictEnv),
 		session: {
 			strategy: "jwt",
 		},
-		providers: [
-			twitterProvider({
-				clientId: readRequiredEnv("AUTH_X_ID", env, strictEnv),
-				clientSecret: readRequiredEnv("AUTH_X_SECRET", env, strictEnv),
-				version: "2.0",
-			}),
-		],
+		providers: [provider],
 		pages: {
 			signIn: "/sign-in",
 		},
