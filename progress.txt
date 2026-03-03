@@ -125,3 +125,11 @@ Bugs/issues found: Duplicate per-file auth logic increased risk of inconsistent 
 Root cause: Auth checks were copy-pasted across Convex modules.
 Fix applied: Consolidated checks in a single helper and reused it in all account data functions.
 What to do differently next feature: Align startup env validation and deployment docs in the same change to prevent config/runtime drift.
+
+Date/Time (America/Chicago): 2026-03-03 13:37:40 CST
+Feature: 5 - Environment and Config Validation Update
+What was implemented: Replaced Clerk env validation with Auth.js/X OAuth env validation (`AUTH_SECRET`, `AUTH_X_ID`, `AUTH_X_SECRET`) while retaining Convex and app-only X ingestion key checks, and updated deployment runbook accordingly.
+Bugs/issues found: Potential mismatch between runtime auth config and startup validator.
+Root cause: Auth env requirements previously lived in multiple places with different variable names.
+Fix applied: Aligned startup validator names with auth module env names and updated tests/docs in same feature.
+What to do differently next feature: Migrate auth tests to include middleware token/session scenarios, not only route helper unit tests.

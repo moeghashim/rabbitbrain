@@ -3,8 +3,9 @@ import { readXApiConfigFromEnv } from "@pi-starter/x-client";
 type EnvMap = Record<string, string | undefined>;
 
 export interface StartupEnv {
-	clerkPublishableKey: string;
-	clerkSecretKey: string;
+	authSecret: string;
+	authXId: string;
+	authXSecret: string;
 	convexUrl: string;
 	convexDeployment: string;
 }
@@ -22,8 +23,9 @@ function readRequiredEnv(name: string, env: EnvMap): string {
 export function validateStartupEnv(env: EnvMap = process.env): StartupEnv {
 	readXApiConfigFromEnv(env as NodeJS.ProcessEnv);
 	return {
-		clerkPublishableKey: readRequiredEnv("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", env),
-		clerkSecretKey: readRequiredEnv("CLERK_SECRET_KEY", env),
+		authSecret: readRequiredEnv("AUTH_SECRET", env),
+		authXId: readRequiredEnv("AUTH_X_ID", env),
+		authXSecret: readRequiredEnv("AUTH_X_SECRET", env),
 		convexUrl: readRequiredEnv("NEXT_PUBLIC_CONVEX_URL", env),
 		convexDeployment: readRequiredEnv("CONVEX_DEPLOYMENT", env),
 	};
