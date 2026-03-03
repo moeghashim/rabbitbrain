@@ -29,3 +29,11 @@ Bugs/issues found: Initial Convex typing failed due generic context never-types 
 Root cause: Missing data-model typing for GenericQueryCtx/GenericMutationCtx and incorrect write behavior in query.
 Fix applied: Switched to schema-derived DataModelFromSchemaDefinition typing and made getPreferences read-only with defaults while updates happen via mutation.
 What to do differently next feature: Derive Convex data model types at file start before writing handlers to avoid rework.
+
+Date/Time (America/Chicago): 2026-03-02 22:43:31 CST
+Feature: 4 - X Production Key Integration (App-Only Read)
+What was implemented: Replaced x-client scaffold with production-focused X API v2 client including env validation (X_API_KEY, X_API_SECRET, X_BEARER_TOKEN), tweet URL/ID parsing, timeout/retry behavior, typed provider errors, and provider interface exports.
+Bugs/issues found: Needed deterministic retries in tests and strict payload validation to avoid silent malformed responses.
+Root cause: Upstream APIs can fail with varied status/body formats and transient rate limiting.
+Fix applied: Added status-to-error mapping, retryable classification, injectable sleep/random functions for deterministic tests, and strong payload checks.
+What to do differently next feature: Define API contracts first and reuse shared error taxonomy in pipeline/service layers immediately.
