@@ -1,0 +1,18 @@
+{
+  "name": "@pi-starter/cli",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "echo 'cli build pending packaging setup'",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@pi-starter/contracts": "0.0.1",
+    "@pi-starter/core": "0.0.1"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

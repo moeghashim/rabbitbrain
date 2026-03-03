@@ -1,0 +1,23 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"target": "ES2022",
+		"lib": ["DOM", "DOM.Iterable", "ES2022"],
+		"jsx": "preserve",
+		"incremental": true,
+		"allowJs": false,
+		"noEmit": true,
+		"plugins": [{ "name": "next" }],
+		"moduleResolution": "Bundler",
+		"module": "ESNext",
+		"isolatedModules": true,
+		"baseUrl": ".",
+		"paths": {
+			"@pi-starter/contracts": ["../../packages/contracts/src/index.ts"],
+			"@pi-starter/core": ["../../packages/core/src/index.ts"],
+			"@pi-starter/x-client": ["../../packages/x-client/src/index.ts"]
+		}
+	},
+	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+	"exclude": ["node_modules"]
+}

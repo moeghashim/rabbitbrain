@@ -13,8 +13,9 @@ import {
 	renderConceptAssessmentMarkdown,
 	renderLearningTrackMarkdown,
 	type TweetLearningAnalysis,
-} from "../packages/core/src/index.js";
-import { DEFAULT_OPENAI_MODEL, RECOMMENDED_MODELS, readOpenAIConfig } from "./lib/openai-config.mjs";
+} from "@pi-starter/core";
+import { AnalyzeTweetResultSchema } from "@pi-starter/contracts";
+import { DEFAULT_OPENAI_MODEL, RECOMMENDED_MODELS, readOpenAIConfig } from "../../../scripts/lib/openai-config.mjs";
 
 const execFileAsync = promisify(execFile);
 
@@ -274,7 +275,8 @@ async function analyzeWithOpenAI({
 		throw new Error("OpenAI API returned no text output.");
 	}
 
-	return parseTweetLearningAnalysisText(analysisText);
+	const parsed = parseTweetLearningAnalysisText(analysisText);
+	return AnalyzeTweetResultSchema.parse(parsed);
 }
 
 async function readRating(rl: readline.Interface, prompt: string, fieldLabel: string): Promise<1 | 2 | 3 | 4 | 5> {
