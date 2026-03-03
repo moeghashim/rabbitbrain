@@ -77,3 +77,11 @@ Bugs/issues found: Type mismatch between generic env map and ProcessEnv in start
 Root cause: x-client config reader requires ProcessEnv type while tests supply partial env objects.
 Fix applied: Normalized env handling with a flexible map for validation and explicit cast only at x-client config boundary.
 What to do differently next feature: Keep env-reader boundaries explicit from the start when mixing strongly-typed process env helpers across packages.
+
+Date/Time (America/Chicago): 2026-03-03 12:45:00 CST
+Feature: PR Gate - Review and Validation Hardening
+What was implemented: Ran full validation matrix for PR gate, generated screenshot artifacts for landing/app/account routes, and prepared repo for clean review handoff.
+Bugs/issues found: Next.js build failed on .js-suffixed internal runtime imports and required Clerk publishable key format during build.
+Root cause: Turbopack runtime module resolution did not map .js to .ts/.tsx for app/middleware imports, and Clerk validates publishable key format at prerender time.
+Fix applied: Added local .js bridge modules for runtime imports, adjusted web tsconfig include stability, used valid-format non-secret build-time placeholders for local validation, and added apps/*/.next to .gitignore.
+What to do differently next feature: Add CI build with env placeholders earlier and enforce framework-specific import compatibility checks.
