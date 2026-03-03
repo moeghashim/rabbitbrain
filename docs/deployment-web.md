@@ -9,6 +9,7 @@ Set these in both Vercel Preview and Production:
 - `AUTH_X_SECRET`
 - `NEXT_PUBLIC_CONVEX_URL`
 - `CONVEX_DEPLOYMENT`
+- `CONVEX_DEPLOY_KEY` (server-only; used for authenticated server-to-Convex writes)
 - `X_API_KEY`
 - `X_API_SECRET`
 - `X_BEARER_TOKEN`
@@ -31,7 +32,8 @@ Optional runtime control:
 
 1. Set `CONVEX_DEPLOYMENT` for the target environment.
 2. Set `NEXT_PUBLIC_CONVEX_URL` matching the deployment.
-3. Sync environment variables in Convex dashboard for server functions using X API.
+3. Set `CONVEX_DEPLOY_KEY` for trusted server-side mutation access.
+4. Sync environment variables in Convex dashboard for server functions using X API.
 
 ## X Production Keys (App-Only Ingestion)
 

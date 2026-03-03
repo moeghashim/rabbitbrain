@@ -40,6 +40,9 @@ export interface TweetPayload {
 	id: string;
 	text: string;
 	authorId?: string;
+	authorUsername?: string;
+	authorName?: string;
+	authorAvatarUrl?: string;
 	raw: unknown;
 }
 
@@ -181,6 +184,29 @@ function readTweetPayload(responseBody: unknown): TweetPayload {
 	const id = (data as { id?: unknown }).id;
 	const text = (data as { text?: unknown }).text;
 	const authorId = (data as { author_id?: unknown }).author_id;
+	const includes = (responseBody as { includes?: unknown }).includes;
+	const users =
+		typeof includes === "object" && includes !== null ? (includes as { users?: unknown }).users : undefined;
+	const matchingUser =
+		Array.isArray(users) && typeof authorId === "string"
+			? users.find((entry) => {
+					if (typeof entry !== "object" || entry === null) {
+						return false;
+					}
+					const userId = (entry as { id?: unknown }).id;
+					return userId === authorId;
+				})
+			: undefined;
+	const authorUsername =
+		typeof matchingUser === "object" && matchingUser !== null
+			? (matchingUser as { username?: unknown }).username
+			: undefined;
+	const authorName =
+		typeof matchingUser === "object" && matchingUser !== null ? (matchingUser as { name?: unknown }).name : undefined;
+	const authorAvatarUrl =
+		typeof matchingUser === "object" && matchingUser !== null
+			? (matchingUser as { profile_image_url?: unknown }).profile_image_url
+			: undefined;
 
 	if (typeof id !== "string" || id.length === 0 || typeof text !== "string" || text.length === 0) {
 		throw new XProviderError({
@@ -194,6 +220,9 @@ function readTweetPayload(responseBody: unknown): TweetPayload {
 		id,
 		text,
 		authorId: typeof authorId === "string" && authorId.length > 0 ? authorId : undefined,
+		authorUsername: typeof authorUsername === "string" && authorUsername.length > 0 ? authorUsername : undefined,
+		authorName: typeof authorName === "string" && authorName.length > 0 ? authorName : undefined,
+		authorAvatarUrl: typeof authorAvatarUrl === "string" && authorAvatarUrl.length > 0 ? authorAvatarUrl : undefined,
 		raw: responseBody,
 	};
 }
@@ -225,6 +254,8 @@ export class XApiV2Client implements TweetSourceProvider {
 		const tweetId = parseTweetId(input);
 		const url = new URL(`https://api.x.com/2/tweets/${tweetId}`);
 		url.searchParams.set("expansions", "author_id");
+		url.searchParams.set("tweet.fields", "author_id");
+		url.searchParams.set("user.fields", "id,username,name,profile_image_url");
 
 		let attempt = 0;
 		while (attempt <= this.config.retryCount) {
