@@ -133,3 +133,11 @@ Bugs/issues found: Potential mismatch between runtime auth config and startup va
 Root cause: Auth env requirements previously lived in multiple places with different variable names.
 Fix applied: Aligned startup validator names with auth module env names and updated tests/docs in same feature.
 What to do differently next feature: Migrate auth tests to include middleware token/session scenarios, not only route helper unit tests.
+
+Date/Time (America/Chicago): 2026-03-03 13:40:17 CST
+Feature: 6 - Test Suite Migration
+What was implemented: Refactored auth config into testable `buildAuthOptions`, updated auth route to construct handlers from that builder, and added Auth.js-focused tests validating required envs and X-only provider/session configuration.
+Bugs/issues found: next-auth Twitter provider import was not consistently callable across test/runtime module interop.
+Root cause: CJS/ESM default export interop differences in execution contexts.
+Fix applied: Added explicit provider factory resolver that handles both direct and nested default exports.
+What to do differently next feature: Remove residual Clerk dependency references only after all auth tests are stable and green.

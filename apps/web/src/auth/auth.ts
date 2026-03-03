@@ -1,67 +1,96 @@
-import NextAuth, { type NextAuthOptions, getServerSession } from "next-auth";
-import TwitterProvider, { type TwitterProfile } from "next-auth/providers/twitter";
+import { type NextAuthOptions, getServerSession } from "next-auth";
+import * as TwitterProviderModule from "next-auth/providers/twitter";
+import type { TwitterProfile } from "next-auth/providers/twitter";
 
-function readRequiredEnv(name: "AUTH_X_ID" | "AUTH_X_SECRET" | "AUTH_SECRET"): string {
-	const value = process.env[name];
+interface AuthEnv {
+	AUTH_X_ID?: string;
+	AUTH_X_SECRET?: string;
+	AUTH_SECRET?: string;
+}
+
+interface TwitterProviderInit {
+	clientId: string;
+	clientSecret: string;
+	version: "2.0";
+}
+
+type AuthProvider = NonNullable<NextAuthOptions["providers"]>[number];
+type TwitterProviderFactory = (options: TwitterProviderInit) => AuthProvider;
+
+function readRequiredEnv(name: keyof AuthEnv, env: AuthEnv): string {
+	const value = env[name];
 	if (!value || value.trim().length === 0) {
 		throw new Error(`Missing required environment variable: ${name}`);
 	}
 	return value.trim();
 }
 
-export const authOptions: NextAuthOptions = {
-	secret: readRequiredEnv("AUTH_SECRET"),
-	session: {
-		strategy: "jwt",
-	},
-	providers: [
-		TwitterProvider({
-			clientId: readRequiredEnv("AUTH_X_ID"),
-			clientSecret: readRequiredEnv("AUTH_X_SECRET"),
-			version: "2.0",
-		}),
-	],
-	pages: {
-		signIn: "/sign-in",
-	},
-	callbacks: {
-		async jwt({ token, profile }) {
-			const twitterProfile = profile as TwitterProfile | undefined;
-			const xUserId = twitterProfile?.data?.id;
-			if (typeof xUserId === "string" && xUserId.length > 0) {
-				token.sub = xUserId;
-				token.xUserId = xUserId;
-			}
+function resolveTwitterProviderFactory(): TwitterProviderFactory {
+	const maybeDefault = TwitterProviderModule.default as unknown;
+	if (typeof maybeDefault === "function") {
+		return maybeDefault as TwitterProviderFactory;
+	}
 
-			const username = twitterProfile?.data?.username;
-			if (typeof username === "string" && username.length > 0) {
-				token.xUsername = username;
-			}
+	if (typeof maybeDefault === "object" && maybeDefault !== null) {
+		const nestedDefault = (maybeDefault as { default?: unknown }).default;
+		if (typeof nestedDefault === "function") {
+			return nestedDefault as TwitterProviderFactory;
+		}
+	}
 
-			const image = twitterProfile?.data?.profile_image_url;
-			if (typeof image === "string" && image.length > 0) {
-				token.picture = image;
-			}
+	throw new Error("Unable to initialize next-auth twitter provider");
+}
 
-			return token;
+export function buildAuthOptions(env: AuthEnv = process.env): NextAuthOptions {
+	const twitterProvider = resolveTwitterProviderFactory();
+
+	return {
+		secret: readRequiredEnv("AUTH_SECRET", env),
+		session: {
+			strategy: "jwt",
 		},
-		async session({ session, token }) {
-			if (session.user) {
-				session.user.id = typeof token.xUserId === "string" ? token.xUserId : token.sub ?? "";
-				session.user.xUsername = typeof token.xUsername === "string" ? token.xUsername : undefined;
-			}
-			return session;
+		providers: [
+			twitterProvider({
+				clientId: readRequiredEnv("AUTH_X_ID", env),
+				clientSecret: readRequiredEnv("AUTH_X_SECRET", env),
+				version: "2.0",
+			}),
+		],
+		pages: {
+			signIn: "/sign-in",
 		},
-	},
-};
+		callbacks: {
+			async jwt({ token, profile }) {
+				const twitterProfile = profile as TwitterProfile | undefined;
+				const xUserId = twitterProfile?.data?.id;
+				if (typeof xUserId === "string" && xUserId.length > 0) {
+					token.sub = xUserId;
+					token.xUserId = xUserId;
+				}
 
-const authHandler = NextAuth(authOptions);
+				const username = twitterProfile?.data?.username;
+				if (typeof username === "string" && username.length > 0) {
+					token.xUsername = username;
+				}
 
-export const authRouteHandlers = {
-	GET: authHandler,
-	POST: authHandler,
-};
+				const image = twitterProfile?.data?.profile_image_url;
+				if (typeof image === "string" && image.length > 0) {
+					token.picture = image;
+				}
+
+				return token;
+			},
+			async session({ session, token }) {
+				if (session.user) {
+					session.user.id = typeof token.xUserId === "string" ? token.xUserId : token.sub ?? "";
+					session.user.xUsername = typeof token.xUsername === "string" ? token.xUsername : undefined;
+				}
+				return session;
+			},
+		},
+	};
+}
 
 export async function getServerAuthSession() {
-	return await getServerSession(authOptions);
+	return await getServerSession(buildAuthOptions(process.env));
 }

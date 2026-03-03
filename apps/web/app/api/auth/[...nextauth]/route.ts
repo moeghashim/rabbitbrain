@@ -1,3 +1,7 @@
-import { authRouteHandlers } from "../../../../../src/auth/auth.js";
+import NextAuth from "next-auth";
 
-export const { GET, POST } = authRouteHandlers;
+import { buildAuthOptions } from "../../../../../src/auth/auth.js";
+
+const handler = NextAuth(buildAuthOptions(process.env));
+
+export { handler as GET, handler as POST };
