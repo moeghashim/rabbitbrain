@@ -165,3 +165,11 @@ Bugs/issues found: Users reached X login but were redirected back repeatedly and
 Root cause: OAuth start path was initiated via link/GET semantics instead of NextAuth client sign-in flow with CSRF/session handling.
 Fix applied: Added `TwitterSignInButton` client component, wired sign-in page to it, updated tests, and deployed.
 What to do differently next feature: Treat auth provider start/callback as integration flows and validate with realistic end-to-end session initiation before release.
+
+Date/Time (America/Chicago): 2026-03-03 16:45:09 CST
+Feature: Hotfix - Twitter OAuth scope hardening
+What was implemented: Enforced provider-level Twitter OAuth scope to `users.read tweet.read` (removed `offline.access`) and added regression test asserting final provider authorization scope.
+Bugs/issues found: NextAuth Twitter provider kept adding `offline.access` even when custom scope was provided via options.
+Root cause: Provider default authorization params are defined internally and not fully overridden by nested option params.
+Fix applied: Added post-construction provider authorization override in auth config (`enforceTwitterOauthScope`) and verified resolved scope output.
+What to do differently next feature: Runtime-inspect generated provider authorization payload whenever overriding OAuth defaults to confirm behavior before deployment.
