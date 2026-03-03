@@ -1,0 +1,15 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"target": "ES2022",
+		"module": "Node16",
+		"moduleResolution": "Node16",
+		"noEmit": true,
+		"baseUrl": ".",
+		"paths": {
+			"@pi-starter/contracts": ["../../packages/contracts/src/index.ts"],
+			"@pi-starter/core": ["../../packages/core/src/index.ts"]
+		}
+	},
+	"include": ["src/**/*.ts"]
+}
