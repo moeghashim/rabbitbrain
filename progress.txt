@@ -85,3 +85,11 @@ Bugs/issues found: Next.js build failed on .js-suffixed internal runtime imports
 Root cause: Turbopack runtime module resolution did not map .js to .ts/.tsx for app/middleware imports, and Clerk validates publishable key format at prerender time.
 Fix applied: Added local .js bridge modules for runtime imports, adjusted web tsconfig include stability, used valid-format non-secret build-time placeholders for local validation, and added apps/*/.next to .gitignore.
 What to do differently next feature: Add CI build with env placeholders earlier and enforce framework-specific import compatibility checks.
+
+Date/Time (America/Chicago): 2026-03-03 13:29:46 CST
+Feature: 0 - Baseline + Safety Snapshot
+What was implemented: Confirmed branch context, captured pre-migration auth/identity/test surface in docs/auth-migration-baseline-2026-03-03.md, and locked defaults for X-only Auth.js cutover.
+Bugs/issues found: None.
+Root cause: N/A.
+Fix applied: N/A.
+What to do differently next feature: Replace runtime auth entrypoints first (provider, middleware, sign-in routes) before data model refactor to keep blast radius isolated.
