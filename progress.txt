@@ -101,3 +101,11 @@ Bugs/issues found: NextAuth package installed as stable v4 API (not v5 helper ex
 Root cause: Workspace dependency resolution selected current stable major version, which differs from v5 examples.
 Fix applied: Implemented app-router compatible v4 handler export pattern and middleware token verification via next-auth/jwt.
 What to do differently next feature: Keep auth UX updates isolated to route behavior and CTA target changes without touching core auth/session wiring.
+
+Date/Time (America/Chicago): 2026-03-03 13:33:35 CST
+Feature: 2 - X-Only Route UX
+What was implemented: Updated marketing CTAs to target /sign-in and changed /sign-up to server-side redirect into /sign-in, leaving one canonical X-auth entry route.
+Bugs/issues found: Path checks using zsh glob patterns failed when unquoted catch-all route paths were passed to tooling.
+Root cause: Square-bracket route segment names are interpreted as shell globs.
+Fix applied: Used consistently quoted paths for catch-all route files in command invocations.
+What to do differently next feature: Batch-rename identity keys and indexes in one pass with grep validation to avoid partial data-model drift.

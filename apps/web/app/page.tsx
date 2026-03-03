@@ -68,7 +68,7 @@ export default function LandingPage() {
 						Sign In
 					</Link>
 					<Link
-						href="/sign-up"
+						href="/sign-in"
 						id="nav-cta"
 						className="rounded-[48px] bg-coral px-7 py-3 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(239,70,35,0.4)] transition-all duration-300 ease-redsun hover:-translate-y-0.5 hover:bg-coral-hover hover:shadow-[0_6px_20px_rgba(239,70,35,0.6)]"
 					>
@@ -94,7 +94,7 @@ export default function LandingPage() {
 						</p>
 						<div className="flex w-full flex-col items-center justify-center gap-4 sm:flex-row">
 							<Link
-								href="/sign-up"
+								href="/sign-in"
 								id="hero-cta-main"
 								className="group flex w-full items-center justify-center gap-3 rounded-[48px] bg-coral px-10 py-5 text-base font-medium text-white shadow-[0_8px_24px_rgba(239,70,35,0.3)] transition-all duration-500 ease-redsun hover:-translate-y-1 hover:bg-coral-hover hover:shadow-[0_12px_32px_rgba(239,70,35,0.5)] md:text-lg sm:w-auto"
 							>
@@ -102,7 +102,7 @@ export default function LandingPage() {
 								<ArrowRight className="transition-transform duration-300 group-hover:translate-x-1" />
 							</Link>
 							<Link
-								href="/sign-up"
+								href="/sign-in"
 								id="hero-cta-sec"
 								className="flex w-full items-center justify-center gap-3 rounded-[48px] border border-white/20 bg-transparent px-10 py-5 text-base font-medium text-white transition-all duration-500 ease-redsun hover:bg-white/5 md:text-lg sm:w-auto"
 							>
@@ -209,7 +209,7 @@ export default function LandingPage() {
 							Join the vanguard of creators who value the weight of their words. The studio is open.
 						</p>
 						<Link
-							href="/sign-up"
+							href="/sign-in"
 							id="final-cta"
 							className="inline-flex items-center gap-3 rounded-[48px] bg-ink px-12 py-6 text-lg font-semibold text-white shadow-2xl transition-all duration-500 ease-redsun hover:scale-105 hover:bg-white hover:text-ink"
 						>
