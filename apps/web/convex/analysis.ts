@@ -58,6 +58,48 @@ export const createFromTweetUrl = mutationGeneric({
 	},
 });
 
+export const createFromComputed = mutationGeneric({
+	args: {
+		tweetUrlOrId: v.string(),
+		model: v.optional(v.string()),
+		topic: v.string(),
+		summary: v.string(),
+		intent: v.string(),
+		novelConcepts: v.array(
+			v.object({
+				name: v.string(),
+				whyItMattersInTweet: v.string(),
+			}),
+		),
+	},
+	handler: async (ctx, args) => {
+		const user = await requireUserBySession(ctx);
+		const createdAt = Date.now();
+		const id = await ctx.db.insert("analyses", {
+			userId: user._id,
+			tweetUrlOrId: args.tweetUrlOrId,
+			model: args.model ?? "gpt-4.1",
+			topic: args.topic,
+			summary: args.summary,
+			intent: args.intent,
+			novelConcepts: args.novelConcepts,
+			createdAt,
+		});
+
+		return SavedAnalysisSchema.parse({
+			id: String(id),
+			userId: String(user._id),
+			tweetUrlOrId: args.tweetUrlOrId,
+			model: args.model ?? "gpt-4.1",
+			topic: args.topic,
+			summary: args.summary,
+			intent: args.intent,
+			novelConcepts: args.novelConcepts,
+			createdAt,
+		});
+	},
+});
+
 export const listByUser = queryGeneric({
 	args: {},
 	handler: async (ctx) => {

@@ -1,10 +1,8 @@
 import {
 	ArrowDown,
-	ArrowRight,
 	ArrowUpRight,
 	BrainCircuit,
 	PenTool,
-	PlayCircle,
 	SlidersHorizontal,
 	Sparkles,
 	Sun,
@@ -13,6 +11,7 @@ import {
 import Link from "next/link";
 import React from "react";
 
+import { HeroTweetAnalyzer } from "../components/hero-tweet-analyzer.js";
 import { Reveal } from "../components/reveal.js";
 
 const featureCards = [
@@ -35,7 +34,24 @@ const featureCards = [
 	},
 ];
 
-export default function LandingPage() {
+interface LandingPageProps {
+	searchParams?: {
+		tweetUrlOrId?: string | string[];
+		analyze?: string | string[];
+	};
+}
+
+function firstQueryValue(value?: string | string[]): string | undefined {
+	if (Array.isArray(value)) {
+		return value[0];
+	}
+	return value;
+}
+
+export default function LandingPage({ searchParams }: Readonly<LandingPageProps>) {
+	const initialTweetUrlOrId = firstQueryValue(searchParams?.tweetUrlOrId) ?? "";
+	const autoAnalyze = firstQueryValue(searchParams?.analyze) === "1";
+
 	return (
 		<div className="bg-ink text-peach">
 			<div className="pointer-events-none fixed inset-0 z-0 overflow-hidden">
@@ -65,14 +81,14 @@ export default function LandingPage() {
 
 				<div className="flex items-center gap-6">
 					<Link href="/sign-in" className="hidden text-sm font-medium text-white transition-colors duration-300 hover:text-coral md:block">
-						Sign In
+						Login with Twitter
 					</Link>
 					<Link
 						href="/sign-in"
 						id="nav-cta"
 						className="rounded-[48px] bg-coral px-7 py-3 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(239,70,35,0.4)] transition-all duration-300 ease-redsun hover:-translate-y-0.5 hover:bg-coral-hover hover:shadow-[0_6px_20px_rgba(239,70,35,0.6)]"
 					>
-						Get Access
+						Analyze with Twitter
 					</Link>
 				</div>
 			</nav>
@@ -82,33 +98,15 @@ export default function LandingPage() {
 					<Reveal className="mx-auto flex max-w-6xl flex-col items-center text-center">
 						<div className="mb-10 inline-flex items-center gap-2 rounded-full border border-coral/30 bg-coral/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-coral">
 							<span className="h-1.5 w-1.5 animate-pulse-slow rounded-full bg-coral" />
-							The New Standard
+							Twitter Signal Lab
 						</div>
-						<h1 className="text-glow mb-8 font-serif text-[5rem] leading-[0.85] tracking-tighter text-white sm:text-[7rem] lg:text-[10rem]">
-							Elevate your <br />
-							<span className="text-peach/90">digital</span> <span className="italic text-coral">presence.</span>
+						<h1 className="text-glow mb-8 font-serif text-[3.4rem] leading-[0.92] tracking-tight text-white sm:text-[5rem] lg:text-[6.5rem]">
+							Paste a tweet.
+							<br />
+							<span className="italic text-coral">Get analysis instantly.</span>
 						</h1>
-						<p className="mb-12 max-w-2xl font-sans text-lg font-light leading-relaxed text-peach/60 md:text-xl">
-							Transform raw thoughts into compelling narratives with editorial precision. A minimalist environment designed
-							for maximum intellectual impact.
-						</p>
-						<div className="flex w-full flex-col items-center justify-center gap-4 sm:flex-row">
-							<Link
-								href="/sign-in"
-								id="hero-cta-main"
-								className="group flex w-full items-center justify-center gap-3 rounded-[48px] bg-coral px-10 py-5 text-base font-medium text-white shadow-[0_8px_24px_rgba(239,70,35,0.3)] transition-all duration-500 ease-redsun hover:-translate-y-1 hover:bg-coral-hover hover:shadow-[0_12px_32px_rgba(239,70,35,0.5)] md:text-lg sm:w-auto"
-							>
-								Start Writing
-								<ArrowRight className="transition-transform duration-300 group-hover:translate-x-1" />
-							</Link>
-							<Link
-								href="/sign-in"
-								id="hero-cta-sec"
-								className="flex w-full items-center justify-center gap-3 rounded-[48px] border border-white/20 bg-transparent px-10 py-5 text-base font-medium text-white transition-all duration-500 ease-redsun hover:bg-white/5 md:text-lg sm:w-auto"
-							>
-								<PlayCircle />
-								Watch Demo
-							</Link>
+						<div className="w-full">
+							<HeroTweetAnalyzer initialTweetUrlOrId={initialTweetUrlOrId} autoAnalyze={autoAnalyze} />
 						</div>
 					</Reveal>
 					<div className="absolute bottom-10 left-1/2 flex -translate-x-1/2 animate-bounce flex-col items-center gap-2 opacity-50">
@@ -213,7 +211,7 @@ export default function LandingPage() {
 							id="final-cta"
 							className="inline-flex items-center gap-3 rounded-[48px] bg-ink px-12 py-6 text-lg font-semibold text-white shadow-2xl transition-all duration-500 ease-redsun hover:scale-105 hover:bg-white hover:text-ink"
 						>
-							Request Invitation
+							Login with Twitter
 							<ArrowUpRight />
 						</Link>
 					</Reveal>

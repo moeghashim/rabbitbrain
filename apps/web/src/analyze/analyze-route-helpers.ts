@@ -1,0 +1,53 @@
+import type { XProviderErrorCode } from "@pi-starter/x-client";
+
+import { buildSignInRedirectPath } from "../auth/routing.js";
+
+export interface AnalyzeRouteErrorBody {
+	error: {
+		code: string;
+		message: string;
+	};
+	redirectTo?: string;
+}
+
+export function buildResumeSignInRedirect(tweetUrlOrId: string): string {
+	const params = new URLSearchParams({
+		tweetUrlOrId,
+		analyze: "1",
+	});
+	return buildSignInRedirectPath("/", `?${params.toString()}`);
+}
+
+export function mapXErrorCodeToResponse(code: XProviderErrorCode): { status: number; body: AnalyzeRouteErrorBody } {
+	const statusByCode: Record<XProviderErrorCode, number> = {
+		UNAUTHORIZED: 502,
+		FORBIDDEN: 403,
+		NOT_FOUND: 404,
+		RATE_LIMITED: 429,
+		UPSTREAM_ERROR: 502,
+		INVALID_INPUT: 400,
+		CONFIG_ERROR: 500,
+		NETWORK_ERROR: 503,
+	};
+
+	const messageByCode: Record<XProviderErrorCode, string> = {
+		UNAUTHORIZED: "Tweet provider authentication failed. Please try again later.",
+		FORBIDDEN: "This tweet is private or unavailable.",
+		NOT_FOUND: "Tweet not found. Check the URL and try again.",
+		RATE_LIMITED: "Tweet provider is rate limited. Please retry shortly.",
+		UPSTREAM_ERROR: "Tweet provider returned an unexpected response.",
+		INVALID_INPUT: "Enter a valid tweet URL or tweet ID.",
+		CONFIG_ERROR: "Tweet provider is not configured correctly.",
+		NETWORK_ERROR: "Network error while contacting tweet provider.",
+	};
+
+	return {
+		status: statusByCode[code],
+		body: {
+			error: {
+				code,
+				message: messageByCode[code],
+			},
+		},
+	};
+}

@@ -42,6 +42,16 @@ test("XApiV2Client returns tweet payload on success", async () => {
 					text: "Hello from X",
 					author_id: "user_1",
 				},
+				includes: {
+					users: [
+						{
+							id: "user_1",
+							username: "moe",
+							name: "Moe",
+							profile_image_url: "https://example.com/avatar.jpg",
+						},
+					],
+				},
 			},
 		});
 
@@ -61,6 +71,9 @@ test("XApiV2Client returns tweet payload on success", async () => {
 	assert.equal(tweet.id, "123");
 	assert.equal(tweet.text, "Hello from X");
 	assert.equal(tweet.authorId, "user_1");
+	assert.equal(tweet.authorUsername, "moe");
+	assert.equal(tweet.authorName, "Moe");
+	assert.equal(tweet.authorAvatarUrl, "https://example.com/avatar.jpg");
 });
 
 test("XApiV2Client maps 404 to NOT_FOUND", async () => {

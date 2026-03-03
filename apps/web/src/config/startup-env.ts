@@ -8,6 +8,7 @@ export interface StartupEnv {
 	authXSecret: string;
 	convexUrl: string;
 	convexDeployment: string;
+	convexDeployKey: string;
 }
 
 let hasValidated = false;
@@ -28,6 +29,7 @@ export function validateStartupEnv(env: EnvMap = process.env): StartupEnv {
 		authXSecret: readRequiredEnv("AUTH_X_SECRET", env),
 		convexUrl: readRequiredEnv("NEXT_PUBLIC_CONVEX_URL", env),
 		convexDeployment: readRequiredEnv("CONVEX_DEPLOYMENT", env),
+		convexDeployKey: readRequiredEnv("CONVEX_DEPLOY_KEY", env),
 	};
 }
 

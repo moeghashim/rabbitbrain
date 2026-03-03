@@ -10,6 +10,7 @@ test("validateStartupEnv accepts required web and x env vars", () => {
 		AUTH_X_SECRET: "x_client_secret",
 		NEXT_PUBLIC_CONVEX_URL: "https://example.convex.cloud",
 		CONVEX_DEPLOYMENT: "dev:workspace",
+		CONVEX_DEPLOY_KEY: "convex_deploy_key",
 		X_API_KEY: "x_api_key",
 		X_API_SECRET: "x_api_secret",
 		X_BEARER_TOKEN: "x_bearer_token",
@@ -17,6 +18,7 @@ test("validateStartupEnv accepts required web and x env vars", () => {
 
 	assert.equal(result.authXId, "x_client_id");
 	assert.equal(result.convexDeployment, "dev:workspace");
+	assert.equal(result.convexDeployKey, "convex_deploy_key");
 });
 
 test("validateStartupEnv throws on missing required env vars", () => {
@@ -28,6 +30,7 @@ test("validateStartupEnv throws on missing required env vars", () => {
 				AUTH_X_SECRET: "x_client_secret",
 				NEXT_PUBLIC_CONVEX_URL: "https://example.convex.cloud",
 				CONVEX_DEPLOYMENT: "dev:workspace",
+				CONVEX_DEPLOY_KEY: "convex_deploy_key",
 				X_API_KEY: "x_api_key",
 				X_API_SECRET: "x_api_secret",
 			}),
