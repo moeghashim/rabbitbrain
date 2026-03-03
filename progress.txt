@@ -5,3 +5,11 @@ Bugs/issues found: None.
 Root cause: N/A.
 Fix applied: N/A.
 What to do differently next feature: Introduce real web runtime dependencies and avoid placeholder build steps.
+
+Date/Time (America/Chicago): 2026-03-02 22:37:28 CST
+Feature: 1 - Pixel-Faithful Marketing Page
+What was implemented: Converted apps/web to Next.js with Tailwind tokens/motion and implemented a pixel-faithful landing page based on docs/Landing Page Design.html, including CTA routing to /sign-in and /sign-up and reveal animation behavior.
+Bugs/issues found: JSX tests failed initially with React runtime errors in tsx test execution.
+Root cause: Node test execution used a JSX transform mode requiring React symbol in scope for TSX test rendering.
+Fix applied: Added explicit React imports in TSX-rendered modules and updated web test script to include .test.tsx files.
+What to do differently next feature: Keep framework runtime tests separate from component render tests and define auth route stubs before wiring middleware.

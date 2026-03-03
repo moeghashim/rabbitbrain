@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Red Sun | Editorial SaaS</title>
+    
+    <!-- Fonts: Instrument Serif & Manrope -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Iconify -->
+    <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+
+    <!-- Tailwind Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        coral: {
+                            DEFAULT: '#EF4623',
+                            hover: '#D83A1A',
+                        },
+                        ink: {
+                            DEFAULT: '#2D3B42',
+                            dark: '#1C262B',
+                            light: '#3E4D55'
+                        },
+                        peach: '#FDF1EE',
+                        charcoal: '#222D33',
+                    },
+                    fontFamily: {
+                        serif: ['"Instrument Serif"', 'serif'],
+                        sans: ['Manrope', 'sans-serif'],
+                    },
+                    borderRadius: {
+                        '4xl': '24px',
+                        '5xl': '48px',
+                    },
+                    transitionTimingFunction: {
+                        'redsun': 'cubic-bezier(0.16, 1, 0.3, 1)',
+                    },
+                    backgroundImage: {
+                        'dot-pattern': 'radial-gradient(rgba(253, 241, 238, 0.2) 2px, transparent 2px)',
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body {
+            background-color: #2D3B42;
+            color: #FDF1EE;
+            overflow-x: hidden;
+        }
+        
+        ::selection {
+            background-color: #EF4623;
+            color: #FFFFFF;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1C262B;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3E4D55;
+            border-radius: 5px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #EF4623;
+        }
+
+        /* Reveal Animation Classes */
+        .reveal {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Subtle text shadow for serif impact */
+        .text-glow {
+            text-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- AMBIENT BACKGROUND BLURS -->
+    <div class="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div class="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-coral/10 blur-[120px] animate-float" style="animation-duration: 10s;"></div>
+        <div class="absolute bottom-[20%] right-[-5%] w-[30vw] h-[30vw] rounded-full bg-peach/5 blur-[100px] animate-float" style="animation-duration: 8s; animation-delay: -4s;"></div>
+        <div class="absolute top-[40%] left-[20%] w-[20vw] h-[20vw] rounded-full bg-coral/5 blur-[80px]"></div>
+    </div>
+
+    <!-- NAVIGATION -->
+    <nav class="fixed top-6 left-1/2 -translate-x-1/2 w-[95%] max-w-7xl z-50 rounded-[48px] bg-ink/60 backdrop-blur-xl border border-white/10 px-8 py-4 flex items-center justify-between shadow-[0_8px_32px_rgba(0,0,0,0.2)] transition-all duration-500 ease-redsun">
+        <a href="#" id="nav-logo" class="flex items-center gap-2 group">
+            <div class="w-8 h-8 rounded-full bg-coral flex items-center justify-center text-white">
+                <iconify-icon icon="lucide:sun" class="text-lg group-hover:rotate-90 transition-transform duration-700 ease-redsun"></iconify-icon>
+            </div>
+            <span class="font-serif text-2xl tracking-tight text-white mt-1">Red Sun</span>
+        </a>
+
+        <div class="hidden md:flex items-center gap-10">
+            <a href="#" class="text-sm font-medium text-peach/70 hover:text-white transition-colors duration-300">Philosophy</a>
+            <a href="#" class="text-sm font-medium text-peach/70 hover:text-white transition-colors duration-300">Platform</a>
+            <a href="#" class="text-sm font-medium text-peach/70 hover:text-white transition-colors duration-300">Manifesto</a>
+        </div>
+
+        <div class="flex items-center gap-6">
+            <a href="#" class="hidden md:block text-sm font-medium text-white hover:text-coral transition-colors duration-300">Sign In</a>
+            <a href="#" id="nav-cta" class="bg-coral hover:bg-coral-hover text-white text-sm font-semibold px-7 py-3 rounded-[48px] shadow-[0_4px_14px_rgba(239,70,35,0.4)] hover:shadow-[0_6px_20px_rgba(239,70,35,0.6)] transition-all duration-300 ease-redsun hover:-translate-y-0.5">
+                Get Access
+            </a>
+        </div>
+    </nav>
+
+    <!-- MAIN CONTENT -->
+    <main class="relative z-10 flex flex-col items-center w-full">
+
+        <!-- HERO SECTION -->
+        <section class="w-full min-h-screen flex flex-col items-center justify-center pt-32 pb-20 px-6 relative">
+            <div class="max-w-6xl mx-auto flex flex-col items-center text-center reveal">
+                
+                <!-- Pill Badge -->
+                <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-coral/30 bg-coral/10 text-coral text-xs font-semibold tracking-widest uppercase mb-10">
+                    <span class="w-1.5 h-1.5 rounded-full bg-coral animate-pulse-slow"></span>
+                    The New Standard
+                </div>
+
+                <!-- Massive Headline -->
+                <h1 class="font-serif text-[5rem] sm:text-[7rem] lg:text-[10rem] leading-[0.85] tracking-tighter text-white mb-8 text-glow">
+                    Elevate your <br>
+                    <span class="text-peach/90">digital</span> 
+                    <span class="italic text-coral">presence.</span>
+                </h1>
+
+                <!-- Subheadline -->
+                <p class="font-sans text-lg md:text-xl text-peach/60 max-w-2xl font-light leading-relaxed mb-12">
+                    Transform raw thoughts into compelling narratives with editorial precision. A minimalist environment designed for maximum intellectual impact.
+                </p>
+
+                <!-- CTAs -->
+                <div class="flex flex-col sm:flex-row items-center gap-4 w-full justify-center">
+                    <a href="#" id="hero-cta-main" class="w-full sm:w-auto bg-coral hover:bg-coral-hover text-white text-base md:text-lg font-medium px-10 py-5 rounded-[48px] shadow-[0_8px_24px_rgba(239,70,35,0.3)] hover:shadow-[0_12px_32px_rgba(239,70,35,0.5)] transition-all duration-500 ease-redsun hover:-translate-y-1 flex items-center justify-center gap-3 group">
+                        Start Writing
+                        <iconify-icon icon="lucide:arrow-right" class="group-hover:translate-x-1 transition-transform duration-300"></iconify-icon>
+                    </a>
+                    <a href="#" id="hero-cta-sec" class="w-full sm:w-auto bg-transparent border border-white/20 text-white hover:bg-white/5 text-base md:text-lg font-medium px-10 py-5 rounded-[48px] transition-all duration-500 ease-redsun flex items-center justify-center gap-3">
+                        <iconify-icon icon="lucide:play-circle"></iconify-icon>
+                        Watch Demo
+                    </a>
+                </div>
+            </div>
+
+            <!-- Scroll Indicator -->
+            <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 opacity-50 animate-bounce">
+                <span class="text-xs font-sans tracking-widest uppercase">Scroll</span>
+                <iconify-icon icon="lucide:arrow-down" class="text-lg"></iconify-icon>
+            </div>
+        </section>
+
+        <!-- BENTO GRID SECTION -->
+        <section class="w-full max-w-7xl mx-auto px-6 py-32 flex flex-col gap-8">
+            
+            <div class="text-center mb-16 reveal">
+                <h2 class="font-serif text-5xl md:text-7xl text-white tracking-tight mb-4">The <span class="italic text-coral">Studio</span></h2>
+                <p class="font-sans text-peach/60 text-lg max-w-xl mx-auto">Tools designed not to distract, but to amplify.</p>
+            </div>
+
+            <!-- Top Row: UI Simulator + Feature -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Dark UI Simulator (Span 2) -->
+                <div class="lg:col-span-2 bg-charcoal rounded-5xl p-2 md:p-8 relative overflow-hidden group reveal border border-white/5 hover:border-coral/20 transition-colors duration-700">
+                    <!-- Background Glow -->
+                    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-coral/5 blur-[80px] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
+                    
+                    <div class="relative z-10 bg-ink-dark rounded-[36px] border border-white/10 p-6 md:p-10 h-full min-h-[400px] flex flex-col shadow-2xl">
+                        <div class="flex items-center justify-between mb-8 border-b border-white/10 pb-4">
+                            <div class="flex gap-2">
+                                <div class="w-3 h-3 rounded-full bg-white/20"></div>
+                                <div class="w-3 h-3 rounded-full bg-white/20"></div>
+                                <div class="w-3 h-3 rounded-full bg-white/20"></div>
+                            </div>
+                            <div class="font-sans text-xs uppercase tracking-widest text-peach/40">
+                                AI Transformation
+                            </div>
+                        </div>
+
+                        <!-- Split Interface Mockup -->
+                        <div class="flex flex-col md:flex-row gap-6 flex-1">
+                            <!-- Input -->
+                            <div class="flex-1 bg-ink/50 rounded-4xl p-6 border border-white/5">
+                                <label class="block font-serif text-peach/50 text-xl mb-4 italic">Raw Draft</label>
+                                <p class="font-sans text-white/80 leading-relaxed">
+                                    i built this feature over the weekend and it works perfectly. honestly suprised it didn't break everything else lol. going to sleep now.
+                                </p>
+                            </div>
+                            
+                            <!-- Center Action -->
+                            <div class="flex items-center justify-center -my-2 md:-mx-2 z-10">
+                                <div class="w-14 h-14 rounded-full bg-coral flex items-center justify-center shadow-[0_0_20px_rgba(239,70,35,0.4)] group-hover:scale-110 group-hover:rotate-180 transition-all duration-700 ease-redsun">
+                                    <iconify-icon icon="lucide:sparkles" class="text-white text-xl"></iconify-icon>
+                                </div>
+                            </div>
+
+                            <!-- Output -->
+                            <div class="flex-1 bg-gradient-to-br from-ink to-charcoal rounded-4xl p-6 border border-coral/20 relative overflow-hidden">
+                                <div class="absolute top-0 right-0 w-32 h-32 bg-coral/10 blur-[40px] rounded-full"></div>
+                                <label class="block font-serif text-coral text-xl mb-4 italic relative z-10">Refined Prose</label>
+                                <p class="font-serif text-2xl text-white leading-tight relative z-10">
+                                    "Weekend deep dive complete. The new architecture held flawlessly under stress testing. There is a profound quiet that comes after executing a perfect deployment. Rest is earned."
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature Card 1 -->
+                <div class="bg-charcoal rounded-5xl p-10 flex flex-col justify-between group reveal border border-white/5 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(239,70,35,0.15)] hover:border-coral/30 transition-all duration-500 ease-redsun">
+                    <div class="w-16 h-16 rounded-[24px] bg-ink flex items-center justify-center border border-white/10 mb-8 group-hover:bg-coral group-hover:border-coral transition-colors duration-500">
+                        <iconify-icon icon="lucide:pen-tool" class="text-2xl text-peach group-hover:text-white"></iconify-icon>
+                    </div>
+                    <div>
+                        <h3 class="font-sans text-2xl font-semibold text-white mb-3">Intentional Design</h3>
+                        <p class="font-sans text-peach/60 leading-relaxed">
+                            Every pixel serves a purpose. We removed the noise so your thoughts can take center stage.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Row: 3 Feature Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Feature Card 2 -->
+                <div class="bg-charcoal rounded-5xl p-10 flex flex-col group reveal border border-white/5 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(239,70,35,0.15)] hover:border-coral/30 transition-all duration-500 ease-redsun">
+                    <div class="flex items-center justify-between mb-8">
+                        <h3 class="font-sans text-2xl font-semibold text-white">Tone Mastery</h3>
+                        <iconify-icon icon="lucide:sliders-horizontal" class="text-coral text-2xl opacity-50 group-hover:opacity-100 transition-opacity"></iconify-icon>
+                    </div>
+                    <p class="font-sans text-peach/60 leading-relaxed flex-1">
+                        From philosophical musings to crisp executive summaries, dial in the exact frequency of your voice.
+                    </p>
+                    <div class="mt-8 h-1 w-full bg-ink rounded-full overflow-hidden">
+                        <div class="h-full bg-coral w-[60%] rounded-full group-hover:w-[100%] transition-all duration-1000 ease-redsun"></div>
+                    </div>
+                </div>
+
+                <!-- Feature Card 3 -->
+                <div class="bg-charcoal rounded-5xl p-10 flex flex-col group reveal border border-white/5 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(239,70,35,0.15)] hover:border-coral/30 transition-all duration-500 ease-redsun">
+                    <div class="flex items-center justify-between mb-8">
+                        <h3 class="font-sans text-2xl font-semibold text-white">Context Aware</h3>
+                        <iconify-icon icon="lucide:brain-circuit" class="text-coral text-2xl opacity-50 group-hover:opacity-100 transition-opacity"></iconify-icon>
+                    </div>
+                    <p class="font-sans text-peach/60 leading-relaxed">
+                        The engine understands nuance, industry jargon, and subtext, ensuring nothing gets lost in translation.
+                    </p>
+                </div>
+
+                <!-- Feature Card 4 -->
+                <div class="bg-charcoal rounded-5xl p-10 flex flex-col group reveal border border-white/5 hover:-translate-y-2 hover:shadow-[0_20px_40px_-15px_rgba(239,70,35,0.15)] hover:border-coral/30 transition-all duration-500 ease-redsun">
+                    <div class="flex items-center justify-between mb-8">
+                        <h3 class="font-sans text-2xl font-semibold text-white">Frictionless</h3>
+                        <iconify-icon icon="lucide:zap" class="text-coral text-2xl opacity-50 group-hover:opacity-100 transition-opacity"></iconify-icon>
+                    </div>
+                    <p class="font-sans text-peach/60 leading-relaxed">
+                        Draft, transform, and publish without ever leaving the flow state. The architecture of speed.
+                    </p>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- FULL-WIDTH CTA SECTION -->
+        <section class="w-full bg-coral bg-[length:32px_32px] bg-dot-pattern py-40 px-6 relative overflow-hidden">
+            <!-- Edge ambient blurs to blend with ink body -->
+            <div class="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-ink to-transparent z-0"></div>
+            <div class="absolute bottom-0 left-0 w-full h-32 bg-gradient-to-t from-ink to-transparent z-0"></div>
+            
+            <div class="max-w-4xl mx-auto text-center relative z-10 reveal">
+                <h2 class="font-serif text-[4rem] sm:text-[6rem] lg:text-[9rem] leading-[0.9] tracking-tighter text-white mb-8">
+                    Leave <span class="italic">mediocrity</span> <br>behind.
+                </h2>
+                <p class="font-sans text-xl text-white/90 max-w-2xl mx-auto mb-12 font-medium">
+                    Join the vanguard of creators who value the weight of their words. The studio is open.
+                </p>
+                <a href="#" id="final-cta" class="inline-flex items-center gap-3 bg-ink text-white font-sans text-lg font-semibold px-12 py-6 rounded-[48px] shadow-2xl hover:bg-white hover:text-ink transition-all duration-500 ease-redsun hover:scale-105">
+                    Request Invitation
+                    <iconify-icon icon="lucide:arrow-up-right"></iconify-icon>
+                </a>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="w-full bg-ink pt-20 pb-10 px-6 border-t border-white/5 relative z-10">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-10">
+            
+            <div class="flex flex-col gap-6">
+                <a href="#" class="flex items-center gap-2">
+                    <div class="w-6 h-6 rounded-full bg-coral flex items-center justify-center text-white">
+                        <iconify-icon icon="lucide:sun" class="text-sm"></iconify-icon>
+                    </div>
+                    <span class="font-serif text-2xl tracking-tight text-white">Red Sun</span>
+                </a>
+                <p class="font-sans text-sm text-peach/40 max-w-xs">
+                    The premium standard for digital expression and thought refinement.
+                </p>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-12 md:gap-24 font-sans text-sm">
+                <div class="flex flex-col gap-4">
+                    <span class="text-peach font-semibold uppercase tracking-widest text-xs">Platform</span>
+                    <a href="#" class="text-peach/60 hover:text-coral transition-colors">The Studio</a>
+                    <a href="#" class="text-peach/60 hover:text-coral transition-colors">Features</a>
+                    <a href="#" class="text-peach/60 hover:text-coral transition-colors">Pricing</a>
+                </div>
+                <div class="flex flex-col gap-4">
+                    <span class="text-peach font-semibold uppercase tracking-widest text-xs">Company</span>
+                    <a href="#" class="text-peach/60 hover:text-coral transition-colors">Manifesto</a>
+                    <a href="#" class="text-peach/60 hover:text-coral transition-colors">Journal</a>
+                    <a href="#" class="text-peach/60 hover:text-coral transition-colors">Contact</a>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="max-w-7xl mx-auto mt-20 pt-8 border-t border-white/5 flex flex-col sm:flex-row items-center justify-between gap-4 font-sans text-xs text-peach/30">
+            <p>&copy; 2024 Red Sun Inc. All rights reserved.</p>
+            <div class="flex gap-6">
+                <a href="#" class="hover:text-peach transition-colors">X / Twitter</a>
+                <a href="#" class="hover:text-peach transition-colors">LinkedIn</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Simple Scroll Reveal Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const observerOptions = {
+                root: null,
+                rootMargin: '0px',
+                threshold: 0.1
+            };
+
+            const observer = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active');
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, observerOptions);
+
+            document.querySelectorAll('.reveal').forEach((el) => {
+                observer.observe(el);
+            });
+        });
+    </script>
+</body>
+</html>
