@@ -59,13 +59,18 @@ function resolveTwitterProviderFactory(): TwitterProviderFactory {
 }
 
 function enforceTwitterOauthScope(provider: AuthProvider): AuthProvider {
-	const authorization = provider.authorization;
+	if (!("authorization" in provider)) {
+		return provider;
+	}
+
+	const providerWithAuthorization = provider as AuthProvider & { authorization?: unknown };
+	const authorization = providerWithAuthorization.authorization;
 	if (typeof authorization !== "object" || authorization === null || !("url" in authorization)) {
 		return provider;
 	}
 
 	const typedAuthorization = authorization as ProviderAuthorization;
-	provider.authorization = {
+	providerWithAuthorization.authorization = {
 		...typedAuthorization,
 		params: {
 			...(typedAuthorization.params ?? {}),
