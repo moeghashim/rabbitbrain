@@ -7,7 +7,7 @@ import {
 
 export interface StoredUser {
 	id: string;
-	clerkUserId: string;
+	xUserId: string;
 	email: string | null;
 	name: string | null;
 	createdAt: number;
@@ -15,13 +15,13 @@ export interface StoredUser {
 }
 
 export interface PreferencesStore {
-	usersByClerkId: Map<string, StoredUser>;
+	usersByXId: Map<string, StoredUser>;
 	preferencesByUserId: Map<string, UserPreferencesResult>;
 	nextUserId: number;
 }
 
 export interface UserIdentityInput {
-	clerkUserId: string;
+	xUserId: string;
 	email?: string | null;
 	name?: string | null;
 }
@@ -33,14 +33,14 @@ const DEFAULT_PREFERENCES: Omit<UserPreferencesResult, "userId" | "updatedAt"> =
 
 export function createPreferencesStore(): PreferencesStore {
 	return {
-		usersByClerkId: new Map<string, StoredUser>(),
+		usersByXId: new Map<string, StoredUser>(),
 		preferencesByUserId: new Map<string, UserPreferencesResult>(),
 		nextUserId: 1,
 	};
 }
 
-export function upsertUserByClerkId(store: PreferencesStore, identity: UserIdentityInput, now: number): StoredUser {
-	const existing = store.usersByClerkId.get(identity.clerkUserId);
+export function upsertUserByXId(store: PreferencesStore, identity: UserIdentityInput, now: number): StoredUser {
+	const existing = store.usersByXId.get(identity.xUserId);
 	if (existing) {
 		const updated: StoredUser = {
 			...existing,
@@ -48,20 +48,20 @@ export function upsertUserByClerkId(store: PreferencesStore, identity: UserIdent
 			name: identity.name ?? existing.name,
 			updatedAt: now,
 		};
-		store.usersByClerkId.set(identity.clerkUserId, updated);
+		store.usersByXId.set(identity.xUserId, updated);
 		return updated;
 	}
 
 	const created: StoredUser = {
 		id: `user_${store.nextUserId}`,
-		clerkUserId: identity.clerkUserId,
+		xUserId: identity.xUserId,
 		email: identity.email ?? null,
 		name: identity.name ?? null,
 		createdAt: now,
 		updatedAt: now,
 	};
 	store.nextUserId += 1;
-	store.usersByClerkId.set(identity.clerkUserId, created);
+	store.usersByXId.set(identity.xUserId, created);
 	return created;
 }
 

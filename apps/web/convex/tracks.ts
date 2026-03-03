@@ -30,7 +30,7 @@ async function requireUser(ctx: ConvexContext) {
 	}
 	const user = await ctx.db
 		.query("users")
-		.withIndex("by_clerk_user_id", (query) => query.eq("clerkUserId", identity.subject))
+		.withIndex("by_x_user_id", (query) => query.eq("xUserId", identity.subject))
 		.unique();
 	if (!user) {
 		throw new Error("User not found");

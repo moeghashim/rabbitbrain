@@ -5,15 +5,15 @@ import {
 	createPreferencesStore,
 	getOrCreatePreferences,
 	updatePreferences,
-	upsertUserByClerkId,
+	upsertUserByXId,
 } from "../src/data/preferences-service.js";
 
-test("upsertUserByClerkId creates new user and reuses existing", () => {
+test("upsertUserByXId creates new user and reuses existing", () => {
 	const store = createPreferencesStore();
-	const created = upsertUserByClerkId(
+	const created = upsertUserByXId(
 		store,
 		{
-			clerkUserId: "user_abc",
+			xUserId: "user_abc",
 			email: "moe@example.com",
 			name: "Moe",
 		},
@@ -21,10 +21,10 @@ test("upsertUserByClerkId creates new user and reuses existing", () => {
 	);
 	assert.equal(created.id, "user_1");
 
-	const updated = upsertUserByClerkId(
+	const updated = upsertUserByXId(
 		store,
 		{
-			clerkUserId: "user_abc",
+			xUserId: "user_abc",
 			email: "new@example.com",
 			name: "Moe Updated",
 		},
@@ -37,7 +37,7 @@ test("upsertUserByClerkId creates new user and reuses existing", () => {
 
 test("getOrCreatePreferences returns defaults for new user", () => {
 	const store = createPreferencesStore();
-	const user = upsertUserByClerkId(store, { clerkUserId: "user_abc" }, 100);
+	const user = upsertUserByXId(store, { xUserId: "user_abc" }, 100);
 	const prefs = getOrCreatePreferences(store, user.id, 150);
 	assert.equal(prefs.userId, user.id);
 	assert.equal(prefs.defaultModel, "gpt-4.1");
@@ -46,7 +46,7 @@ test("getOrCreatePreferences returns defaults for new user", () => {
 
 test("updatePreferences persists validated values", () => {
 	const store = createPreferencesStore();
-	const user = upsertUserByClerkId(store, { clerkUserId: "user_abc" }, 100);
+	const user = upsertUserByXId(store, { xUserId: "user_abc" }, 100);
 	const updated = updatePreferences(
 		store,
 		user.id,
@@ -64,7 +64,7 @@ test("updatePreferences persists validated values", () => {
 
 test("updatePreferences rejects invalid payload", () => {
 	const store = createPreferencesStore();
-	const user = upsertUserByClerkId(store, { clerkUserId: "user_abc" }, 100);
+	const user = upsertUserByXId(store, { xUserId: "user_abc" }, 100);
 	assert.throws(
 		() =>
 			updatePreferences(

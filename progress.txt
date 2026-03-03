@@ -109,3 +109,11 @@ Bugs/issues found: Path checks using zsh glob patterns failed when unquoted catc
 Root cause: Square-bracket route segment names are interpreted as shell globs.
 Fix applied: Used consistently quoted paths for catch-all route files in command invocations.
 What to do differently next feature: Batch-rename identity keys and indexes in one pass with grep validation to avoid partial data-model drift.
+
+Date/Time (America/Chicago): 2026-03-03 13:34:21 CST
+Feature: 3 - Convex Identity Cutover (clerkUserId -> xUserId)
+What was implemented: Migrated users schema/index to xUserId/by_x_user_id, updated Convex user lookups in users/preferences/analysis/tracks functions, and renamed in-memory preference helpers/tests to xUserId naming.
+Bugs/issues found: Risk of partial index rename causing runtime query failures.
+Root cause: Index names are stringly-typed across multiple files.
+Fix applied: Performed global rename in all Convex query callsites and validated no remaining Clerk identifiers via grep plus test pass.
+What to do differently next feature: Explicitly codify session-derived identity as a shared helper to avoid repeated auth assumptions in multiple modules.

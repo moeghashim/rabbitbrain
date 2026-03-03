@@ -27,7 +27,7 @@ export const upsertCurrentUser = mutationGeneric({
 		const userName = args.name ?? identity.name;
 		const existing = await ctx.db
 			.query("users")
-			.withIndex("by_clerk_user_id", (query) => query.eq("clerkUserId", identity.subject))
+			.withIndex("by_x_user_id", (query) => query.eq("xUserId", identity.subject))
 			.unique();
 
 		if (existing) {
@@ -40,7 +40,7 @@ export const upsertCurrentUser = mutationGeneric({
 		}
 
 		return await ctx.db.insert("users", {
-			clerkUserId: identity.subject,
+			xUserId: identity.subject,
 			email: userEmail,
 			name: userName,
 			createdAt: now,
