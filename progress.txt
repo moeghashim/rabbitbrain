@@ -149,3 +149,19 @@ Bugs/issues found: Typecheck failed due an incorrect relative import depth in ap
 Root cause: Catch-all route file moved during refactor and path depth was miscounted.
 Fix applied: Corrected route import to `../../../../src/auth/auth.js` and reran full validation.
 What to do differently next feature: Add a small auth-route typecheck test or path alias to avoid fragile deep relative imports.
+
+Date/Time (America/Chicago): 2026-03-03 16:22:00 CST
+Feature: Hotfix - Middleware env validation isolation
+What was implemented: Split startup validation into middleware-safe auth-only validation and full runtime validation. Updated middleware to call `validateMiddlewareEnvIfNeeded` so missing analyze-specific vars no longer crash all routes.
+Bugs/issues found: Production returned `MIDDLEWARE_INVOCATION_FAILED` for all requests.
+Root cause: Middleware executed full env validation requiring non-auth keys (`CONVEX_DEPLOY_KEY`, X ingestion vars) on every request.
+Fix applied: Added `validateMiddlewareEnv` + `validateMiddlewareEnvIfNeeded`, switched middleware to use that path, and added test coverage.
+What to do differently next feature: Keep middleware dependencies minimal and validate feature-specific env only at feature entrypoints.
+
+Date/Time (America/Chicago): 2026-03-03 16:29:00 CST
+Feature: Hotfix - Twitter OAuth start flow
+What was implemented: Changed `/sign-in` action from direct link navigation to NextAuth client `signIn("twitter", { callbackUrl })` with a dedicated client button component.
+Bugs/issues found: Users reached X login but were redirected back repeatedly and failed with `error=twitter`.
+Root cause: OAuth start path was initiated via link/GET semantics instead of NextAuth client sign-in flow with CSRF/session handling.
+Fix applied: Added `TwitterSignInButton` client component, wired sign-in page to it, updated tests, and deployed.
+What to do differently next feature: Treat auth provider start/callback as integration flows and validate with realistic end-to-end session initiation before release.
