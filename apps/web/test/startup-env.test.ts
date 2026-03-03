@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { validateStartupEnv } from "../src/config/startup-env.js";
+import { validateMiddlewareEnv, validateStartupEnv } from "../src/config/startup-env.js";
 
 test("validateStartupEnv accepts required web and x env vars", () => {
 	const result = validateStartupEnv({
@@ -36,4 +36,11 @@ test("validateStartupEnv throws on missing required env vars", () => {
 			}),
 		/Missing required environment variable: X_BEARER_TOKEN/,
 	);
+});
+
+test("validateMiddlewareEnv only requires auth secret", () => {
+	const result = validateMiddlewareEnv({
+		AUTH_SECRET: "auth_secret",
+	});
+	assert.equal(result.authSecret, "auth_secret");
 });
