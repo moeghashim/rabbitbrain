@@ -15,7 +15,6 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.39.0",
     "@pi-starter/contracts": "0.0.1",
     "@pi-starter/core": "0.0.1",
     "@pi-starter/x-client": "0.0.1",
