@@ -1,20 +1,46 @@
 "use client";
 
-import { signIn } from "next-auth/react";
 import React from "react";
+import { startTwitterPopupAuth } from "../src/auth/popup-client.js";
 
 export function TwitterSignInButton({ callbackUrl }: Readonly<{ callbackUrl: string }>) {
+	const [popupBlockedMessage, setPopupBlockedMessage] = React.useState<string | null>(null);
+	const popupCleanupRef = React.useRef<(() => void) | null>(null);
+
+	React.useEffect(() => {
+		return () => {
+			popupCleanupRef.current?.();
+			popupCleanupRef.current = null;
+		};
+	}, []);
+
+	const startTwitterPopup = React.useCallback(() => {
+		popupCleanupRef.current?.();
+		popupCleanupRef.current = null;
+		setPopupBlockedMessage(null);
+		popupCleanupRef.current = startTwitterPopupAuth({
+			callbackUrl,
+			onSuccess: (redirectUrl) => {
+				window.location.assign(redirectUrl);
+			},
+			onPopupBlocked: () => {
+				setPopupBlockedMessage("Popup blocked. Allow popups for this site and try again.");
+			},
+		});
+	}, [callbackUrl]);
+
 	return (
-		<button
-			id="twitter-sign-in-button"
-			data-callback-url={callbackUrl}
-			type="button"
-			onClick={() => {
-				void signIn("twitter", { callbackUrl });
-			}}
-			className="mt-8 inline-flex rounded-[48px] bg-coral px-8 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-coral-hover"
-		>
-			Continue with Twitter
-		</button>
+		<div className="mt-8 flex flex-col items-center gap-3">
+			<button
+				id="twitter-sign-in-button"
+				data-callback-url={callbackUrl}
+				type="button"
+				onClick={startTwitterPopup}
+				className="inline-flex rounded-[48px] bg-coral px-8 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-coral-hover"
+			>
+				Continue with Twitter
+			</button>
+			{popupBlockedMessage ? <p className="text-xs text-peach/70">{popupBlockedMessage}</p> : null}
+		</div>
 	);
 }

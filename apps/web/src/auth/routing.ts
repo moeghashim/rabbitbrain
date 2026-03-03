@@ -4,7 +4,7 @@ export interface AuthRoutingInput {
 	isAuthenticated: boolean;
 }
 
-export const PUBLIC_PATH_PREFIXES = ["/", "/sign-in", "/sign-up"] as const;
+export const PUBLIC_PATH_PREFIXES = ["/", "/sign-in", "/sign-up", "/auth/popup-start", "/auth/popup-complete"] as const;
 
 function normalizePath(pathname: string): string {
 	if (!pathname.startsWith("/")) {

@@ -3,6 +3,8 @@
 import type { AnalyzeTweetResult } from "@pi-starter/contracts";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
+import { startTwitterPopupAuth } from "../src/auth/popup-client.js";
+
 interface TweetPreview {
 	id: string;
 	text: string;
@@ -39,6 +41,27 @@ function cleanAnalyzeFlagInUrl(): void {
 	window.history.replaceState({}, "", `${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
 }
 
+function buildResumePath(tweetUrlOrId: string): string {
+	const params = new URLSearchParams({
+		tweetUrlOrId,
+		analyze: "1",
+	});
+	return `/?${params.toString()}`;
+}
+
+function extractCallbackUrlFromRedirectPath(redirectPath: string, fallbackPath: string): string {
+	try {
+		const redirectUrl = new URL(redirectPath, window.location.origin);
+		const callbackUrl = redirectUrl.searchParams.get("redirect_url");
+		if (callbackUrl && callbackUrl.startsWith("/")) {
+			return callbackUrl;
+		}
+		return fallbackPath;
+	} catch {
+		return fallbackPath;
+	}
+}
+
 function defaultAvatarLabel(tweet: TweetPreview): string {
 	if (tweet.authorName && tweet.authorName.trim().length > 0) {
 		return tweet.authorName.trim().charAt(0).toUpperCase();
@@ -59,10 +82,12 @@ export function HeroTweetAnalyzer({
 	const [tweet, setTweet] = useState<TweetPreview | null>(null);
 	const [analysis, setAnalysis] = useState<AnalyzeTweetResult | null>(null);
 	const hasAutoRunRef = useRef(false);
+	const authPopupCleanupRef = useRef<(() => void) | null>(null);
 
 	const canSubmit = useMemo(() => tweetUrlOrId.trim().length > 0 && !isLoading, [isLoading, tweetUrlOrId]);
 
-	async function runAnalysis(value: string): Promise<void> {
+	async function runAnalysis(value: string, options: { allowAuthPopup?: boolean } = {}): Promise<void> {
+		const allowAuthPopup = options.allowAuthPopup ?? true;
 		const trimmedValue = value.trim();
 		if (trimmedValue.length === 0) {
 			setErrorMessage("Enter a tweet URL or tweet ID before analyzing.");
@@ -86,8 +111,22 @@ export function HeroTweetAnalyzer({
 
 			if (response.status === 401) {
 				const redirectTo = "redirectTo" in payload ? payload.redirectTo : undefined;
+				if (!allowAuthPopup) {
+					setErrorMessage("Please sign in with Twitter to analyze tweets.");
+					return;
+				}
 				if (redirectTo && redirectTo.startsWith("/")) {
-					window.location.href = redirectTo;
+					authPopupCleanupRef.current?.();
+					authPopupCleanupRef.current = startTwitterPopupAuth({
+						callbackUrl: extractCallbackUrlFromRedirectPath(redirectTo, buildResumePath(trimmedValue)),
+						onSuccess: () => {
+							setErrorMessage(null);
+							void runAnalysis(trimmedValue, { allowAuthPopup: false });
+						},
+						onPopupBlocked: () => {
+							setErrorMessage("Popup blocked. Allow popups for this site and try again.");
+						},
+					});
 					return;
 				}
 				setErrorMessage("Please sign in with Twitter to analyze tweets.");
@@ -116,6 +155,13 @@ export function HeroTweetAnalyzer({
 			cleanAnalyzeFlagInUrl();
 		}
 	}
+
+	useEffect(() => {
+		return () => {
+			authPopupCleanupRef.current?.();
+			authPopupCleanupRef.current = null;
+		};
+	}, []);
 
 	useEffect(() => {
 		if (!autoAnalyze || hasAutoRunRef.current) {
