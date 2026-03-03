@@ -1,11 +1,11 @@
 import { getToken } from "next-auth/jwt";
 import { NextResponse, type NextRequest } from "next/server";
 
-import { validateStartupEnvIfNeeded } from "./src/config/startup-env.js";
+import { validateMiddlewareEnvIfNeeded } from "./src/config/startup-env.js";
 import { resolveAuthRedirectPath } from "./src/auth/routing.js";
 
 export default async function middleware(req: NextRequest) {
-	validateStartupEnvIfNeeded();
+	validateMiddlewareEnvIfNeeded();
 	const token = await getToken({
 		req,
 		secret: process.env.AUTH_SECRET,

@@ -11,7 +11,12 @@ export interface StartupEnv {
 	convexDeployKey: string;
 }
 
+export interface MiddlewareStartupEnv {
+	authSecret: string;
+}
+
 let hasValidated = false;
+let hasValidatedMiddleware = false;
 
 function readRequiredEnv(name: string, env: EnvMap): string {
 	const value = env[name];
@@ -42,4 +47,21 @@ export function validateStartupEnvIfNeeded(env: EnvMap = process.env): void {
 	}
 	validateStartupEnv(env);
 	hasValidated = true;
+}
+
+export function validateMiddlewareEnv(env: EnvMap = process.env): MiddlewareStartupEnv {
+	return {
+		authSecret: readRequiredEnv("AUTH_SECRET", env),
+	};
+}
+
+export function validateMiddlewareEnvIfNeeded(env: EnvMap = process.env): void {
+	if (env.NODE_ENV === "test" || env.SKIP_STARTUP_ENV_VALIDATION === "1") {
+		return;
+	}
+	if (hasValidatedMiddleware) {
+		return;
+	}
+	validateMiddlewareEnv(env);
+	hasValidatedMiddleware = true;
 }
