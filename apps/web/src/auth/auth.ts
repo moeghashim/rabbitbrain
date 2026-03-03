@@ -17,8 +17,14 @@ interface TwitterProviderInit {
 type AuthProvider = NonNullable<NextAuthOptions["providers"]>[number];
 type TwitterProviderFactory = (options: TwitterProviderInit) => AuthProvider;
 
-function readRequiredEnv(name: keyof AuthEnv, env: AuthEnv): string {
+function readRequiredEnv(name: keyof AuthEnv, env: AuthEnv, strictEnv: boolean): string {
 	const value = env[name];
+	if (value && value.trim().length > 0) {
+		return value.trim();
+	}
+	if (!strictEnv) {
+		return `__missing_${name.toLowerCase()}__`;
+	}
 	if (!value || value.trim().length === 0) {
 		throw new Error(`Missing required environment variable: ${name}`);
 	}
@@ -41,18 +47,22 @@ function resolveTwitterProviderFactory(): TwitterProviderFactory {
 	throw new Error("Unable to initialize next-auth twitter provider");
 }
 
-export function buildAuthOptions(env: AuthEnv = process.env): NextAuthOptions {
+export function buildAuthOptions(
+	env: AuthEnv = process.env,
+	options: { strictEnv?: boolean } = {},
+): NextAuthOptions {
+	const strictEnv = options.strictEnv ?? true;
 	const twitterProvider = resolveTwitterProviderFactory();
 
 	return {
-		secret: readRequiredEnv("AUTH_SECRET", env),
+		secret: readRequiredEnv("AUTH_SECRET", env, strictEnv),
 		session: {
 			strategy: "jwt",
 		},
 		providers: [
 			twitterProvider({
-				clientId: readRequiredEnv("AUTH_X_ID", env),
-				clientSecret: readRequiredEnv("AUTH_X_SECRET", env),
+				clientId: readRequiredEnv("AUTH_X_ID", env, strictEnv),
+				clientSecret: readRequiredEnv("AUTH_X_SECRET", env, strictEnv),
 				version: "2.0",
 			}),
 		],

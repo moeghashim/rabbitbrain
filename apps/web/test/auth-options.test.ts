@@ -25,3 +25,8 @@ test("buildAuthOptions returns X-only provider config", () => {
 	assert.equal(options.session?.strategy, "jwt");
 	assert.equal(options.providers[0]?.id, "twitter");
 });
+
+test("buildAuthOptions supports non-strict env for build-time route initialization", () => {
+	const options = buildAuthOptions({}, { strictEnv: false });
+	assert.equal(options.providers[0]?.id, "twitter");
+});
