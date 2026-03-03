@@ -46,3 +46,33 @@ export const SavedAnalysisSchema = AnalyzeTweetResultSchema.extend({
 export type AnalyzeTweetInput = z.infer<typeof AnalyzeTweetInputSchema>;
 export type AnalyzeTweetResult = z.infer<typeof AnalyzeTweetResultSchema>;
 export type SavedAnalysis = z.infer<typeof SavedAnalysisSchema>;
+
+export const LearningTrackTaskSetSchema = z.object({
+	learn: z.string().min(1),
+	explain: z.string().min(1),
+	check: z.string().min(1),
+});
+
+export const LearningTrackDaySchema = z.object({
+	day: z.number().int().min(1).max(7),
+	title: z.string().min(1),
+	focus: z.string().min(1),
+	minutes: z.number().int().min(1),
+	tasks: LearningTrackTaskSetSchema,
+});
+
+export const CreateLearningTrackInputSchema = z.object({
+	analysisId: z.string().min(1),
+});
+
+export const CreateLearningTrackResultSchema = z.object({
+	id: z.string().min(1),
+	userId: z.string().min(1),
+	analysisId: z.string().min(1),
+	minutesPerDay: z.number().int().min(1),
+	days: z.array(LearningTrackDaySchema).length(7),
+	createdAt: z.number().int().nonnegative(),
+});
+
+export type CreateLearningTrackInput = z.infer<typeof CreateLearningTrackInputSchema>;
+export type CreateLearningTrackResult = z.infer<typeof CreateLearningTrackResultSchema>;

@@ -45,3 +45,11 @@ Bugs/issues found: Needed a stable way to satisfy the core analysis shape while 
 Root cause: Core parser expects exact 5-concept JSON payload format.
 Fix applied: Built deterministic analysis JSON and validated through parseTweetLearningAnalysisText plus shared zod schemas.
 What to do differently next feature: Reuse these schema-validated persistence patterns for learning-track storage to avoid contract drift.
+
+Date/Time (America/Chicago): 2026-03-02 22:46:46 CST
+Feature: 6 - Learning Track Persistence
+What was implemented: Added learning-track contracts, track generation pipeline using core prioritizeConcepts/buildFeynmanTrack, Convex track creation/listing functions, schema table for learningTracks, and tests for generation/persistence and ownership checks.
+Bugs/issues found: Needed explicit ownership validation before track generation to prevent cross-user analysis references.
+Root cause: Track creation depends on a saved analysis ID that could be supplied across accounts.
+Fix applied: Added analysis ownership checks in pipeline and Convex mutation before inserting learningTracks.
+What to do differently next feature: Reuse protected-user helper modules for UI data reads to keep authorization checks consistent across screens.
