@@ -1,0 +1,5 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "npm run -w @pi-starter/web build",
+  "outputDirectory": "apps/web/.next"
+}
