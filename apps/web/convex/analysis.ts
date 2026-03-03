@@ -10,6 +10,7 @@ import {
 import { v } from "convex/values";
 
 import { buildAnalysisFromTweetPayload } from "../src/analysis/build-analysis.js";
+import { reportServerError } from "../src/telemetry/report-error.js";
 import schema from "./schema.js";
 
 type AppDataModel = DataModelFromSchemaDefinition<typeof schema>;
@@ -42,34 +43,45 @@ export const createFromTweetUrl = mutationGeneric({
 		model: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
-		const user = await requireUser(ctx);
-		const client = new XApiV2Client();
-		const tweet = await client.getTweetByUrlOrId(args.tweetUrlOrId);
-		const analysis = buildAnalysisFromTweetPayload(tweet);
-		const createdAt = Date.now();
+		try {
+			const user = await requireUser(ctx);
+			const client = new XApiV2Client();
+			const tweet = await client.getTweetByUrlOrId(args.tweetUrlOrId);
+			const analysis = buildAnalysisFromTweetPayload(tweet);
+			const createdAt = Date.now();
 
-		const id = await ctx.db.insert("analyses", {
-			userId: user._id,
-			tweetUrlOrId: args.tweetUrlOrId,
-			model: args.model ?? "gpt-4.1",
-			topic: analysis.topic,
-			summary: analysis.summary,
-			intent: analysis.intent,
-			novelConcepts: analysis.novelConcepts,
-			createdAt,
-		});
+			const id = await ctx.db.insert("analyses", {
+				userId: user._id,
+				tweetUrlOrId: args.tweetUrlOrId,
+				model: args.model ?? "gpt-4.1",
+				topic: analysis.topic,
+				summary: analysis.summary,
+				intent: analysis.intent,
+				novelConcepts: analysis.novelConcepts,
+				createdAt,
+			});
 
-		return SavedAnalysisSchema.parse({
-			id: String(id),
-			userId: String(user._id),
-			tweetUrlOrId: args.tweetUrlOrId,
-			model: args.model ?? "gpt-4.1",
-			topic: analysis.topic,
-			summary: analysis.summary,
-			intent: analysis.intent,
-			novelConcepts: analysis.novelConcepts,
-			createdAt,
-		});
+			return SavedAnalysisSchema.parse({
+				id: String(id),
+				userId: String(user._id),
+				tweetUrlOrId: args.tweetUrlOrId,
+				model: args.model ?? "gpt-4.1",
+				topic: analysis.topic,
+				summary: analysis.summary,
+				intent: analysis.intent,
+				novelConcepts: analysis.novelConcepts,
+				createdAt,
+			});
+		} catch (error) {
+			reportServerError({
+				scope: "analysis.createFromTweetUrl",
+				error,
+				metadata: {
+					hasModelOverride: Boolean(args.model),
+				},
+			});
+			throw error;
+		}
 	},
 });
 
