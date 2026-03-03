@@ -1,5 +1,6 @@
-import Link from "next/link";
 import React from "react";
+
+import { TwitterSignInButton } from "../../../components/twitter-sign-in-button.js";
 
 function resolveCallbackUrl(searchParams: { redirect_url?: string | string[] }): string {
 	const raw = searchParams.redirect_url;
@@ -19,7 +20,6 @@ export default function SignInPage({
 	searchParams: { redirect_url?: string | string[] };
 }>) {
 	const callbackUrl = resolveCallbackUrl(searchParams);
-	const authUrl = `/api/auth/signin/twitter?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
 	return (
 		<main className="min-h-screen bg-ink px-6 py-24 text-peach">
@@ -27,12 +27,7 @@ export default function SignInPage({
 				<p className="text-xs font-semibold uppercase tracking-[0.24em] text-coral">Twitter Authentication</p>
 				<h1 className="mt-4 font-serif text-5xl text-white">Sign in with Twitter</h1>
 				<p className="mt-4 text-peach/70">Use your Twitter account to access your dashboard and account data.</p>
-				<Link
-					href={authUrl}
-					className="mt-8 inline-flex rounded-[48px] bg-coral px-8 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-coral-hover"
-				>
-					Continue with Twitter
-				</Link>
+				<TwitterSignInButton callbackUrl={callbackUrl} />
 			</div>
 		</main>
 	);

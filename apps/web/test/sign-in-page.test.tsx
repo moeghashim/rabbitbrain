@@ -10,5 +10,6 @@ test("sign-in page uses twitter-specific auth copy", () => {
 	assert.match(html, /Twitter Authentication/);
 	assert.match(html, /Sign in with Twitter/);
 	assert.match(html, /Continue with Twitter/);
-	assert.match(html, /\/api\/auth\/signin\/twitter\?callbackUrl=%2Fapp/);
+	assert.match(html, /id=\"twitter-sign-in-button\"/);
+	assert.match(html, /data-callback-url=\"\/app\"/);
 });
