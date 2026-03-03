@@ -10,7 +10,13 @@
 		"plugins": [{ "name": "next" }],
 		"moduleResolution": "Bundler",
 		"module": "ESNext",
-		"isolatedModules": true
+		"isolatedModules": true,
+		"baseUrl": ".",
+		"paths": {
+			"@pi-starter/contracts": ["../../packages/contracts/src/index.ts"],
+			"@pi-starter/core": ["../../packages/core/src/index.ts"],
+			"@pi-starter/x-client": ["../../packages/x-client/src/index.ts"]
+		}
 	},
 	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
 	"exclude": ["node_modules"]

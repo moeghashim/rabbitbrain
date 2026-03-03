@@ -21,3 +21,11 @@ Bugs/issues found: Zsh globbing failed when creating catch-all route directories
 Root cause: Unquoted shell paths were treated as glob patterns by zsh.
 Fix applied: Re-ran file creation with quoted paths for [[...sign-in]] and [[...sign-up]].
 What to do differently next feature: Use quoted paths by default for Next catch-all route folders and keep auth policy logic centralized in pure helper modules for easier tests.
+
+Date/Time (America/Chicago): 2026-03-02 22:42:07 CST
+Feature: 3 - Convex Schema + User/Preferences
+What was implemented: Added contracts schemas/types for user preferences, Convex schema for users and userPreferences tables, Convex upsert/get/update functions, and a tested preferences service module for upsert/get/update behavior.
+Bugs/issues found: Initial Convex typing failed due generic context never-types and an attempted insert inside a query handler.
+Root cause: Missing data-model typing for GenericQueryCtx/GenericMutationCtx and incorrect write behavior in query.
+Fix applied: Switched to schema-derived DataModelFromSchemaDefinition typing and made getPreferences read-only with defaults while updates happen via mutation.
+What to do differently next feature: Derive Convex data model types at file start before writing handlers to avoid rework.
