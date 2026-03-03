@@ -37,3 +37,11 @@ Bugs/issues found: Needed deterministic retries in tests and strict payload vali
 Root cause: Upstream APIs can fail with varied status/body formats and transient rate limiting.
 Fix applied: Added status-to-error mapping, retryable classification, injectable sleep/random functions for deterministic tests, and strong payload checks.
 What to do differently next feature: Define API contracts first and reuse shared error taxonomy in pipeline/service layers immediately.
+
+Date/Time (America/Chicago): 2026-03-02 22:45:29 CST
+Feature: 5 - Analysis Pipeline (Web + Convex + Core)
+What was implemented: Added analysis contracts, core-backed tweet analysis builder, analysis pipeline service, Convex analysis mutation/query for create/list by user, and integration tests for create/list plus unauthorized access.
+Bugs/issues found: Needed a stable way to satisfy the core analysis shape while deriving structured output from raw tweet text.
+Root cause: Core parser expects exact 5-concept JSON payload format.
+Fix applied: Built deterministic analysis JSON and validated through parseTweetLearningAnalysisText plus shared zod schemas.
+What to do differently next feature: Reuse these schema-validated persistence patterns for learning-track storage to avoid contract drift.

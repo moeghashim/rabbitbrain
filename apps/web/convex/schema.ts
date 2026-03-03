@@ -15,4 +15,19 @@ export default defineSchema({
 		learningMinutes: v.number(),
 		updatedAt: v.number(),
 	}).index("by_user_id", ["userId"]),
+	analyses: defineTable({
+		userId: v.id("users"),
+		tweetUrlOrId: v.string(),
+		model: v.string(),
+		topic: v.string(),
+		summary: v.string(),
+		intent: v.string(),
+		novelConcepts: v.array(
+			v.object({
+				name: v.string(),
+				whyItMattersInTweet: v.string(),
+			}),
+		),
+		createdAt: v.number(),
+	}).index("by_user_id_created_at", ["userId", "createdAt"]),
 });

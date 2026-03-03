@@ -16,6 +16,9 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^6.39.0",
+    "@pi-starter/contracts": "0.0.1",
+    "@pi-starter/core": "0.0.1",
+    "@pi-starter/x-client": "0.0.1",
     "convex": "^1.32.0",
     "lucide-react": "^0.576.0",
     "next": "^16.1.6",
