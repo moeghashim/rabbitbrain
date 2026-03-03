@@ -1,0 +1,7 @@
+Date/Time (America/Chicago): 2026-03-02 22:33:51 CST
+Feature: 0 - Workspace Foundation + progress.txt
+What was implemented: Added workspace scaffolding for apps/web, apps/cli, packages/contracts, and packages/x-client. Added initial smoke tests and package build/test scripts.
+Bugs/issues found: None.
+Root cause: N/A.
+Fix applied: N/A.
+What to do differently next feature: Introduce real web runtime dependencies and avoid placeholder build steps.

@@ -1,0 +1,13 @@
+{
+  "name": "@pi-starter/cli",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "clean": "rm -rf dist",
+    "build": "echo 'cli migration configured in Feature 8'"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

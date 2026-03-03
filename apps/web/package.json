@@ -1,0 +1,14 @@
+{
+  "name": "@pi-starter/web",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "clean": "rm -rf .next dist coverage",
+    "build": "echo 'web build configured in Feature 1'",
+    "test": "tsx --test test/**/*.test.ts"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
