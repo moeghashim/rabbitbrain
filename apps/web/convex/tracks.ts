@@ -5,45 +5,18 @@ import {
 import {
 	mutationGeneric,
 	queryGeneric,
-	type DataModelFromSchemaDefinition,
-	type GenericMutationCtx,
-	type GenericQueryCtx,
 } from "convex/server";
 import { v } from "convex/values";
 
 import { createTrackFromSavedAnalysis } from "../src/track/track-pipeline.js";
-import schema from "./schema.js";
-
-type AppDataModel = DataModelFromSchemaDefinition<typeof schema>;
-type QueryContext = GenericQueryCtx<AppDataModel>;
-type MutationContext = GenericMutationCtx<AppDataModel>;
-type ConvexContext = QueryContext | MutationContext;
-
-interface ConvexIdentity {
-	subject: string;
-}
-
-async function requireUser(ctx: ConvexContext) {
-	const identity = (await ctx.auth.getUserIdentity()) as ConvexIdentity | null;
-	if (!identity) {
-		throw new Error("Unauthorized");
-	}
-	const user = await ctx.db
-		.query("users")
-		.withIndex("by_x_user_id", (query) => query.eq("xUserId", identity.subject))
-		.unique();
-	if (!user) {
-		throw new Error("User not found");
-	}
-	return user;
-}
+import { requireUserBySession } from "./auth-helpers.js";
 
 export const createFromAnalysis = mutationGeneric({
 	args: {
 		analysisId: v.id("analyses"),
 	},
 	handler: async (ctx, args) => {
-		const user = await requireUser(ctx);
+		const user = await requireUserBySession(ctx);
 		const analysisDoc = await ctx.db.get(args.analysisId);
 		if (!analysisDoc) {
 			throw new Error("Analysis not found");
@@ -97,7 +70,7 @@ export const createFromAnalysis = mutationGeneric({
 export const listByUser = queryGeneric({
 	args: {},
 	handler: async (ctx) => {
-		const user = await requireUser(ctx);
+		const user = await requireUserBySession(ctx);
 		const records = await ctx.db
 			.query("learningTracks")
 			.withIndex("by_user_id_created_at", (query) => query.eq("userId", user._id))

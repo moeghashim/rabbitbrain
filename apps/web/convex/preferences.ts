@@ -2,42 +2,15 @@ import { UserPreferencesInputSchema, UserPreferencesResultSchema } from "@pi-sta
 import {
 	mutationGeneric,
 	queryGeneric,
-	type DataModelFromSchemaDefinition,
-	type GenericMutationCtx,
-	type GenericQueryCtx,
 } from "convex/server";
 import { v } from "convex/values";
 
-import schema from "./schema.js";
-
-type AppDataModel = DataModelFromSchemaDefinition<typeof schema>;
-type QueryContext = GenericQueryCtx<AppDataModel>;
-type MutationContext = GenericMutationCtx<AppDataModel>;
-type ConvexContext = QueryContext | MutationContext;
-
-interface ConvexIdentity {
-	subject: string;
-}
-
-async function requireUser(ctx: ConvexContext) {
-	const identity = (await ctx.auth.getUserIdentity()) as ConvexIdentity | null;
-	if (!identity) {
-		throw new Error("Unauthorized");
-	}
-	const user = await ctx.db
-		.query("users")
-		.withIndex("by_x_user_id", (query) => query.eq("xUserId", identity.subject))
-		.unique();
-	if (!user) {
-		throw new Error("User not found");
-	}
-	return user;
-}
+import { requireUserBySession } from "./auth-helpers.js";
 
 export const getPreferences = queryGeneric({
 	args: {},
 	handler: async (ctx) => {
-		const user = await requireUser(ctx);
+		const user = await requireUserBySession(ctx);
 		const existing = await ctx.db
 			.query("userPreferences")
 			.withIndex("by_user_id", (query) => query.eq("userId", user._id))
@@ -66,7 +39,7 @@ export const updatePreferences = mutationGeneric({
 		learningMinutes: v.number(),
 	},
 	handler: async (ctx, args) => {
-		const user = await requireUser(ctx);
+		const user = await requireUserBySession(ctx);
 		const validated = UserPreferencesInputSchema.parse(args);
 		const now = Date.now();
 		const existing = await ctx.db

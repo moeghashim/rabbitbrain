@@ -117,3 +117,11 @@ Bugs/issues found: Risk of partial index rename causing runtime query failures.
 Root cause: Index names are stringly-typed across multiple files.
 Fix applied: Performed global rename in all Convex query callsites and validated no remaining Clerk identifiers via grep plus test pass.
 What to do differently next feature: Explicitly codify session-derived identity as a shared helper to avoid repeated auth assumptions in multiple modules.
+
+Date/Time (America/Chicago): 2026-03-03 13:36:31 CST
+Feature: 4 - Session-to-Data Boundary Hardening
+What was implemented: Added shared Convex auth helpers (`requireIdentity`, `requireUserBySession`) and switched users/preferences/analysis/tracks handlers to resolve identity only from server auth context.
+Bugs/issues found: Duplicate per-file auth logic increased risk of inconsistent authorization checks.
+Root cause: Auth checks were copy-pasted across Convex modules.
+Fix applied: Consolidated checks in a single helper and reused it in all account data functions.
+What to do differently next feature: Align startup env validation and deployment docs in the same change to prevent config/runtime drift.

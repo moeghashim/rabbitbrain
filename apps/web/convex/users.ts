@@ -1,19 +1,7 @@
 import { mutationGeneric } from "convex/server";
 import { v } from "convex/values";
 
-interface ConvexIdentity {
-	subject: string;
-	email?: string;
-	name?: string;
-}
-
-async function requireIdentity(ctx: { auth: { getUserIdentity: () => Promise<ConvexIdentity | null> } }) {
-	const identity = await ctx.auth.getUserIdentity();
-	if (!identity) {
-		throw new Error("Unauthorized");
-	}
-	return identity;
-}
+import { requireIdentity } from "./auth-helpers.js";
 
 export const upsertCurrentUser = mutationGeneric({
 	args: {
