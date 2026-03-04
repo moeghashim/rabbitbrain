@@ -7,6 +7,13 @@ interface StartTwitterPopupAuthOptions {
 	callbackUrl: string;
 	onSuccess: (redirectUrl: string) => void;
 	onPopupBlocked?: () => void;
+	onPopupClosed?: () => void;
+	onPopupTimedOut?: () => void;
+	timeoutMs?: number;
+}
+
+export function buildTwitterAuthStartPath(callbackUrl: string): string {
+	return `/auth/popup-start?redirect_url=${encodeURIComponent(callbackUrl)}`;
 }
 
 function isPopupAuthSuccessMessage(value: unknown): value is PopupAuthSuccessMessage {
@@ -18,7 +25,7 @@ function isPopupAuthSuccessMessage(value: unknown): value is PopupAuthSuccessMes
 }
 
 export function startTwitterPopupAuth(options: StartTwitterPopupAuthOptions): () => void {
-	const popupStartPath = `/auth/popup-start?redirect_url=${encodeURIComponent(options.callbackUrl)}`;
+	const popupStartPath = buildTwitterAuthStartPath(options.callbackUrl);
 	const popup = window.open(
 		popupStartPath,
 		"rabbitbrain-twitter-auth",
@@ -34,6 +41,8 @@ export function startTwitterPopupAuth(options: StartTwitterPopupAuthOptions): ()
 
 	let cleanedUp = false;
 	let popupInterval: number | null = null;
+	let popupTimeout: number | null = null;
+	let completed = false;
 
 	const messageHandler = (event: MessageEvent) => {
 		if (event.origin !== window.location.origin) {
@@ -43,6 +52,7 @@ export function startTwitterPopupAuth(options: StartTwitterPopupAuthOptions): ()
 			return;
 		}
 
+		completed = true;
 		cleanup();
 		const nextPath =
 			typeof event.data.redirectUrl === "string" && event.data.redirectUrl.startsWith("/")
@@ -61,6 +71,10 @@ export function startTwitterPopupAuth(options: StartTwitterPopupAuthOptions): ()
 			window.clearInterval(popupInterval);
 			popupInterval = null;
 		}
+		if (popupTimeout !== null) {
+			window.clearTimeout(popupTimeout);
+			popupTimeout = null;
+		}
 	};
 
 	window.addEventListener("message", messageHandler);
@@ -69,7 +83,22 @@ export function startTwitterPopupAuth(options: StartTwitterPopupAuthOptions): ()
 			return;
 		}
 		cleanup();
+		if (!completed) {
+			options.onPopupClosed?.();
+		}
 	}, 300);
+	popupTimeout = window.setTimeout(() => {
+		cleanup();
+		if (completed) {
+			return;
+		}
+		try {
+			popup.close();
+		} catch {
+			// no-op
+		}
+		options.onPopupTimedOut?.();
+	}, options.timeoutMs ?? 45000);
 
 	return cleanup;
 }
