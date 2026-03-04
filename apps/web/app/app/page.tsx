@@ -16,7 +16,7 @@ export default function AppHomePage() {
 	return (
 		<main className="min-h-screen bg-ink px-6 py-16 text-peach">
 			<div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
-				<header className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-end">
+				<header className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
 					<div>
 						<p className="text-sm uppercase tracking-[0.24em] text-coral">Workspace</p>
 						<h1 className="mt-2 font-serif text-6xl leading-[0.9] text-white">Account Dashboard</h1>

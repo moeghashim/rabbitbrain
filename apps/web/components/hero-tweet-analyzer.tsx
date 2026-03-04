@@ -183,7 +183,7 @@ export function HeroTweetAnalyzer({
 	}, [autoAnalyze, initialTweetUrlOrId]);
 
 	return (
-		<div className="mx-auto flex w-full max-w-4xl flex-col gap-6 rounded-5xl border border-white/10 bg-charcoal/70 p-6 text-left shadow-[0_20px_50px_rgba(0,0,0,0.35)] backdrop-blur-md md:p-8">
+		<div className="flex w-full flex-col gap-6 rounded-5xl border border-white/10 bg-charcoal/70 p-6 text-left shadow-[0_20px_50px_rgba(0,0,0,0.35)] backdrop-blur-md md:p-8">
 			<h2 className="font-serif text-4xl leading-tight text-white sm:text-5xl">Analyze any tweet instantly.</h2>
 			<p className="max-w-2xl text-sm leading-relaxed text-peach/70 md:text-base">
 				Paste a tweet URL, then RabbitBrain will mimic the tweet card and generate a concise analysis you can reuse in your learning tracks.
