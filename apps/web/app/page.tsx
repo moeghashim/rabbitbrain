@@ -14,6 +14,8 @@ import React from "react";
 import { HeroTweetAnalyzer } from "../components/hero-tweet-analyzer.js";
 import { Reveal } from "../components/reveal.js";
 
+const twitterLoginPath = "/auth/popup-start?redirect_url=%2Fapp";
+
 const featureCards = [
 	{
 		title: "Tone Mastery",
@@ -81,7 +83,7 @@ export default function LandingPage({ searchParams }: Readonly<LandingPageProps>
 
 				<div className="flex items-center">
 					<Link
-						href="/sign-in"
+						href={twitterLoginPath}
 						id="nav-cta"
 						className="rounded-[48px] bg-coral px-7 py-3 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(239,70,35,0.4)] transition-all duration-300 ease-redsun hover:-translate-y-0.5 hover:bg-coral-hover hover:shadow-[0_6px_20px_rgba(239,70,35,0.6)]"
 					>
@@ -204,7 +206,7 @@ export default function LandingPage({ searchParams }: Readonly<LandingPageProps>
 							Join the vanguard of creators who value the weight of their words. The studio is open.
 						</p>
 						<Link
-							href="/sign-in"
+							href={twitterLoginPath}
 							id="final-cta"
 							className="inline-flex items-center gap-3 rounded-[48px] bg-ink px-12 py-6 text-lg font-semibold text-white shadow-2xl transition-all duration-500 ease-redsun hover:scale-105 hover:bg-white hover:text-ink"
 						>

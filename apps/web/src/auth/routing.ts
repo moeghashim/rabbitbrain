@@ -25,7 +25,7 @@ export function buildSignInRedirectPath(pathname: string, search = ""): string {
 	const normalizedPathname = normalizePath(pathname);
 	const redirectUrl = `${normalizedPathname}${search}`;
 	const params = new URLSearchParams({ redirect_url: redirectUrl });
-	return `/sign-in?${params.toString()}`;
+	return `/auth/popup-start?${params.toString()}`;
 }
 
 export function resolveAuthRedirectPath(input: AuthRoutingInput): string | null {

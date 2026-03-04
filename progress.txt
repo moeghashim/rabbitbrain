@@ -229,3 +229,11 @@ Bugs/issues found: None.
 Root cause: N/A.
 Fix applied: N/A.
 What to do differently next feature: Validate typography updates against auth and dashboard screens in one screenshot pass before shipping.
+
+Date/Time (America/Chicago): 2026-03-03 22:40:38 CST
+Feature: Auth UX refinement - remove standalone sign-in page surface
+What was implemented: Redirected /sign-in and /sign-up to popup auth start, updated landing CTAs to popup auth path, and aligned auth redirect helpers/tests to popup-first flow.
+Bugs/issues found: Redirect test initially expected Next.js redirect target in error message and failed.
+Root cause: Next.js redirect errors are stable on marker (NEXT_REDIRECT) but not guaranteed to include full destination in message text.
+Fix applied: Relaxed sign-in redirect test assertion to check for NEXT_REDIRECT marker only.
+What to do differently next feature: Prefer testing redirect intent through routing helper output and behavior contracts rather than exact framework error message text.

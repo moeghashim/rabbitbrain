@@ -17,7 +17,7 @@ test("landing page renders headline and core sections", () => {
 
 test("landing page ctas route to auth pages", () => {
 	const html = renderToStaticMarkup(<LandingPage />);
-	assert.match(html, /id=\"nav-cta\"[^>]*href=\"\/sign-in\"/);
+	assert.match(html, /id=\"nav-cta\"[^>]*href=\"\/auth\/popup-start\?redirect_url=%2Fapp\"/);
 	assert.match(html, /id=\"hero-analyze-button\"/);
 	assert.match(html, /Login with Twitter<\/a>/);
 });
