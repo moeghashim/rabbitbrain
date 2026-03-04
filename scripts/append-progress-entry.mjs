@@ -5,6 +5,21 @@ import { appendFileSync, existsSync, readFileSync } from "node:fs";
 
 const MESSAGE_FILE_PATH = process.argv[2];
 const PROGRESS_PATH = "progress.txt";
+const APP_CODE_PREFIXES = ["apps/", "packages/"];
+const NON_CODE_EXTENSIONS = new Set([
+	".gif",
+	".ico",
+	".jpeg",
+	".jpg",
+	".md",
+	".pdf",
+	".png",
+	".svg",
+	".txt",
+	".webp",
+	".yaml",
+	".yml",
+]);
 
 function run(command) {
 	return execSync(command, { encoding: "utf8" }).trim();
@@ -49,15 +64,39 @@ function stagedFiles() {
 		.filter((line) => line.length > 0 && line !== PROGRESS_PATH);
 }
 
+function extensionFor(filePath) {
+	const dotIndex = filePath.lastIndexOf(".");
+	if (dotIndex < 0) {
+		return "";
+	}
+	return filePath.slice(dotIndex).toLowerCase();
+}
+
+function isAppCodeFile(filePath) {
+	if (!APP_CODE_PREFIXES.some((prefix) => filePath.startsWith(prefix))) {
+		return false;
+	}
+	const extension = extensionFor(filePath);
+	if (extension.length === 0) {
+		return true;
+	}
+	return !NON_CODE_EXTENSIONS.has(extension);
+}
+
 const subject = readCommitSubject(MESSAGE_FILE_PATH);
 const files = stagedFiles();
+const appCodeFiles = files.filter(isAppCodeFile);
 
-if (files.length === 0) {
+if (appCodeFiles.length === 0) {
+	console.log(`Skipped ${PROGRESS_PATH} append: no staged app/code files under apps/ or packages/.`);
 	process.exit(0);
 }
 
 const feature = subject || "Automated commit checkpoint";
-const filePreview = files.length <= 8 ? files.join(", ") : `${files.slice(0, 8).join(", ")}, +${files.length - 8} more`;
+const filePreview =
+	appCodeFiles.length <= 8
+		? appCodeFiles.join(", ")
+		: `${appCodeFiles.slice(0, 8).join(", ")}, +${appCodeFiles.length - 8} more`;
 const learning =
 	process.env.PROGRESS_LEARNING?.trim() ||
 	"Record one concrete risk earlier and define the validation command before coding.";

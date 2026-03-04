@@ -9,8 +9,12 @@ import AppHomePage from "../app/app/page.js";
 test("dashboard page includes analyze action controls", () => {
 	const html = renderToStaticMarkup(<AppHomePage />);
 	assert.match(html, /id=\"hero-analyze-button\"/);
+	assert.match(html, /id=\"nav-cta\"[^>]*>Account Settings<\/a>/);
 	assert.match(html, /name=\"tweetUrlOrId\"/);
 	assert.match(html, /Analyze Tweet/);
+	assert.doesNotMatch(html, /Analyze any tweet instantly/);
+	assert.doesNotMatch(html, /Workspace/);
+	assert.doesNotMatch(html, /Account Dashboard/);
 	assert.match(html, /Learning Tracks/);
 });
 

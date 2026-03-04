@@ -13,6 +13,7 @@ import React from "react";
 
 import { HeroTweetAnalyzer } from "../components/hero-tweet-analyzer.js";
 import { Reveal } from "../components/reveal.js";
+import { getServerAuthSession } from "../src/auth/auth.js";
 
 const twitterLoginPath = "/auth/popup-start?redirect_url=%2Fapp";
 
@@ -50,9 +51,22 @@ function firstQueryValue(value?: string | string[]): string | undefined {
 	return value;
 }
 
-export default function LandingPage({ searchParams }: Readonly<LandingPageProps>) {
+async function resolveIsAuthenticated(): Promise<boolean> {
+	try {
+		const session = await getServerAuthSession();
+		const userId = session?.user?.id?.trim() ?? "";
+		return userId.length > 0;
+	} catch {
+		return false;
+	}
+}
+
+export default async function LandingPage({ searchParams }: Readonly<LandingPageProps>) {
 	const initialTweetUrlOrId = firstQueryValue(searchParams?.tweetUrlOrId) ?? "";
 	const autoAnalyze = firstQueryValue(searchParams?.analyze) === "1";
+	const isAuthenticated = await resolveIsAuthenticated();
+	const navCtaHref = isAuthenticated ? "/account" : twitterLoginPath;
+	const navCtaLabel = isAuthenticated ? "Account Settings" : "Login with Twitter";
 
 	return (
 		<div className="bg-ink text-peach">
@@ -83,11 +97,11 @@ export default function LandingPage({ searchParams }: Readonly<LandingPageProps>
 
 				<div className="flex items-center">
 					<Link
-						href={twitterLoginPath}
+						href={navCtaHref}
 						id="nav-cta"
 						className="rounded-[48px] bg-coral px-7 py-3 text-sm font-semibold text-white shadow-[0_4px_14px_rgba(239,70,35,0.4)] transition-all duration-300 ease-redsun hover:-translate-y-0.5 hover:bg-coral-hover hover:shadow-[0_6px_20px_rgba(239,70,35,0.6)]"
 					>
-						Login with Twitter
+						{navCtaLabel}
 					</Link>
 				</div>
 			</nav>

@@ -21,5 +21,9 @@
 - After code changes (not docs changes): `npm run check`
 - Fix all errors, warnings, and infos before committing.
 
+## Progress Log
+- When staged changes include app/code files under `apps/**` or `packages/**`, append `progress.txt` before commit by running `node scripts/append-progress-entry.mjs`.
+- Do not append `progress.txt` for docs-only or non-code-only staged changes.
+
 ## Git
 - Never commit unless explicitly requested.
