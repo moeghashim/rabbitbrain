@@ -22,6 +22,7 @@ interface TwitterProviderInit {
 type AuthProvider = NonNullable<NextAuthOptions["providers"]>[number];
 type TwitterProviderFactory = (options: TwitterProviderInit) => AuthProvider;
 const TWITTER_OAUTH_SCOPE = "users.read tweet.read";
+const TWITTER_OAUTH_URL = "https://x.com/i/oauth2/authorize";
 
 interface ProviderAuthorization {
 	url: string;
@@ -72,6 +73,7 @@ function enforceTwitterOauthScope(provider: AuthProvider): AuthProvider {
 	const typedAuthorization = authorization as ProviderAuthorization;
 	providerWithAuthorization.authorization = {
 		...typedAuthorization,
+		url: TWITTER_OAUTH_URL,
 		params: {
 			...(typedAuthorization.params ?? {}),
 			scope: TWITTER_OAUTH_SCOPE,
