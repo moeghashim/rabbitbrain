@@ -8,7 +8,7 @@ import { v } from "convex/values";
 
 import { buildAnalysisFromTweetPayload } from "../src/analysis/build-analysis.js";
 import { reportServerError } from "../src/telemetry/report-error.js";
-import { requireUserBySession } from "./auth-helpers.js";
+import { requireUserBySession } from "./auth_helpers.js";
 
 export const createFromTweetUrl = mutationGeneric({
 	args: {
@@ -95,6 +95,56 @@ export const createFromComputed = mutationGeneric({
 			summary: args.summary,
 			intent: args.intent,
 			novelConcepts: args.novelConcepts,
+			createdAt,
+		});
+	},
+});
+
+export const createFromTweetPayload = mutationGeneric({
+	args: {
+		tweetUrlOrId: v.string(),
+		model: v.optional(v.string()),
+		tweet: v.object({
+			id: v.string(),
+			text: v.string(),
+			authorId: v.optional(v.string()),
+			authorUsername: v.optional(v.string()),
+			authorName: v.optional(v.string()),
+			authorAvatarUrl: v.optional(v.string()),
+		}),
+	},
+	handler: async (ctx, args) => {
+		const user = await requireUserBySession(ctx);
+		const analysis = buildAnalysisFromTweetPayload({
+			id: args.tweet.id,
+			text: args.tweet.text,
+			authorId: args.tweet.authorId,
+			authorUsername: args.tweet.authorUsername,
+			authorName: args.tweet.authorName,
+			authorAvatarUrl: args.tweet.authorAvatarUrl,
+			raw: args.tweet,
+		});
+		const createdAt = Date.now();
+		const id = await ctx.db.insert("analyses", {
+			userId: user._id,
+			tweetUrlOrId: args.tweetUrlOrId,
+			model: args.model ?? "gpt-4.1",
+			topic: analysis.topic,
+			summary: analysis.summary,
+			intent: analysis.intent,
+			novelConcepts: analysis.novelConcepts,
+			createdAt,
+		});
+
+		return SavedAnalysisSchema.parse({
+			id: String(id),
+			userId: String(user._id),
+			tweetUrlOrId: args.tweetUrlOrId,
+			model: args.model ?? "gpt-4.1",
+			topic: analysis.topic,
+			summary: analysis.summary,
+			intent: analysis.intent,
+			novelConcepts: analysis.novelConcepts,
 			createdAt,
 		});
 	},
