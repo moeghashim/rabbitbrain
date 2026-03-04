@@ -221,3 +221,11 @@ Bugs/issues found: None.
 Root cause: N/A.
 Fix applied: N/A.
 What to do differently next feature: Pair font swaps with a screenshot diff check on landing and dashboard to validate hierarchy and legibility quickly.
+
+Date/Time (America/Chicago): 2026-03-03 22:31:46 CST
+Feature: Visual refinement - typography refresh to Newsreader + Space Grotesk
+What was implemented: Updated global web typography to Newsreader (serif) and Space Grotesk (sans) while preserving existing CSS font variable contract.
+Bugs/issues found: None.
+Root cause: N/A.
+Fix applied: N/A.
+What to do differently next feature: Validate typography updates against auth and dashboard screens in one screenshot pass before shipping.
