@@ -3,7 +3,7 @@
 import type { AnalyzeTweetResult } from "@pi-starter/contracts";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
-import { startTwitterPopupAuth } from "../src/auth/popup-client.js";
+import { buildTwitterAuthStartPath, startTwitterPopupAuth } from "../src/auth/popup-client.js";
 
 interface TweetPreview {
 	id: string;
@@ -116,16 +116,23 @@ export function HeroTweetAnalyzer({
 					return;
 				}
 				if (redirectTo && redirectTo.startsWith("/")) {
+					const callbackUrl = extractCallbackUrlFromRedirectPath(redirectTo, buildResumePath(trimmedValue));
+					const fullPageFallback = () => {
+						window.location.assign(buildTwitterAuthStartPath(callbackUrl));
+					};
 					authPopupCleanupRef.current?.();
 					authPopupCleanupRef.current = startTwitterPopupAuth({
-						callbackUrl: extractCallbackUrlFromRedirectPath(redirectTo, buildResumePath(trimmedValue)),
+						callbackUrl,
 						onSuccess: () => {
 							setErrorMessage(null);
 							void runAnalysis(trimmedValue, { allowAuthPopup: false });
 						},
 						onPopupBlocked: () => {
-							setErrorMessage("Popup blocked. Allow popups for this site and try again.");
+							setErrorMessage("Opening full-page Twitter sign-in...");
+							fullPageFallback();
 						},
+						onPopupClosed: fullPageFallback,
+						onPopupTimedOut: fullPageFallback,
 					});
 					return;
 				}

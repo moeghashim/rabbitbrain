@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { startTwitterPopupAuth } from "../src/auth/popup-client.js";
+import { buildTwitterAuthStartPath, startTwitterPopupAuth } from "../src/auth/popup-client.js";
 
 export function TwitterSignInButton({ callbackUrl }: Readonly<{ callbackUrl: string }>) {
 	const [popupBlockedMessage, setPopupBlockedMessage] = React.useState<string | null>(null);
@@ -18,14 +18,20 @@ export function TwitterSignInButton({ callbackUrl }: Readonly<{ callbackUrl: str
 		popupCleanupRef.current?.();
 		popupCleanupRef.current = null;
 		setPopupBlockedMessage(null);
+		const fullPageFallback = () => {
+			window.location.assign(buildTwitterAuthStartPath(callbackUrl));
+		};
 		popupCleanupRef.current = startTwitterPopupAuth({
 			callbackUrl,
 			onSuccess: (redirectUrl) => {
 				window.location.assign(redirectUrl);
 			},
 			onPopupBlocked: () => {
-				setPopupBlockedMessage("Popup blocked. Allow popups for this site and try again.");
+				setPopupBlockedMessage("Opening full-page sign-in...");
+				fullPageFallback();
 			},
+			onPopupClosed: fullPageFallback,
+			onPopupTimedOut: fullPageFallback,
 		});
 	}, [callbackUrl]);
 

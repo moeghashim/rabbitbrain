@@ -189,3 +189,11 @@ Bugs/issues found: Next.js build failed for new popup routes due missing .js re-
 Root cause: New helper module lacked ESM bridge file used by existing import pattern; client hooks on route pages require Suspense wrapper under current Next.js build behavior.
 Fix applied: Added `redirect-url.js`/`popup-client.js` re-exports and wrapped popup pages in Suspense with stable fallbacks.
 What to do differently next feature: Always run `npm run -w @pi-starter/web build` immediately after adding new app routes/hooks to catch app-router prerender constraints before commit.
+
+Date/Time (America/Chicago): 2026-03-03 21:52:45 CST
+Feature: Auth resiliency - popup fallback to full-page flow
+What was implemented: Added popup auth fallback hooks for blocked/closed/timeout cases, shared auth-start URL builder, and wired both sign-in button and hero analyze login handoff to auto-fallback into full-page sign-in.
+Bugs/issues found: X popup flow can stall on upstream 429s, leaving users stranded in popup without callback completion.
+Root cause: Existing flow only handled popup success and blocked-popup states; no recovery for closed/stalled popups.
+Fix applied: Added `onPopupClosed` and `onPopupTimedOut` handlers in popup client and redirected to full-page auth start route when popup does not complete.
+What to do differently next feature: Add browser-level integration test coverage for popup close/timeout fallback paths to catch auth UX dead-ends pre-release.
