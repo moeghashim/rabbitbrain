@@ -9,6 +9,8 @@ if [ $? -ne 0 ]; then
 	exit 1
 fi
 
+node scripts/append-progress-entry.mjs
+
 for file in $STAGED_FILES; do
 	if [ -f "$file" ]; then
 		git add "$file"
