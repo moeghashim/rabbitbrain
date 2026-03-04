@@ -102,7 +102,7 @@ export async function POST(req: Request) {
 					retryable: error.retryable,
 				},
 			});
-			const mapped = mapXErrorCodeToResponse(error.code);
+			const mapped = mapXErrorCodeToResponse(error.code, error.message);
 			return NextResponse.json(mapped.body, { status: mapped.status });
 		}
 

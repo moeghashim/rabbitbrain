@@ -133,6 +133,74 @@ test("XApiV2Client maps 401 to UNAUTHORIZED", async () => {
 	});
 });
 
+test("XApiV2Client maps 400 invalid-request payload to INVALID_INPUT", async () => {
+	const fetchFn: FetchLike = async () =>
+		responseFrom({
+			status: 400,
+			body: {
+				errors: [
+					{
+						title: "Invalid Request",
+						detail: "One or more request parameters are invalid.",
+						type: "https://api.x.com/2/problems/invalid-request",
+					},
+				],
+			},
+		});
+
+	const client = new XApiV2Client({
+		config: {
+			apiKey: "key",
+			apiSecret: "secret",
+			bearerToken: "bearer",
+			timeoutMs: 500,
+			retryCount: 0,
+			retryBaseDelayMs: 1,
+		},
+		fetchFn,
+	});
+
+	await assert.rejects(client.getTweetByUrlOrId("123"), (error: unknown) => {
+		return (
+			error instanceof XProviderError &&
+			error.code === "INVALID_INPUT" &&
+			error.message.includes("request parameters are invalid")
+		);
+	});
+});
+
+test("XApiV2Client maps 200 payload errors to specific provider codes", async () => {
+	const fetchFn: FetchLike = async () =>
+		responseFrom({
+			status: 200,
+			body: {
+				errors: [
+					{
+						title: "Not Found Error",
+						detail: "Could not find tweet with id: [123].",
+						type: "https://api.x.com/2/problems/resource-not-found",
+					},
+				],
+			},
+		});
+
+	const client = new XApiV2Client({
+		config: {
+			apiKey: "key",
+			apiSecret: "secret",
+			bearerToken: "bearer",
+			timeoutMs: 500,
+			retryCount: 0,
+			retryBaseDelayMs: 1,
+		},
+		fetchFn,
+	});
+
+	await assert.rejects(client.getTweetByUrlOrId("123"), (error: unknown) => {
+		return error instanceof XProviderError && error.code === "NOT_FOUND";
+	});
+});
+
 test("XApiV2Client retries 429 and fails after retry budget", async () => {
 	let attempts = 0;
 	const fetchFn: FetchLike = async () => {

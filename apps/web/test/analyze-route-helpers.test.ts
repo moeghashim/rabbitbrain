@@ -20,3 +20,13 @@ test("mapXErrorCodeToResponse maps not found and rate limit", () => {
 	assert.equal(rateLimited.status, 429);
 	assert.equal(rateLimited.body.error.code, "RATE_LIMITED");
 });
+
+test("mapXErrorCodeToResponse uses provider details for upstream and invalid input", () => {
+	const upstream = mapXErrorCodeToResponse("UPSTREAM_ERROR", "Upstream returned malformed JSON payload.");
+	assert.equal(upstream.status, 502);
+	assert.equal(upstream.body.error.message, "Upstream returned malformed JSON payload.");
+
+	const invalidInput = mapXErrorCodeToResponse("INVALID_INPUT", "Tweet id value is not valid.");
+	assert.equal(invalidInput.status, 400);
+	assert.equal(invalidInput.body.error.message, "Tweet id value is not valid.");
+});
