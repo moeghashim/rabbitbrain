@@ -290,6 +290,7 @@ test("XApiV2Client parses video preview and keeps media key order", async () => 
 });
 
 test("XApiV2Client skips missing media mappings without throwing", async () => {
+	const warnings: unknown[] = [];
 	const fetchFn: FetchLike = async () =>
 		responseFrom({
 			status: 200,
@@ -323,10 +324,67 @@ test("XApiV2Client skips missing media mappings without throwing", async () => {
 			retryBaseDelayMs: 1,
 		},
 		fetchFn,
+		warningReporter: (event) => {
+			warnings.push(event);
+		},
 	});
 
 	const tweet = await client.getTweetByUrlOrId("123");
 	assert.equal(tweet.media, undefined);
+	assert.deepEqual(warnings, [
+		{
+			code: "MEDIA_KEYS_UNRESOLVED",
+			tweetId: "123",
+			mediaKeys: ["missing_1", "missing_2"],
+			includesMediaCount: 1,
+		},
+	]);
+});
+
+test("XApiV2Client reports warning when media keys exist but includes.media is missing", async () => {
+	const warnings: unknown[] = [];
+	const fetchFn: FetchLike = async () =>
+		responseFrom({
+			status: 200,
+			body: {
+				data: {
+					id: "123",
+					text: "Missing includes media",
+					attachments: {
+						media_keys: ["13_video_1"],
+					},
+				},
+				includes: {
+					users: [],
+				},
+			},
+		});
+
+	const client = new XApiV2Client({
+		config: {
+			apiKey: "key",
+			apiSecret: "secret",
+			bearerToken: "bearer",
+			timeoutMs: 500,
+			retryCount: 0,
+			retryBaseDelayMs: 1,
+		},
+		fetchFn,
+		warningReporter: (event) => {
+			warnings.push(event);
+		},
+	});
+
+	const tweet = await client.getTweetByUrlOrId("123");
+	assert.equal(tweet.media, undefined);
+	assert.deepEqual(warnings, [
+		{
+			code: "MEDIA_METADATA_MISSING",
+			tweetId: "123",
+			mediaKeys: ["13_video_1"],
+			includesMediaCount: 0,
+		},
+	]);
 });
 
 test("XApiV2Client retries 429 and fails after retry budget", async () => {

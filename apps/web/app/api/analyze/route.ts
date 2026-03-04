@@ -2,7 +2,7 @@ import {
 	AnalyzeTweetInputSchema,
 	type AnalyzeTweetInput,
 } from "@pi-starter/contracts";
-import { XApiV2Client, XProviderError } from "@pi-starter/x-client";
+import { XApiV2Client, type TweetSourceProvider, XProviderError } from "@pi-starter/x-client";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
@@ -11,6 +11,32 @@ import { getServerAuthSession } from "../../../src/auth/auth.js";
 import { validateStartupEnvIfNeeded } from "../../../src/config/startup-env.js";
 import { persistAnalysisForSession } from "../../../src/server/convex-admin.js";
 import { reportServerError } from "../../../src/telemetry/report-error.js";
+
+interface SessionUserLike {
+	id?: string | null;
+	email?: string | null;
+	name?: string | null;
+}
+
+interface SessionLike {
+	user?: SessionUserLike | null;
+}
+
+interface AnalyzeRouteDependencies {
+	validateStartupEnvIfNeeded: () => void;
+	getServerAuthSession: () => Promise<SessionLike | null>;
+	createXClient: () => TweetSourceProvider;
+	persistAnalysisForSession: typeof persistAnalysisForSession;
+	reportServerError: typeof reportServerError;
+}
+
+const defaultDependencies: AnalyzeRouteDependencies = {
+	validateStartupEnvIfNeeded,
+	getServerAuthSession,
+	createXClient: () => new XApiV2Client(),
+	persistAnalysisForSession,
+	reportServerError,
+};
 
 async function readAnalyzeInput(req: Request): Promise<AnalyzeTweetInput> {
 	const contentType = req.headers.get("content-type") ?? "";
@@ -27,11 +53,14 @@ async function readAnalyzeInput(req: Request): Promise<AnalyzeTweetInput> {
 	});
 }
 
-export async function POST(req: Request) {
+export async function handleAnalyzePost(
+	req: Request,
+	dependencies: AnalyzeRouteDependencies = defaultDependencies,
+) {
 	try {
-		validateStartupEnvIfNeeded();
+		dependencies.validateStartupEnvIfNeeded();
 		const input = await readAnalyzeInput(req);
-		const session = await getServerAuthSession();
+		const session = await dependencies.getServerAuthSession();
 		const sessionUser = session?.user;
 		const userId = session?.user?.id?.trim() ?? "";
 
@@ -48,9 +77,9 @@ export async function POST(req: Request) {
 			);
 		}
 
-		const client = new XApiV2Client();
+		const client = dependencies.createXClient();
 		const tweet = await client.getTweetByUrlOrId(input.tweetUrlOrId);
-		const persisted = await persistAnalysisForSession({
+		const persisted = await dependencies.persistAnalysisForSession({
 			sessionUser: {
 				id: userId,
 				email: sessionUser.email,
@@ -79,7 +108,7 @@ export async function POST(req: Request) {
 		});
 	} catch (error) {
 		if (error instanceof ZodError) {
-			reportServerError({
+			dependencies.reportServerError({
 				scope: "api.analyze.invalid_input",
 				error,
 			});
@@ -95,7 +124,7 @@ export async function POST(req: Request) {
 		}
 
 		if (error instanceof XProviderError) {
-			reportServerError({
+			dependencies.reportServerError({
 				scope: "api.analyze.x_provider_error",
 				error,
 				metadata: {
@@ -107,7 +136,7 @@ export async function POST(req: Request) {
 			return NextResponse.json(mapped.body, { status: mapped.status });
 		}
 
-		reportServerError({
+		dependencies.reportServerError({
 			scope: "api.analyze.unexpected_failure",
 			error,
 		});
@@ -122,4 +151,8 @@ export async function POST(req: Request) {
 			{ status: 500 },
 		);
 	}
+}
+
+export async function POST(req: Request) {
+	return handleAnalyzePost(req);
 }

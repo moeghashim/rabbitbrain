@@ -58,6 +58,16 @@ export interface TweetPayload {
 	media?: TweetMedia[];
 	raw: unknown;
 }
+export type XProviderWarningCode = "MEDIA_METADATA_MISSING" | "MEDIA_KEYS_UNRESOLVED";
+
+export interface XProviderWarningEvent {
+	code: XProviderWarningCode;
+	tweetId?: string;
+	mediaKeys: string[];
+	includesMediaCount: number;
+}
+
+export type XProviderWarningReporter = (event: XProviderWarningEvent) => void;
 
 export interface TweetSourceProvider {
 	getTweetByUrlOrId(input: string): Promise<TweetPayload>;
@@ -133,6 +143,10 @@ async function defaultSleep(ms: number): Promise<void> {
 	await new Promise<void>((resolve) => {
 		setTimeout(resolve, ms);
 	});
+}
+
+function defaultWarningReporter(event: XProviderWarningEvent): void {
+	console.warn(JSON.stringify({ scope: "x_client.media_fallback", ...event }));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -343,10 +357,13 @@ function toXProviderErrorFromPayload(responseBody: unknown, fallbackMessage: str
 function readTweetMedia({
 	data,
 	includes,
+	reportWarning,
 }: {
 	data: Record<string, unknown>;
 	includes: unknown;
+	reportWarning: XProviderWarningReporter;
 }): TweetMedia[] | undefined {
+	const tweetId = toNonEmptyString(data.id);
 	const attachments = isRecord(data.attachments) ? data.attachments : undefined;
 	const mediaKeysRaw = attachments ? attachments.media_keys : undefined;
 	if (!Array.isArray(mediaKeysRaw) || mediaKeysRaw.length === 0) {
@@ -356,7 +373,17 @@ function readTweetMedia({
 	const mediaKeys = mediaKeysRaw
 		.map((key) => (typeof key === "string" ? key.trim() : ""))
 		.filter((key) => key.length > 0);
-	if (mediaKeys.length === 0 || !isRecord(includes) || !Array.isArray(includes.media)) {
+	if (mediaKeys.length === 0) {
+		return undefined;
+	}
+
+	if (!isRecord(includes) || !Array.isArray(includes.media)) {
+		reportWarning({
+			code: "MEDIA_METADATA_MISSING",
+			tweetId,
+			mediaKeys,
+			includesMediaCount: 0,
+		});
 		return undefined;
 	}
 
@@ -406,10 +433,20 @@ function readTweetMedia({
 	}
 
 	const ordered = mediaKeys.map((key) => byMediaKey.get(key)).filter((item): item is TweetMedia => item !== undefined);
-	return ordered.length > 0 ? ordered : undefined;
+	if (ordered.length === 0) {
+		reportWarning({
+			code: "MEDIA_KEYS_UNRESOLVED",
+			tweetId,
+			mediaKeys,
+			includesMediaCount: includes.media.length,
+		});
+		return undefined;
+	}
+
+	return ordered;
 }
 
-function readTweetPayload(responseBody: unknown): TweetPayload {
+function readTweetPayload(responseBody: unknown, reportWarning: XProviderWarningReporter): TweetPayload {
 	if (typeof responseBody !== "object" || responseBody === null) {
 		throw new XProviderError({
 			code: "UPSTREAM_ERROR",
@@ -457,6 +494,7 @@ function readTweetPayload(responseBody: unknown): TweetPayload {
 	const media = readTweetMedia({
 		data,
 		includes,
+		reportWarning,
 	});
 
 	return {
@@ -476,22 +514,26 @@ export class XApiV2Client implements TweetSourceProvider {
 	private readonly fetchFn: FetchLike;
 	private readonly sleepFn: (ms: number) => Promise<void>;
 	private readonly randomFn: () => number;
+	private readonly warningReporter: XProviderWarningReporter;
 
 	constructor({
 		config = readXApiConfigFromEnv(),
 		fetchFn,
 		sleepFn = defaultSleep,
 		randomFn = Math.random,
+		warningReporter = defaultWarningReporter,
 	}: {
 		config?: XApiConfig;
 		fetchFn?: FetchLike;
 		sleepFn?: (ms: number) => Promise<void>;
 		randomFn?: () => number;
+		warningReporter?: XProviderWarningReporter;
 	} = {}) {
 		this.config = config;
 		this.fetchFn = fetchFn ?? (fetch as unknown as FetchLike);
 		this.sleepFn = sleepFn;
 		this.randomFn = randomFn;
+		this.warningReporter = warningReporter;
 	}
 
 	async getTweetByUrlOrId(input: string): Promise<TweetPayload> {
@@ -517,7 +559,7 @@ export class XApiV2Client implements TweetSourceProvider {
 					signal: controller.signal,
 				});
 				if (response.ok) {
-					return readTweetPayload(await response.json());
+					return readTweetPayload(await response.json(), this.warningReporter);
 				}
 
 				const error = toXProviderError(response.status, await response.text());
