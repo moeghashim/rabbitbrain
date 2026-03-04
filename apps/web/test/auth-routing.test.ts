@@ -24,7 +24,7 @@ test("isPublicPath blocks app and account routes", () => {
 });
 
 test("buildSignInRedirectPath includes redirect_url query", () => {
-	assert.equal(buildSignInRedirectPath("/app", "?tab=history"), "/sign-in?redirect_url=%2Fapp%3Ftab%3Dhistory");
+	assert.equal(buildSignInRedirectPath("/app", "?tab=history"), "/auth/popup-start?redirect_url=%2Fapp%3Ftab%3Dhistory");
 });
 
 test("resolveAuthRedirectPath redirects unauthenticated private routes", () => {
@@ -33,7 +33,7 @@ test("resolveAuthRedirectPath redirects unauthenticated private routes", () => {
 		search: "",
 		isAuthenticated: false,
 	});
-	assert.equal(redirect, "/sign-in?redirect_url=%2Faccount");
+	assert.equal(redirect, "/auth/popup-start?redirect_url=%2Faccount");
 });
 
 test("resolveAuthRedirectPath allows authenticated private routes", () => {

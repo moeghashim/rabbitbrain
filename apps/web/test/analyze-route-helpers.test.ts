@@ -7,7 +7,7 @@ test("buildResumeSignInRedirect preserves tweet input for auth callback", () => 
 	const redirect = buildResumeSignInRedirect("https://x.com/moe/status/123");
 	assert.equal(
 		redirect,
-		"/sign-in?redirect_url=%2F%3FtweetUrlOrId%3Dhttps%253A%252F%252Fx.com%252Fmoe%252Fstatus%252F123%26analyze%3D1",
+		"/auth/popup-start?redirect_url=%2F%3FtweetUrlOrId%3Dhttps%253A%252F%252Fx.com%252Fmoe%252Fstatus%252F123%26analyze%3D1",
 	);
 });
 
