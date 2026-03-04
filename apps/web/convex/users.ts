@@ -1,7 +1,7 @@
 import { mutationGeneric } from "convex/server";
 import { v } from "convex/values";
 
-import { requireIdentity } from "./auth-helpers.js";
+import { requireIdentity } from "./auth_helpers.js";
 
 export const upsertCurrentUser = mutationGeneric({
 	args: {

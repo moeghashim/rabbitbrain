@@ -9,7 +9,7 @@ import {
 import { v } from "convex/values";
 
 import { createTrackFromSavedAnalysis } from "../src/track/track-pipeline.js";
-import { requireUserBySession } from "./auth-helpers.js";
+import { requireUserBySession } from "./auth_helpers.js";
 
 export const createFromAnalysis = mutationGeneric({
 	args: {

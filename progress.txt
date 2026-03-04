@@ -197,3 +197,11 @@ Bugs/issues found: X popup flow can stall on upstream 429s, leaving users strand
 Root cause: Existing flow only handled popup success and blocked-popup states; no recovery for closed/stalled popups.
 Fix applied: Added `onPopupClosed` and `onPopupTimedOut` handlers in popup client and redirected to full-page auth start route when popup does not complete.
 What to do differently next feature: Add browser-level integration test coverage for popup close/timeout fallback paths to catch auth UX dead-ends pre-release.
+
+Date/Time (America/Chicago): 2026-03-03 22:06:37 CST
+Feature: Hotfix - Convex-safe analysis persistence path
+What was implemented: Reworked `/api/analyze` persistence to avoid Convex mutation-side X calls by persisting fetched tweet payload through a new Convex mutation (`analysis:createFromTweetPayload`) and computing analysis within Convex without network retries/timers.
+Bugs/issues found: Convex deploy initially failed due invalid module path (`auth-helpers.js`) and legacy user rows requiring `clerkUserId` compatibility in schema.
+Root cause: Convex module path restrictions disallow hyphenated import module names; production data still contained pre-migration Clerk-shaped documents.
+Fix applied: Renamed Convex helper module import path to `auth_helpers`, made users schema backward-compatible (`xUserId` optional + `clerkUserId` optional), deployed Convex functions, then redeployed web production.
+What to do differently next feature: Run a Convex deployment health check (`convex function-spec`) before web release to catch schema/module compatibility blockers earlier.

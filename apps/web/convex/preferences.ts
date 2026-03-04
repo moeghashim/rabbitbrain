@@ -5,7 +5,7 @@ import {
 } from "convex/server";
 import { v } from "convex/values";
 
-import { requireUserBySession } from "./auth-helpers.js";
+import { requireUserBySession } from "./auth_helpers.js";
 
 export const getPreferences = queryGeneric({
 	args: {},

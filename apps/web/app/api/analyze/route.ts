@@ -57,6 +57,7 @@ export async function POST(req: Request) {
 				name: sessionUser.name,
 			},
 			input,
+			tweet,
 		});
 
 		return NextResponse.json({

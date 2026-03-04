@@ -3,6 +3,7 @@ import {
 	SavedAnalysisSchema,
 	type SavedAnalysis,
 } from "@pi-starter/contracts";
+import type { TweetPayload } from "@pi-starter/x-client";
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
 
@@ -36,14 +37,22 @@ const upsertCurrentUserRef = makeFunctionReference<
 	string
 >("users:upsertCurrentUser");
 
-const createFromTweetUrlRef = makeFunctionReference<
+const createFromTweetPayloadRef = makeFunctionReference<
 	"mutation",
 	{
 		tweetUrlOrId: string;
 		model?: string;
+		tweet: {
+			id: string;
+			text: string;
+			authorId?: string;
+			authorUsername?: string;
+			authorName?: string;
+			authorAvatarUrl?: string;
+		};
 	},
 	SavedAnalysis
->("analysis:createFromTweetUrl");
+>("analysis:createFromTweetPayload");
 
 function readRequiredEnv(name: keyof ConvexEnv, env: ConvexEnv): string {
 	const value = env[name];
@@ -76,10 +85,12 @@ function createAdminClient({ user, env = process.env }: { user: SessionUserIdent
 export async function persistAnalysisForSession({
 	sessionUser,
 	input,
+	tweet,
 	env,
 }: {
 	sessionUser: SessionUserIdentity;
 	input: AnalyzeTweetInput;
+	tweet: TweetPayload;
 	env?: ConvexEnv;
 }): Promise<SavedAnalysis> {
 	const userId = sessionUser.id.trim();
@@ -100,9 +111,17 @@ export async function persistAnalysisForSession({
 		name: sessionUser.name ?? undefined,
 	});
 
-	const saved = await client.mutation(createFromTweetUrlRef, {
+	const saved = await client.mutation(createFromTweetPayloadRef, {
 		tweetUrlOrId: input.tweetUrlOrId,
 		model: input.model,
+		tweet: {
+			id: tweet.id,
+			text: tweet.text,
+			authorId: tweet.authorId,
+			authorUsername: tweet.authorUsername,
+			authorName: tweet.authorName,
+			authorAvatarUrl: tweet.authorAvatarUrl,
+		},
 	});
 
 	return SavedAnalysisSchema.parse(saved);
