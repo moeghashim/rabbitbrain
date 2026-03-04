@@ -1,17 +1,19 @@
 "use client";
 
 import type { AnalyzeTweetResult } from "@pi-starter/contracts";
+import type { TweetMedia } from "@pi-starter/x-client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { buildTwitterAuthStartPath, startTwitterPopupAuth } from "../src/auth/popup-client.js";
 
-interface TweetPreview {
+export interface TweetPreview {
 	id: string;
 	text: string;
 	authorId?: string;
 	authorUsername?: string;
 	authorName?: string;
 	authorAvatarUrl?: string;
+	media?: TweetMedia[];
 }
 
 interface AnalyzeResponseSuccess {
@@ -70,6 +72,138 @@ function defaultAvatarLabel(tweet: TweetPreview): string {
 		return tweet.authorUsername.trim().charAt(0).toUpperCase();
 	}
 	return "X";
+}
+
+function normalizeUsername(username?: string): string | undefined {
+	if (!username) {
+		return undefined;
+	}
+	const trimmed = username.trim();
+	if (trimmed.length === 0) {
+		return undefined;
+	}
+	return trimmed.startsWith("@") ? trimmed.slice(1) : trimmed;
+}
+
+export function buildTweetCanonicalUrl(tweet: TweetPreview): string {
+	const username = normalizeUsername(tweet.authorUsername);
+	if (username) {
+		return `https://x.com/${username}/status/${tweet.id}`;
+	}
+	return `https://x.com/i/web/status/${tweet.id}`;
+}
+
+export function selectLeadTweetMedia(tweet: TweetPreview): TweetMedia | undefined {
+	return tweet.media?.[0];
+}
+
+function renderLeadTweetMedia(tweet: TweetPreview): React.ReactNode {
+	const media = selectLeadTweetMedia(tweet);
+	if (!media) {
+		return null;
+	}
+
+	if (media.type === "photo") {
+		const imageUrl = media.url ?? media.previewImageUrl;
+		if (!imageUrl) {
+			return null;
+		}
+
+		return (
+			<img
+				src={imageUrl}
+				alt={media.altText ?? "Tweet media"}
+				className="mt-4 w-full rounded-3xl border border-white/10 object-cover"
+			/>
+		);
+	}
+
+	const previewUrl = media.previewImageUrl ?? media.url;
+	const tweetUrl = buildTweetCanonicalUrl(tweet);
+	const mediaLabel = media.type === "animated_gif" ? "GIF" : "Video";
+
+	if (previewUrl) {
+		return (
+			<a
+				href={tweetUrl}
+				target="_blank"
+				rel="noopener noreferrer"
+				className="group relative mt-4 block overflow-hidden rounded-3xl border border-white/10"
+			>
+				<img
+					src={previewUrl}
+					alt={media.altText ?? `${mediaLabel} preview`}
+					className="w-full object-cover transition-transform duration-300 group-hover:scale-[1.01]"
+				/>
+				<div className="absolute inset-0 flex items-end justify-between bg-gradient-to-t from-black/65 via-black/15 to-transparent p-4">
+					<span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-sm text-white">▶</span>
+					<span className="text-xs font-semibold uppercase tracking-wider text-white">
+						{mediaLabel} - Open on X
+					</span>
+				</div>
+			</a>
+		);
+	}
+
+	return (
+		<a
+			href={tweetUrl}
+			target="_blank"
+			rel="noopener noreferrer"
+			className="mt-4 inline-flex items-center rounded-3xl border border-white/20 bg-charcoal px-4 py-3 text-xs font-semibold uppercase tracking-widest text-peach/80 transition-colors hover:bg-white/10 hover:text-white"
+		>
+			{mediaLabel} - View on X
+		</a>
+	);
+}
+
+export interface TweetPreviewCardProps {
+	tweet: TweetPreview;
+	analysis: AnalyzeTweetResult;
+}
+
+export function TweetPreviewCard({ tweet, analysis }: Readonly<TweetPreviewCardProps>) {
+	return (
+		<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+			<section className="rounded-4xl border border-white/10 bg-ink/70 p-5">
+				<div className="mb-4 flex items-start gap-3">
+					{tweet.authorAvatarUrl ? (
+						<img
+							src={tweet.authorAvatarUrl}
+							alt={tweet.authorName ? `${tweet.authorName} avatar` : "Tweet author avatar"}
+							className="h-10 w-10 rounded-full border border-white/20 object-cover"
+						/>
+					) : (
+						<div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-charcoal text-sm font-semibold text-white">
+							{defaultAvatarLabel(tweet)}
+						</div>
+					)}
+					<div>
+						<p className="text-sm font-semibold text-white">{tweet.authorName ?? "Unknown author"}</p>
+						<p className="text-xs text-peach/60">@{tweet.authorUsername ?? "unknown"}</p>
+					</div>
+				</div>
+				<p className="whitespace-pre-wrap text-sm leading-relaxed text-white/90">{tweet.text}</p>
+				{renderLeadTweetMedia(tweet)}
+				<p className="mt-4 text-xs uppercase tracking-widest text-peach/50">Tweet ID: {tweet.id}</p>
+			</section>
+			<section className="rounded-4xl border border-coral/30 bg-coral/10 p-5">
+				<p className="text-xs font-semibold uppercase tracking-[0.2em] text-coral">Analysis</p>
+				<h3 className="mt-3 font-serif text-2xl text-white">{analysis.topic}</h3>
+				<p className="mt-3 text-sm leading-relaxed text-peach/90">{analysis.summary}</p>
+				<p className="mt-4 text-sm text-peach/70">
+					<span className="font-semibold text-white">Intent:</span> {analysis.intent}
+				</p>
+				<ul className="mt-4 space-y-2">
+					{analysis.novelConcepts.map((concept) => (
+						<li key={concept.name} className="rounded-3xl border border-white/10 bg-ink/40 px-3 py-2 text-xs leading-relaxed text-peach/90">
+							<span className="font-semibold text-white">{concept.name}:</span> {concept.whyItMattersInTweet}
+						</li>
+					))}
+				</ul>
+			</section>
+		</div>
+	);
 }
 
 export function HeroTweetAnalyzer({
@@ -225,46 +359,7 @@ export function HeroTweetAnalyzer({
 				</p>
 			) : null}
 
-			{tweet && analysis ? (
-				<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-					<section className="rounded-4xl border border-white/10 bg-ink/70 p-5">
-						<div className="mb-4 flex items-start gap-3">
-							{tweet.authorAvatarUrl ? (
-								<img
-									src={tweet.authorAvatarUrl}
-									alt={tweet.authorName ? `${tweet.authorName} avatar` : "Tweet author avatar"}
-									className="h-10 w-10 rounded-full border border-white/20 object-cover"
-								/>
-							) : (
-								<div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-charcoal text-sm font-semibold text-white">
-									{defaultAvatarLabel(tweet)}
-								</div>
-							)}
-							<div>
-								<p className="text-sm font-semibold text-white">{tweet.authorName ?? "Unknown author"}</p>
-								<p className="text-xs text-peach/60">@{tweet.authorUsername ?? "unknown"}</p>
-							</div>
-						</div>
-						<p className="whitespace-pre-wrap text-sm leading-relaxed text-white/90">{tweet.text}</p>
-						<p className="mt-4 text-xs uppercase tracking-widest text-peach/50">Tweet ID: {tweet.id}</p>
-					</section>
-					<section className="rounded-4xl border border-coral/30 bg-coral/10 p-5">
-						<p className="text-xs font-semibold uppercase tracking-[0.2em] text-coral">Analysis</p>
-						<h3 className="mt-3 font-serif text-2xl text-white">{analysis.topic}</h3>
-						<p className="mt-3 text-sm leading-relaxed text-peach/90">{analysis.summary}</p>
-						<p className="mt-4 text-sm text-peach/70">
-							<span className="font-semibold text-white">Intent:</span> {analysis.intent}
-						</p>
-						<ul className="mt-4 space-y-2">
-							{analysis.novelConcepts.map((concept) => (
-								<li key={concept.name} className="rounded-3xl border border-white/10 bg-ink/40 px-3 py-2 text-xs leading-relaxed text-peach/90">
-									<span className="font-semibold text-white">{concept.name}:</span> {concept.whyItMattersInTweet}
-								</li>
-							))}
-						</ul>
-					</section>
-				</div>
-			) : null}
-		</div>
-	);
-}
+				{tweet && analysis ? <TweetPreviewCard tweet={tweet} analysis={analysis} /> : null}
+			</div>
+		);
+	}

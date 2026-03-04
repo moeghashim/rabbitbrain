@@ -68,6 +68,7 @@ export async function POST(req: Request) {
 				authorUsername: tweet.authorUsername,
 				authorName: tweet.authorName,
 				authorAvatarUrl: tweet.authorAvatarUrl,
+				media: tweet.media,
 			},
 			analysis: {
 				topic: persisted.topic,

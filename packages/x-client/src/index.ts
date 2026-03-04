@@ -36,6 +36,18 @@ export interface XApiConfig {
 	retryBaseDelayMs: number;
 }
 
+export type TweetMediaType = "photo" | "video" | "animated_gif";
+
+export interface TweetMedia {
+	mediaKey: string;
+	type: TweetMediaType;
+	url?: string;
+	previewImageUrl?: string;
+	altText?: string;
+	width?: number;
+	height?: number;
+}
+
 export interface TweetPayload {
 	id: string;
 	text: string;
@@ -43,6 +55,7 @@ export interface TweetPayload {
 	authorUsername?: string;
 	authorName?: string;
 	authorAvatarUrl?: string;
+	media?: TweetMedia[];
 	raw: unknown;
 }
 
@@ -140,6 +153,24 @@ function firstNonEmptyString(values: unknown[]): string | undefined {
 		if (text) {
 			return text;
 		}
+	}
+	return undefined;
+}
+
+function toPositiveNumber(value: unknown): number | undefined {
+	if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+		return undefined;
+	}
+	return value;
+}
+
+function toTweetMediaType(value: unknown): TweetMediaType | undefined {
+	const candidate = toNonEmptyString(value);
+	if (!candidate) {
+		return undefined;
+	}
+	if (candidate === "photo" || candidate === "video" || candidate === "animated_gif") {
+		return candidate;
 	}
 	return undefined;
 }
@@ -309,6 +340,75 @@ function toXProviderErrorFromPayload(responseBody: unknown, fallbackMessage: str
 	});
 }
 
+function readTweetMedia({
+	data,
+	includes,
+}: {
+	data: Record<string, unknown>;
+	includes: unknown;
+}): TweetMedia[] | undefined {
+	const attachments = isRecord(data.attachments) ? data.attachments : undefined;
+	const mediaKeysRaw = attachments ? attachments.media_keys : undefined;
+	if (!Array.isArray(mediaKeysRaw) || mediaKeysRaw.length === 0) {
+		return undefined;
+	}
+
+	const mediaKeys = mediaKeysRaw
+		.map((key) => (typeof key === "string" ? key.trim() : ""))
+		.filter((key) => key.length > 0);
+	if (mediaKeys.length === 0 || !isRecord(includes) || !Array.isArray(includes.media)) {
+		return undefined;
+	}
+
+	const byMediaKey = new Map<string, TweetMedia>();
+	for (const entry of includes.media) {
+		if (!isRecord(entry)) {
+			continue;
+		}
+
+		const mediaKey = toNonEmptyString(entry.media_key);
+		const mediaType = toTweetMediaType(entry.type);
+		if (!mediaKey || !mediaType) {
+			continue;
+		}
+
+		const media: TweetMedia = {
+			mediaKey,
+			type: mediaType,
+		};
+
+		const url = toNonEmptyString(entry.url);
+		if (url) {
+			media.url = url;
+		}
+
+		const previewImageUrl = toNonEmptyString(entry.preview_image_url);
+		if (previewImageUrl) {
+			media.previewImageUrl = previewImageUrl;
+		}
+
+		const altText = toNonEmptyString(entry.alt_text);
+		if (altText) {
+			media.altText = altText;
+		}
+
+		const width = toPositiveNumber(entry.width);
+		if (width) {
+			media.width = width;
+		}
+
+		const height = toPositiveNumber(entry.height);
+		if (height) {
+			media.height = height;
+		}
+
+		byMediaKey.set(mediaKey, media);
+	}
+
+	const ordered = mediaKeys.map((key) => byMediaKey.get(key)).filter((item): item is TweetMedia => item !== undefined);
+	return ordered.length > 0 ? ordered : undefined;
+}
+
 function readTweetPayload(responseBody: unknown): TweetPayload {
 	if (typeof responseBody !== "object" || responseBody === null) {
 		throw new XProviderError({
@@ -319,13 +419,13 @@ function readTweetPayload(responseBody: unknown): TweetPayload {
 	}
 
 	const data = (responseBody as { data?: unknown }).data;
-	if (typeof data !== "object" || data === null) {
+	if (!isRecord(data)) {
 		throw toXProviderErrorFromPayload(responseBody, "X API payload missing data object.");
 	}
 
-	const id = (data as { id?: unknown }).id;
-	const text = (data as { text?: unknown }).text;
-	const authorId = (data as { author_id?: unknown }).author_id;
+	const id = data.id;
+	const text = data.text;
+	const authorId = data.author_id;
 	const includes = (responseBody as { includes?: unknown }).includes;
 	const users =
 		typeof includes === "object" && includes !== null ? (includes as { users?: unknown }).users : undefined;
@@ -354,6 +454,11 @@ function readTweetPayload(responseBody: unknown): TweetPayload {
 		throw toXProviderErrorFromPayload(responseBody, "X API payload is missing required tweet fields.");
 	}
 
+	const media = readTweetMedia({
+		data,
+		includes,
+	});
+
 	return {
 		id,
 		text,
@@ -361,6 +466,7 @@ function readTweetPayload(responseBody: unknown): TweetPayload {
 		authorUsername: typeof authorUsername === "string" && authorUsername.length > 0 ? authorUsername : undefined,
 		authorName: typeof authorName === "string" && authorName.length > 0 ? authorName : undefined,
 		authorAvatarUrl: typeof authorAvatarUrl === "string" && authorAvatarUrl.length > 0 ? authorAvatarUrl : undefined,
+		media,
 		raw: responseBody,
 	};
 }
@@ -391,9 +497,10 @@ export class XApiV2Client implements TweetSourceProvider {
 	async getTweetByUrlOrId(input: string): Promise<TweetPayload> {
 		const tweetId = parseTweetId(input);
 		const url = new URL(`https://api.x.com/2/tweets/${tweetId}`);
-		url.searchParams.set("expansions", "author_id");
-		url.searchParams.set("tweet.fields", "author_id");
+		url.searchParams.set("expansions", "author_id,attachments.media_keys");
+		url.searchParams.set("tweet.fields", "author_id,attachments");
 		url.searchParams.set("user.fields", "id,username,name,profile_image_url");
+		url.searchParams.set("media.fields", "type,url,preview_image_url,alt_text,width,height");
 
 		let attempt = 0;
 		while (attempt <= this.config.retryCount) {
