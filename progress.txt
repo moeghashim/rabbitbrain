@@ -213,3 +213,11 @@ Bugs/issues found: Successful analysis appeared as raw payload because browser n
 Root cause: `/app` used classic form submit (`action=/api/analyze`) instead of client-side fetch flow.
 Fix applied: Embedded client analyzer component on `/app` and updated dashboard integration test expectations.
 What to do differently next feature: Reuse one analyzer surface across pages by default to avoid drift between API/form and client-fetch behavior.
+
+Date/Time (America/Chicago): 2026-03-03 22:18:58 CST
+Feature: Visual refinement - global font family refresh
+What was implemented: Switched web typography from Instrument Serif + Manrope to Cormorant Garamond + Sora and set body default to `font-sans` for consistent global application.
+Bugs/issues found: None.
+Root cause: N/A.
+Fix applied: N/A.
+What to do differently next feature: Pair font swaps with a screenshot diff check on landing and dashboard to validate hierarchy and legibility quickly.

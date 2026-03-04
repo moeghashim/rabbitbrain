@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
-import { Instrument_Serif, Manrope } from "next/font/google";
+import { Cormorant_Garamond, Sora } from "next/font/google";
 import type { ReactNode } from "react";
 import React from "react";
 
 import "./globals.css";
 
-const instrumentSerif = Instrument_Serif({
+const cormorantGaramond = Cormorant_Garamond({
 	subsets: ["latin"],
-	weight: "400",
+	weight: ["400", "500", "600", "700"],
 	variable: "--font-serif",
 });
 
-const manrope = Manrope({
+const sora = Sora({
 	subsets: ["latin"],
 	weight: ["400", "500", "600", "700"],
 	variable: "--font-sans",
@@ -24,8 +24,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
 	return (
-		<html lang="en" className={`${instrumentSerif.variable} ${manrope.variable} scroll-smooth`}>
-			<body className="antialiased">{children}</body>
+		<html lang="en" className={`${cormorantGaramond.variable} ${sora.variable} scroll-smooth`}>
+			<body className="font-sans antialiased">{children}</body>
 		</html>
 	);
 }
