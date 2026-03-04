@@ -1,0 +1,3 @@
+#!/bin/sh
+
+node scripts/append-progress-entry.mjs "$1"
