@@ -8,9 +8,9 @@ import AppHomePage from "../app/app/page.js";
 
 test("dashboard page includes analyze action controls", () => {
 	const html = renderToStaticMarkup(<AppHomePage />);
-	assert.match(html, /action=\"\/api\/analyze\"/);
+	assert.match(html, /id=\"hero-analyze-button\"/);
 	assert.match(html, /name=\"tweetUrlOrId\"/);
-	assert.match(html, /Run Analysis/);
+	assert.match(html, /Analyze Tweet/);
 	assert.match(html, /Learning Tracks/);
 });
 

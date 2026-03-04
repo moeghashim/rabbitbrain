@@ -205,3 +205,11 @@ Bugs/issues found: Convex deploy initially failed due invalid module path (`auth
 Root cause: Convex module path restrictions disallow hyphenated import module names; production data still contained pre-migration Clerk-shaped documents.
 Fix applied: Renamed Convex helper module import path to `auth_helpers`, made users schema backward-compatible (`xUserId` optional + `clerkUserId` optional), deployed Convex functions, then redeployed web production.
 What to do differently next feature: Run a Convex deployment health check (`convex function-spec`) before web release to catch schema/module compatibility blockers earlier.
+
+Date/Time (America/Chicago): 2026-03-03 22:12:26 CST
+Feature: UX hotfix - keep /app analysis results in UI
+What was implemented: Replaced dashboard form POST navigation with in-page `HeroTweetAnalyzer` component so Analyze Tweet renders tweet+analysis in the app UI instead of opening raw JSON at `/api/analyze`.
+Bugs/issues found: Successful analysis appeared as raw payload because browser navigated directly to API endpoint.
+Root cause: `/app` used classic form submit (`action=/api/analyze`) instead of client-side fetch flow.
+Fix applied: Embedded client analyzer component on `/app` and updated dashboard integration test expectations.
+What to do differently next feature: Reuse one analyzer surface across pages by default to avoid drift between API/form and client-fetch behavior.
