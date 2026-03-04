@@ -1,6 +1,8 @@
 import Link from "next/link";
 import React from "react";
 
+import { HeroTweetAnalyzer } from "../../components/hero-tweet-analyzer.js";
+
 const recentAnalyses = [
 	{ id: "analysis_2", topic: "Deployment confidence update", createdAt: "Today" },
 	{ id: "analysis_1", topic: "Incident readiness reflection", createdAt: "Yesterday" },
@@ -34,33 +36,9 @@ export default function AppHomePage() {
 
 				<section className="rounded-5xl border border-white/10 bg-charcoal/90 p-8">
 					<h2 className="font-serif text-4xl text-white">Analyze Tweet</h2>
-					<form action="/api/analyze" method="post" className="mt-6 flex flex-col gap-4">
-						<label htmlFor="tweetUrlOrId" className="text-sm font-semibold uppercase tracking-widest text-peach/70">
-							Tweet URL or ID
-						</label>
-						<input
-							id="tweetUrlOrId"
-							name="tweetUrlOrId"
-							required
-							placeholder="https://x.com/user/status/123456"
-							className="rounded-4xl border border-white/20 bg-ink/70 px-5 py-4 text-white placeholder:text-peach/40"
-						/>
-						<label htmlFor="model" className="text-sm font-semibold uppercase tracking-widest text-peach/70">
-							Model
-						</label>
-						<select id="model" name="model" className="rounded-4xl border border-white/20 bg-ink/70 px-5 py-4 text-white">
-							<option value="gpt-4.1">gpt-4.1</option>
-							<option value="gpt-4.1-mini">gpt-4.1-mini</option>
-						</select>
-						<div>
-							<button
-								type="submit"
-								className="rounded-[48px] bg-coral px-8 py-3 font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-coral-hover"
-							>
-								Run Analysis
-							</button>
-						</div>
-					</form>
+					<div className="mt-6">
+						<HeroTweetAnalyzer />
+					</div>
 				</section>
 
 				<div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
