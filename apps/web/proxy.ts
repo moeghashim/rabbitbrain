@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { validateMiddlewareEnvIfNeeded } from "./src/config/startup-env.js";
 import { resolveAuthRedirectPath } from "./src/auth/routing.js";
 
-export default async function middleware(req: NextRequest) {
+export default async function proxy(req: NextRequest) {
 	validateMiddlewareEnvIfNeeded();
 	const token = await getToken({
 		req,
