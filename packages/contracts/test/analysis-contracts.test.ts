@@ -6,8 +6,12 @@ import {
 	AnalyzeTweetInputSchema,
 	type AnalyzeTweetResult,
 	AnalyzeTweetResultSchema,
+	type SaveBookmarkInput,
+	SaveBookmarkInputSchema,
 	type SavedAnalysis,
 	SavedAnalysisSchema,
+	type SavedBookmark,
+	SavedBookmarkSchema,
 } from "../src/index.js";
 
 function sampleAnalysisResult(): AnalyzeTweetResult {
@@ -60,4 +64,53 @@ test("SavedAnalysisSchema validates persisted analysis shape", () => {
 	const parsed = SavedAnalysisSchema.parse(payload);
 	assert.equal(parsed.id, "analysis_1");
 	assert.equal(parsed.novelConcepts.length, 5);
+});
+
+test("SaveBookmarkInputSchema validates bookmark save payload", () => {
+	const payload: SaveBookmarkInput = {
+		tweetId: "123",
+		tweetText: "A useful thread on production rollouts.",
+		tweetUrlOrId: "https://x.com/user/status/123",
+		authorUsername: "user",
+		authorName: "User Name",
+		authorAvatarUrl: "https://pbs.twimg.com/profile_images/avatar.jpg",
+		tags: ["infra", "reliability"],
+	};
+
+	const parsed = SaveBookmarkInputSchema.parse(payload);
+	assert.equal(parsed.tags.length, 2);
+});
+
+test("SaveBookmarkInputSchema rejects case-insensitive duplicate tags", () => {
+	assert.throws(
+		() =>
+			SaveBookmarkInputSchema.parse({
+				tweetId: "123",
+				tweetText: "Tweet text",
+				tweetUrlOrId: "https://x.com/user/status/123",
+				authorUsername: "user",
+				tags: ["Infra", "infra"],
+			}),
+		/unique/i,
+	);
+});
+
+test("SavedBookmarkSchema validates persisted bookmark shape", () => {
+	const payload: SavedBookmark = {
+		id: "bookmark_1",
+		userId: "user_1",
+		tweetId: "123",
+		tweetText: "A useful thread on production rollouts.",
+		tweetUrlOrId: "https://x.com/user/status/123",
+		authorUsername: "user",
+		authorName: "User Name",
+		authorAvatarUrl: "https://pbs.twimg.com/profile_images/avatar.jpg",
+		tags: ["infra"],
+		createdAt: 1_700_000_000_000,
+		updatedAt: 1_700_000_000_123,
+	};
+
+	const parsed = SavedBookmarkSchema.parse(payload);
+	assert.equal(parsed.id, "bookmark_1");
+	assert.equal(parsed.tags[0], "infra");
 });

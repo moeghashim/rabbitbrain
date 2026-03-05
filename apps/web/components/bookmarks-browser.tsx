@@ -1,0 +1,283 @@
+"use client";
+
+import type { SavedBookmark } from "@pi-starter/contracts";
+import React, { useEffect, useMemo, useState } from "react";
+
+type BookmarkViewMode = "tile" | "row";
+
+interface BookmarksResponseSuccess {
+	bookmarks: SavedBookmark[];
+}
+
+interface BookmarksResponseError {
+	error?: {
+		code?: string;
+		message?: string;
+	};
+}
+
+function formatBookmarkDate(timestamp: number): string {
+	return new Date(timestamp).toLocaleString();
+}
+
+function truncateForPreview(text: string, maxLength = 170): string {
+	if (text.length <= maxLength) {
+		return text;
+	}
+	return `${text.slice(0, maxLength).trimEnd()}…`;
+}
+
+function buildBookmarkCanonicalUrl(bookmark: SavedBookmark): string {
+	const rawUrl = bookmark.tweetUrlOrId.trim();
+	if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
+		return rawUrl;
+	}
+	return `https://x.com/${bookmark.authorUsername}/status/${bookmark.tweetId}`;
+}
+
+function bookmarkAvatarLabel(bookmark: SavedBookmark): string {
+	const preferred = bookmark.authorName ?? bookmark.authorUsername;
+	const firstChar = preferred.trim().charAt(0);
+	return firstChar.length > 0 ? firstChar.toUpperCase() : "X";
+}
+
+export function BookmarksBrowser() {
+	const [bookmarks, setBookmarks] = useState<SavedBookmark[]>([]);
+	const [viewMode, setViewMode] = useState<BookmarkViewMode>("tile");
+	const [selectedBookmark, setSelectedBookmark] = useState<SavedBookmark | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+	useEffect(() => {
+		let isCancelled = false;
+
+		async function loadBookmarks(): Promise<void> {
+			setIsLoading(true);
+			setErrorMessage(null);
+			try {
+				const response = await fetch("/api/bookmarks", {
+					method: "GET",
+					headers: {
+						"content-type": "application/json",
+					},
+				});
+				const payload = (await response.json()) as BookmarksResponseSuccess | BookmarksResponseError;
+				if (!response.ok) {
+					const fallbackMessage = "Unable to load bookmarks right now.";
+					const message = "error" in payload && payload.error?.message ? payload.error.message : fallbackMessage;
+					if (!isCancelled) {
+						setErrorMessage(message);
+						setBookmarks([]);
+					}
+					return;
+				}
+				if (!("bookmarks" in payload)) {
+					if (!isCancelled) {
+						setErrorMessage("Unexpected bookmarks response.");
+						setBookmarks([]);
+					}
+					return;
+				}
+
+				if (!isCancelled) {
+					setBookmarks(payload.bookmarks);
+				}
+			} catch (error) {
+				if (!isCancelled) {
+					setErrorMessage(error instanceof Error ? error.message : "Unexpected network failure while loading bookmarks.");
+					setBookmarks([]);
+				}
+			} finally {
+				if (!isCancelled) {
+					setIsLoading(false);
+				}
+			}
+		}
+
+		void loadBookmarks();
+		return () => {
+			isCancelled = true;
+		};
+	}, []);
+
+	useEffect(() => {
+		if (!selectedBookmark) {
+			return;
+		}
+
+		const activeBookmark = bookmarks.find((bookmark) => bookmark.id === selectedBookmark.id);
+		if (!activeBookmark) {
+			setSelectedBookmark(null);
+		}
+	}, [bookmarks, selectedBookmark]);
+
+	useEffect(() => {
+		if (!selectedBookmark) {
+			return;
+		}
+
+		const onKeyDown = (event: KeyboardEvent) => {
+			if (event.key === "Escape") {
+				setSelectedBookmark(null);
+			}
+		};
+		window.addEventListener("keydown", onKeyDown);
+		return () => {
+			window.removeEventListener("keydown", onKeyDown);
+		};
+	}, [selectedBookmark]);
+
+	const listContainerClass = useMemo(() => {
+		if (viewMode === "tile") {
+			return "grid grid-cols-1 gap-4 md:grid-cols-2";
+		}
+		return "flex flex-col gap-3";
+	}, [viewMode]);
+
+	return (
+		<div className="flex flex-col gap-5">
+			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+				<p className="text-sm text-peach/70">Open any card to read the full tweet in the side panel.</p>
+				<div className="inline-flex rounded-[18px] border border-white/15 bg-ink/60 p-1">
+					<button
+						id="bookmarks-view-tile"
+						type="button"
+						aria-pressed={viewMode === "tile"}
+						onClick={() => setViewMode("tile")}
+						className={`rounded-[14px] px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
+							viewMode === "tile" ? "bg-coral text-white" : "text-peach/70 hover:text-white"
+						}`}
+					>
+						Tile
+					</button>
+					<button
+						id="bookmarks-view-row"
+						type="button"
+						aria-pressed={viewMode === "row"}
+						onClick={() => setViewMode("row")}
+						className={`rounded-[14px] px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
+							viewMode === "row" ? "bg-coral text-white" : "text-peach/70 hover:text-white"
+						}`}
+					>
+						Row
+					</button>
+				</div>
+			</div>
+
+			{isLoading ? (
+				<div className="rounded-4xl border border-white/10 bg-ink/60 p-6">
+					<p className="text-sm text-peach/70">Loading bookmarks...</p>
+				</div>
+			) : errorMessage ? (
+				<p role="alert" className="rounded-3xl border border-coral/40 bg-coral/10 px-4 py-3 text-sm text-peach">
+					{errorMessage}
+				</p>
+			) : bookmarks.length === 0 ? (
+				<div className="rounded-4xl border border-white/10 bg-ink/60 p-6">
+					<p className="text-sm text-peach/70">
+						No bookmarks yet. Analyze a tweet and save it with tags from the dashboard.
+					</p>
+				</div>
+			) : (
+				<div id="bookmarks-list" className={listContainerClass}>
+					{bookmarks.map((bookmark) => (
+						<button
+							key={bookmark.id}
+							type="button"
+							onClick={() => setSelectedBookmark(bookmark)}
+							className={`rounded-4xl border border-white/10 bg-ink/65 p-5 text-left transition-all hover:border-coral/40 hover:bg-ink/80 ${
+								viewMode === "row" ? "w-full" : ""
+							}`}
+						>
+							<div className="flex items-start justify-between gap-3">
+								<div className="flex flex-wrap gap-2">
+									{bookmark.tags.map((tag) => (
+										<span key={tag} className="rounded-full border border-coral/40 bg-coral/10 px-2.5 py-1 text-[11px] uppercase tracking-wider text-coral">
+											{tag}
+										</span>
+									))}
+								</div>
+								<span className="text-xs text-peach/50">{formatBookmarkDate(bookmark.updatedAt)}</span>
+							</div>
+							<div className="mt-4 flex items-center gap-3">
+								{bookmark.authorAvatarUrl ? (
+									<img
+										src={bookmark.authorAvatarUrl}
+										alt={`${bookmark.authorUsername} avatar`}
+										className="h-9 w-9 rounded-full border border-white/20 object-cover"
+									/>
+								) : (
+									<div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-charcoal text-sm font-semibold text-white">
+										{bookmarkAvatarLabel(bookmark)}
+									</div>
+								)}
+								<p className="text-sm font-semibold text-white">@{bookmark.authorUsername}</p>
+							</div>
+							<p className="mt-3 text-sm leading-relaxed text-peach/90">{truncateForPreview(bookmark.tweetText)}</p>
+						</button>
+					))}
+				</div>
+			)}
+
+			{selectedBookmark ? (
+				<div className="fixed inset-0 z-50">
+					<button
+						type="button"
+						aria-label="Close bookmark details"
+						onClick={() => setSelectedBookmark(null)}
+						className="absolute inset-0 bg-black/65"
+					/>
+					<aside className="absolute right-0 top-0 h-full w-full border-l border-white/10 bg-charcoal p-6 shadow-2xl sm:w-[520px]">
+						<div className="flex items-start justify-between gap-4">
+							<div>
+								<p className="text-xs font-semibold uppercase tracking-[0.2em] text-coral">Saved Tweet</p>
+								<p className="mt-2 text-sm text-peach/70">Updated {formatBookmarkDate(selectedBookmark.updatedAt)}</p>
+							</div>
+							<button
+								id="bookmark-panel-close"
+								type="button"
+								onClick={() => setSelectedBookmark(null)}
+								className="rounded-full border border-white/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-white/10"
+							>
+								Close
+							</button>
+						</div>
+						<div className="mt-6 flex items-center gap-3">
+							{selectedBookmark.authorAvatarUrl ? (
+								<img
+									src={selectedBookmark.authorAvatarUrl}
+									alt={`${selectedBookmark.authorUsername} avatar`}
+									className="h-10 w-10 rounded-full border border-white/20 object-cover"
+								/>
+							) : (
+								<div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-ink text-sm font-semibold text-white">
+									{bookmarkAvatarLabel(selectedBookmark)}
+								</div>
+							)}
+							<div>
+								<p className="text-sm font-semibold text-white">{selectedBookmark.authorName ?? selectedBookmark.authorUsername}</p>
+								<p className="text-xs text-peach/60">@{selectedBookmark.authorUsername}</p>
+							</div>
+						</div>
+						<p className="mt-5 whitespace-pre-wrap text-sm leading-relaxed text-peach/95">{selectedBookmark.tweetText}</p>
+						<div className="mt-5 flex flex-wrap gap-2">
+							{selectedBookmark.tags.map((tag) => (
+								<span key={tag} className="rounded-full border border-coral/35 bg-coral/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-coral">
+									{tag}
+								</span>
+							))}
+						</div>
+						<a
+							href={buildBookmarkCanonicalUrl(selectedBookmark)}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="mt-7 inline-flex rounded-[20px] bg-coral px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-coral-hover"
+						>
+							Open on X
+						</a>
+					</aside>
+				</div>
+			) : null}
+		</div>
+	);
+}

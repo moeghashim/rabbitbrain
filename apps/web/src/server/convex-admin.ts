@@ -1,7 +1,10 @@
 import {
 	type AnalyzeTweetInput,
+	type SaveBookmarkInput,
 	SavedAnalysisSchema,
 	type SavedAnalysis,
+	SavedBookmarkSchema,
+	type SavedBookmark,
 } from "@pi-starter/contracts";
 import type { TweetPayload } from "@pi-starter/x-client";
 import { ConvexHttpClient } from "convex/browser";
@@ -53,6 +56,12 @@ const createFromTweetPayloadRef = makeFunctionReference<
 	},
 	SavedAnalysis
 >("analysis:createFromTweetPayload");
+
+const saveBookmarkRef = makeFunctionReference<"mutation", SaveBookmarkInput, SavedBookmark>("bookmarks:save");
+
+const listBookmarksByUserRef = makeFunctionReference<"query", Record<string, never>, SavedBookmark[]>(
+	"bookmarks:listByUser",
+);
 
 function readRequiredEnv(name: keyof ConvexEnv, env: ConvexEnv): string {
 	const value = env[name];
@@ -125,4 +134,64 @@ export async function persistAnalysisForSession({
 	});
 
 	return SavedAnalysisSchema.parse(saved);
+}
+
+export async function saveBookmarkForSession({
+	sessionUser,
+	input,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	input: SaveBookmarkInput;
+	env?: ConvexEnv;
+}): Promise<SavedBookmark> {
+	const userId = sessionUser.id.trim();
+	if (!userId) {
+		throw new Error("Unauthorized");
+	}
+
+	const client = createAdminClient({
+		user: {
+			...sessionUser,
+			id: userId,
+		},
+		env,
+	});
+
+	await client.mutation(upsertCurrentUserRef, {
+		email: sessionUser.email ?? undefined,
+		name: sessionUser.name ?? undefined,
+	});
+
+	const saved = await client.mutation(saveBookmarkRef, input);
+	return SavedBookmarkSchema.parse(saved);
+}
+
+export async function listBookmarksForSession({
+	sessionUser,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	env?: ConvexEnv;
+}): Promise<SavedBookmark[]> {
+	const userId = sessionUser.id.trim();
+	if (!userId) {
+		throw new Error("Unauthorized");
+	}
+
+	const client = createAdminClient({
+		user: {
+			...sessionUser,
+			id: userId,
+		},
+		env,
+	});
+
+	await client.mutation(upsertCurrentUserRef, {
+		email: sessionUser.email ?? undefined,
+		name: sessionUser.name ?? undefined,
+	});
+
+	const bookmarks = await client.query(listBookmarksByUserRef, {});
+	return bookmarks.map((bookmark) => SavedBookmarkSchema.parse(bookmark));
 }

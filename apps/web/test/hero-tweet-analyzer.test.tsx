@@ -4,7 +4,12 @@ import type { AnalyzeTweetResult } from "@pi-starter/contracts";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { selectLeadTweetMedia, TweetPreviewCard } from "../components/hero-tweet-analyzer.js";
+import {
+	HeroTweetAnalyzer,
+	parseBookmarkTags,
+	selectLeadTweetMedia,
+	TweetPreviewCard,
+} from "../components/hero-tweet-analyzer.js";
 
 const analysisFixture: AnalyzeTweetResult = {
 	topic: "Topic",
@@ -79,3 +84,12 @@ test("selectLeadTweetMedia returns only the first media item", () => {
 	assert.equal(leadMedia?.mediaKey, "first");
 });
 
+test("parseBookmarkTags trims values and deduplicates case-insensitively", () => {
+	const tags = parseBookmarkTags("  Product, growth,product,  GTM , gtm ");
+	assert.deepEqual(tags, ["Product", "growth", "GTM"]);
+});
+
+test("HeroTweetAnalyzer hides bookmark controls before analysis result is available", () => {
+	const html = renderToStaticMarkup(<HeroTweetAnalyzer />);
+	assert.doesNotMatch(html, /id=\"bookmark-save-controls\"/);
+});

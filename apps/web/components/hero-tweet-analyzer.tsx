@@ -1,7 +1,11 @@
 "use client";
 
-import type { AnalyzeTweetResult } from "@pi-starter/contracts";
+import type {
+	AnalyzeTweetResult,
+	SavedBookmark,
+} from "@pi-starter/contracts";
 import type { TweetMedia } from "@pi-starter/x-client";
+import Link from "next/link";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { buildTwitterAuthStartPath, startTwitterPopupAuth } from "../src/auth/popup-client.js";
@@ -27,6 +31,13 @@ interface AnalyzeResponseError {
 		message?: string;
 	};
 	redirectTo?: string;
+}
+
+interface SaveBookmarkResponseError {
+	error?: {
+		code?: string;
+		message?: string;
+	};
 }
 
 export interface HeroTweetAnalyzerProps {
@@ -83,6 +94,26 @@ function normalizeUsername(username?: string): string | undefined {
 		return undefined;
 	}
 	return trimmed.startsWith("@") ? trimmed.slice(1) : trimmed;
+}
+
+export function parseBookmarkTags(input: string): string[] {
+	const tags = input
+		.split(",")
+		.map((tag) => tag.trim())
+		.filter((tag) => tag.length > 0);
+	const seen = new Set<string>();
+	const deduped: string[] = [];
+
+	for (const tag of tags) {
+		const key = tag.toLowerCase();
+		if (seen.has(key)) {
+			continue;
+		}
+		seen.add(key);
+		deduped.push(tag);
+	}
+
+	return deduped;
 }
 
 export function buildTweetCanonicalUrl(tweet: TweetPreview): string {
@@ -215,10 +246,18 @@ export function HeroTweetAnalyzer({
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [tweet, setTweet] = useState<TweetPreview | null>(null);
 	const [analysis, setAnalysis] = useState<AnalyzeTweetResult | null>(null);
+	const [bookmarkTagsInput, setBookmarkTagsInput] = useState("");
+	const [isSavingBookmark, setIsSavingBookmark] = useState(false);
+	const [bookmarkErrorMessage, setBookmarkErrorMessage] = useState<string | null>(null);
+	const [bookmarkSuccessMessage, setBookmarkSuccessMessage] = useState<string | null>(null);
 	const hasAutoRunRef = useRef(false);
 	const authPopupCleanupRef = useRef<(() => void) | null>(null);
 
 	const canSubmit = useMemo(() => tweetUrlOrId.trim().length > 0 && !isLoading, [isLoading, tweetUrlOrId]);
+	const canSaveBookmark = useMemo(
+		() => Boolean(tweet && analysis) && !isSavingBookmark,
+		[analysis, isSavingBookmark, tweet],
+	);
 
 	async function runAnalysis(value: string, options: { allowAuthPopup?: boolean } = {}): Promise<void> {
 		const allowAuthPopup = options.allowAuthPopup ?? true;
@@ -230,6 +269,9 @@ export function HeroTweetAnalyzer({
 
 		setIsLoading(true);
 		setErrorMessage(null);
+		setBookmarkTagsInput("");
+		setBookmarkErrorMessage(null);
+		setBookmarkSuccessMessage(null);
 
 		try {
 			const response = await fetch("/api/analyze", {
@@ -297,6 +339,72 @@ export function HeroTweetAnalyzer({
 		}
 	}
 
+	async function saveBookmark(): Promise<void> {
+		if (!tweet || !analysis) {
+			return;
+		}
+
+		const tags = parseBookmarkTags(bookmarkTagsInput);
+		if (tags.length === 0) {
+			setBookmarkErrorMessage("Add at least one tag before saving.");
+			setBookmarkSuccessMessage(null);
+			return;
+		}
+		if (tags.length > 8) {
+			setBookmarkErrorMessage("Use up to 8 tags per tweet.");
+			setBookmarkSuccessMessage(null);
+			return;
+		}
+		const hasLongTag = tags.some((tag) => tag.length > 24);
+		if (hasLongTag) {
+			setBookmarkErrorMessage("Each tag must be 24 characters or fewer.");
+			setBookmarkSuccessMessage(null);
+			return;
+		}
+
+		setIsSavingBookmark(true);
+		setBookmarkErrorMessage(null);
+		setBookmarkSuccessMessage(null);
+
+		try {
+			const response = await fetch("/api/bookmarks", {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+				},
+				body: JSON.stringify({
+					tweetId: tweet.id,
+					tweetText: tweet.text,
+					tweetUrlOrId: buildTweetCanonicalUrl(tweet),
+					authorUsername: normalizeUsername(tweet.authorUsername) ?? "unknown",
+					authorName: tweet.authorName?.trim() ? tweet.authorName.trim() : undefined,
+					authorAvatarUrl: tweet.authorAvatarUrl?.trim() ? tweet.authorAvatarUrl.trim() : undefined,
+					tags,
+				}),
+			});
+			const payload = (await response.json()) as SavedBookmark | SaveBookmarkResponseError;
+
+			if (!response.ok) {
+				const fallbackMessage = "Unable to save this bookmark right now.";
+				const message = "error" in payload && payload.error?.message ? payload.error.message : fallbackMessage;
+				setBookmarkErrorMessage(message);
+				return;
+			}
+
+			if (!("id" in payload)) {
+				setBookmarkErrorMessage("Unexpected response while saving bookmark.");
+				return;
+			}
+
+			setBookmarkSuccessMessage("Saved to Bookmarks.");
+			setBookmarkTagsInput(tags.join(", "));
+		} catch (error) {
+			setBookmarkErrorMessage(error instanceof Error ? error.message : "Unexpected network failure while saving bookmark.");
+		} finally {
+			setIsSavingBookmark(false);
+		}
+	}
+
 	useEffect(() => {
 		return () => {
 			authPopupCleanupRef.current?.();
@@ -358,7 +466,66 @@ export function HeroTweetAnalyzer({
 				</p>
 			) : null}
 
-			{tweet && analysis ? <TweetPreviewCard tweet={tweet} analysis={analysis} /> : null}
+			{tweet && analysis ? (
+				<>
+					<TweetPreviewCard tweet={tweet} analysis={analysis} />
+					<section id="bookmark-save-controls" className="rounded-4xl border border-white/10 bg-ink/70 p-5">
+						<div className="flex flex-col gap-4">
+							<div>
+								<p className="text-xs font-semibold uppercase tracking-[0.2em] text-coral">Save Tweet</p>
+								<p className="mt-2 text-sm text-peach/70">
+									Add comma-separated tags, then save this analyzed tweet to your bookmarks.
+								</p>
+							</div>
+							<div className="flex flex-col gap-3 sm:flex-row">
+								<label htmlFor="bookmark-tags" className="sr-only">
+									Bookmark tags
+								</label>
+								<input
+									id="bookmark-tags"
+									name="bookmarkTags"
+									type="text"
+									value={bookmarkTagsInput}
+									onChange={(event) => {
+										setBookmarkTagsInput(event.target.value);
+										setBookmarkSuccessMessage(null);
+									}}
+									placeholder="strategy, writing, growth"
+									className="w-full rounded-[20px] border border-white/20 bg-charcoal/70 px-5 py-3 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base"
+								/>
+								<button
+									id="bookmark-save-button"
+									type="button"
+									disabled={!canSaveBookmark}
+									onClick={() => {
+										void saveBookmark();
+									}}
+									className="inline-flex min-w-[190px] items-center justify-center rounded-[20px] bg-coral px-7 py-3 text-sm font-semibold text-white transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60 hover:bg-coral-hover md:text-base"
+								>
+									{isSavingBookmark ? "Saving..." : "Save to Bookmarks"}
+								</button>
+							</div>
+							{bookmarkErrorMessage ? (
+								<p
+									id="bookmark-save-error"
+									role="alert"
+									className="rounded-3xl border border-coral/40 bg-coral/10 px-4 py-3 text-sm text-peach"
+								>
+									{bookmarkErrorMessage}
+								</p>
+							) : null}
+							{bookmarkSuccessMessage ? (
+								<p id="bookmark-save-success" className="text-sm text-peach/80">
+									{bookmarkSuccessMessage}{" "}
+									<Link href="/app/bookmarks" className="font-semibold text-coral transition-colors hover:text-coral-hover">
+										Open Bookmarks
+									</Link>
+								</p>
+							) : null}
+						</div>
+					</section>
+				</>
+			) : null}
 		</div>
 	);
 }

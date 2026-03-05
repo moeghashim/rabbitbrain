@@ -50,4 +50,18 @@ export default defineSchema({
 		),
 		createdAt: v.number(),
 	}).index("by_user_id_created_at", ["userId", "createdAt"]),
+	bookmarks: defineTable({
+		userId: v.id("users"),
+		tweetId: v.string(),
+		tweetText: v.string(),
+		tweetUrlOrId: v.string(),
+		authorUsername: v.string(),
+		authorName: v.optional(v.string()),
+		authorAvatarUrl: v.optional(v.string()),
+		tags: v.array(v.string()),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_user_id_updated_at", ["userId", "updatedAt"])
+		.index("by_user_id_tweet_id", ["userId", "tweetId"]),
 });

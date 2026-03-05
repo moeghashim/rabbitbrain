@@ -43,9 +43,52 @@ export const SavedAnalysisSchema = AnalyzeTweetResultSchema.extend({
 	createdAt: z.number().int().nonnegative(),
 });
 
+export const BookmarkTagSchema = z.string().min(1).max(24);
+
+export const BookmarkedTweetSchema = z.object({
+	tweetId: z.string().min(1),
+	tweetText: z.string().min(1),
+	tweetUrlOrId: z.string().min(1),
+	authorUsername: z.string().min(1),
+	authorName: z.string().min(1).optional(),
+	authorAvatarUrl: z.string().url().optional(),
+});
+
+export const SaveBookmarkInputSchema = BookmarkedTweetSchema.extend({
+	tags: z
+		.array(BookmarkTagSchema)
+		.min(1)
+		.max(8)
+		.refine(
+			(tags) => {
+				const normalized = new Set<string>();
+				for (const tag of tags) {
+					const key = tag.toLowerCase();
+					if (normalized.has(key)) {
+						return false;
+					}
+					normalized.add(key);
+				}
+				return true;
+			},
+			{
+				message: "tags must be unique (case-insensitive)",
+			},
+		),
+});
+
+export const SavedBookmarkSchema = SaveBookmarkInputSchema.extend({
+	id: z.string().min(1),
+	userId: z.string().min(1),
+	createdAt: z.number().int().nonnegative(),
+	updatedAt: z.number().int().nonnegative(),
+});
+
 export type AnalyzeTweetInput = z.infer<typeof AnalyzeTweetInputSchema>;
 export type AnalyzeTweetResult = z.infer<typeof AnalyzeTweetResultSchema>;
 export type SavedAnalysis = z.infer<typeof SavedAnalysisSchema>;
+export type SaveBookmarkInput = z.infer<typeof SaveBookmarkInputSchema>;
+export type SavedBookmark = z.infer<typeof SavedBookmarkSchema>;
 
 export const LearningTrackTaskSetSchema = z.object({
 	learn: z.string().min(1),
