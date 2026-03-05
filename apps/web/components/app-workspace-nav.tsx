@@ -2,13 +2,7 @@ import { Sun } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
-type WorkspaceMenuItem = "Philosophy" | "Bookmarks" | "Manifesto";
-
-const menuLinks: Array<{ label: WorkspaceMenuItem; href: string }> = [
-	{ label: "Philosophy", href: "#" },
-	{ label: "Bookmarks", href: "/app/bookmarks" },
-	{ label: "Manifesto", href: "#" },
-];
+import { workspaceMenuLinks, type WorkspaceMenuItem } from "./workspace-menu.js";
 
 export interface AppWorkspaceNavProps {
 	activeItem: WorkspaceMenuItem;
@@ -24,8 +18,8 @@ export function AppWorkspaceNav({ activeItem }: Readonly<AppWorkspaceNavProps>) 
 				<span className="mt-1 font-serif text-2xl tracking-tight text-white">Red Sun</span>
 			</Link>
 
-			<div className="hidden items-center gap-10 md:flex">
-				{menuLinks.map((item) => (
+				<div className="hidden items-center gap-10 md:flex">
+					{workspaceMenuLinks.map((item) => (
 					<Link
 						key={item.label}
 						href={item.href}

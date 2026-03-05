@@ -13,6 +13,7 @@ import React from "react";
 
 import { HeroTweetAnalyzer } from "../components/hero-tweet-analyzer.js";
 import { Reveal } from "../components/reveal.js";
+import { workspaceMenuLinks } from "../components/workspace-menu.js";
 import { getServerAuthSession } from "../src/auth/auth.js";
 
 const twitterLoginPath = "/auth/popup-start?redirect_url=%2Fapp";
@@ -87,13 +88,17 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 					<span className="mt-1 font-serif text-2xl tracking-tight text-white">Red Sun</span>
 				</Link>
 
-				<div className="hidden items-center gap-10 md:flex">
-					{["Philosophy", "Platform", "Manifesto"].map((item) => (
-						<Link key={item} href="#" className="text-sm font-medium text-peach/70 transition-colors duration-300 hover:text-white">
-							{item}
-						</Link>
-					))}
-				</div>
+					<div className="hidden items-center gap-10 md:flex">
+						{workspaceMenuLinks.map((item) => (
+							<Link
+								key={item.label}
+								href={item.href}
+								className="text-sm font-medium text-peach/70 transition-colors duration-300 hover:text-white"
+							>
+								{item.label}
+							</Link>
+						))}
+					</div>
 
 				<div className="flex items-center">
 					<Link
