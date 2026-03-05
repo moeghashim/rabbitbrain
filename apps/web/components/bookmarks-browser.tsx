@@ -20,6 +20,12 @@ interface DeleteBookmarkResponseSuccess {
 	bookmarkId: string;
 }
 
+interface BookmarkTagFilterOption {
+	key: string;
+	label: string;
+	count: number;
+}
+
 function formatBookmarkDate(timestamp: number): string {
 	return new Date(timestamp).toLocaleString();
 }
@@ -65,9 +71,51 @@ function parseBookmarkTags(input: string): string[] {
 	return deduped;
 }
 
+function buildTagFilterOptions(bookmarks: SavedBookmark[]): BookmarkTagFilterOption[] {
+	const byKey = new Map<string, BookmarkTagFilterOption>();
+	for (const bookmark of bookmarks) {
+		const uniqueTags = new Set<string>();
+		for (const tag of bookmark.tags) {
+			const key = tag.trim().toLowerCase();
+			if (!key || uniqueTags.has(key)) {
+				continue;
+			}
+			uniqueTags.add(key);
+
+			const existing = byKey.get(key);
+			if (existing) {
+				byKey.set(key, { ...existing, count: existing.count + 1 });
+				continue;
+			}
+
+			byKey.set(key, {
+				key,
+				label: tag.trim(),
+				count: 1,
+			});
+		}
+	}
+
+	return Array.from(byKey.values()).sort((left, right) => left.label.localeCompare(right.label, undefined, { sensitivity: "base" }));
+}
+
+export function filterBookmarksByTags(bookmarks: SavedBookmark[], selectedTagKeys: string[]): SavedBookmark[] {
+	if (selectedTagKeys.length === 0) {
+		return bookmarks;
+	}
+
+	const normalizedKeys = new Set(selectedTagKeys.map((tagKey) => tagKey.trim().toLowerCase()).filter((tagKey) => tagKey.length > 0));
+	if (normalizedKeys.size === 0) {
+		return bookmarks;
+	}
+
+	return bookmarks.filter((bookmark) => bookmark.tags.some((tag) => normalizedKeys.has(tag.trim().toLowerCase())));
+}
+
 export function BookmarksBrowser() {
 	const [bookmarks, setBookmarks] = useState<SavedBookmark[]>([]);
 	const [viewMode, setViewMode] = useState<BookmarkViewMode>("tile");
+	const [activeTagFilters, setActiveTagFilters] = useState<string[]>([]);
 	const [selectedBookmark, setSelectedBookmark] = useState<SavedBookmark | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -179,6 +227,24 @@ export function BookmarksBrowser() {
 		return "flex flex-col gap-3";
 	}, [viewMode]);
 
+	const tagFilterOptions = useMemo(() => buildTagFilterOptions(bookmarks), [bookmarks]);
+
+	const filteredBookmarks = useMemo(() => filterBookmarksByTags(bookmarks, activeTagFilters), [bookmarks, activeTagFilters]);
+
+	useEffect(() => {
+		const availableTagKeys = new Set(tagFilterOptions.map((option) => option.key));
+		setActiveTagFilters((current) => current.filter((tagKey) => availableTagKeys.has(tagKey)));
+	}, [tagFilterOptions]);
+
+	function toggleTagFilter(tagKey: string): void {
+		setActiveTagFilters((current) => {
+			if (current.includes(tagKey)) {
+				return current.filter((entry) => entry !== tagKey);
+			}
+			return [...current, tagKey];
+		});
+	}
+
 	async function updateSelectedBookmarkTags(): Promise<void> {
 		if (!selectedBookmark) {
 			return;
@@ -288,12 +354,12 @@ export function BookmarksBrowser() {
 		}
 	}
 
-	return (
-		<div className="flex flex-col gap-5">
-			<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-				<p className="text-sm text-peach/70">Open any card to read the full tweet in the side panel.</p>
-				<div className="inline-flex rounded-[18px] border border-white/15 bg-ink/60 p-1">
-					<button
+		return (
+			<div className="flex flex-col gap-5">
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+					<p className="text-sm text-peach/70">Open any card to read the full tweet in the side panel. Filter by one or more tags.</p>
+					<div className="inline-flex rounded-[18px] border border-white/15 bg-ink/60 p-1">
+						<button
 						id="bookmarks-view-tile"
 						type="button"
 						aria-pressed={viewMode === "tile"}
@@ -314,27 +380,75 @@ export function BookmarksBrowser() {
 						}`}
 					>
 						Row
-					</button>
+						</button>
+					</div>
 				</div>
-			</div>
+				{tagFilterOptions.length > 0 ? (
+					<div className="flex flex-wrap items-center gap-2">
+						<button
+							id="bookmarks-filter-all"
+							type="button"
+							aria-pressed={activeTagFilters.length === 0}
+							onClick={() => setActiveTagFilters([])}
+							className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider transition-colors ${
+								activeTagFilters.length === 0
+									? "border-coral bg-coral text-white"
+									: "border-white/20 text-peach/70 hover:border-coral/40 hover:text-white"
+							}`}
+						>
+							All tags
+						</button>
+						{tagFilterOptions.map((option) => {
+							const isActive = activeTagFilters.includes(option.key);
+							return (
+								<button
+									key={option.key}
+									type="button"
+									aria-pressed={isActive}
+									onClick={() => {
+										toggleTagFilter(option.key);
+									}}
+									className={`rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider transition-colors ${
+										isActive
+											? "border-coral bg-coral/20 text-coral"
+											: "border-white/20 text-peach/70 hover:border-coral/40 hover:text-white"
+									}`}
+								>
+									{option.label} ({option.count})
+								</button>
+							);
+						})}
+					</div>
+				) : null}
 
-			{isLoading ? (
-				<div className="rounded-4xl border border-white/10 bg-ink/60 p-6">
+				{isLoading ? (
+					<div className="rounded-4xl border border-white/10 bg-ink/60 p-6">
 					<p className="text-sm text-peach/70">Loading bookmarks...</p>
 				</div>
 			) : errorMessage ? (
 				<p role="alert" className="rounded-3xl border border-coral/40 bg-coral/10 px-4 py-3 text-sm text-peach">
 					{errorMessage}
 				</p>
-			) : bookmarks.length === 0 ? (
-				<div className="rounded-4xl border border-white/10 bg-ink/60 p-6">
-					<p className="text-sm text-peach/70">
-						No bookmarks yet. Analyze a tweet and save it with tags from the dashboard.
-					</p>
-				</div>
-			) : (
-				<div id="bookmarks-list" className={listContainerClass}>
-					{bookmarks.map((bookmark) => (
+				) : bookmarks.length === 0 ? (
+					<div className="rounded-4xl border border-white/10 bg-ink/60 p-6">
+						<p className="text-sm text-peach/70">
+							No bookmarks yet. Analyze a tweet and save it with tags from the dashboard.
+						</p>
+					</div>
+				) : filteredBookmarks.length === 0 ? (
+					<div className="rounded-4xl border border-white/10 bg-ink/60 p-6">
+						<p className="text-sm text-peach/70">No bookmarks match the selected tags.</p>
+						<button
+							type="button"
+							onClick={() => setActiveTagFilters([])}
+							className="mt-3 inline-flex rounded-[16px] border border-white/20 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-white/10"
+						>
+							Clear Filters
+						</button>
+					</div>
+				) : (
+					<div id="bookmarks-list" className={listContainerClass}>
+						{filteredBookmarks.map((bookmark) => (
 						<button
 							key={bookmark.id}
 							type="button"
