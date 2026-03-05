@@ -4,7 +4,7 @@ import type {
 	AnalyzeTweetResult,
 	SavedBookmark,
 } from "@pi-starter/contracts";
-import type { TweetMedia } from "@pi-starter/x-client";
+import type { TweetMedia, TweetPublicMetrics } from "@pi-starter/x-client";
 import Link from "next/link";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
@@ -18,6 +18,7 @@ export interface TweetPreview {
 	authorName?: string;
 	authorAvatarUrl?: string;
 	media?: TweetMedia[];
+	publicMetrics?: TweetPublicMetrics;
 }
 
 interface AnalyzeResponseSuccess {
@@ -188,12 +189,45 @@ function renderLeadTweetMedia(tweet: TweetPreview): React.ReactNode {
 	);
 }
 
+function formatInteractionCount(value: number): string {
+	return new Intl.NumberFormat(undefined, {
+		notation: "compact",
+		maximumFractionDigits: 1,
+	}).format(value);
+}
+
 export interface TweetPreviewCardProps {
 	tweet: TweetPreview;
 	analysis: AnalyzeTweetResult;
+	selectedConceptTagKeys?: ReadonlySet<string>;
+	onToggleConceptTag?: (tag: string) => void;
 }
 
-export function TweetPreviewCard({ tweet, analysis }: Readonly<TweetPreviewCardProps>) {
+export function TweetPreviewCard({
+	tweet,
+	analysis,
+	selectedConceptTagKeys,
+	onToggleConceptTag,
+}: Readonly<TweetPreviewCardProps>) {
+	const interactionItems = [
+		{
+			label: "Replies",
+			value: tweet.publicMetrics?.replyCount,
+		},
+		{
+			label: "Reposts",
+			value: tweet.publicMetrics?.repostCount,
+		},
+		{
+			label: "Likes",
+			value: tweet.publicMetrics?.likeCount,
+		},
+		{
+			label: "Quotes",
+			value: tweet.publicMetrics?.quoteCount,
+		},
+	].filter((item): item is { label: string; value: number } => typeof item.value === "number");
+
 	return (
 		<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 			<section className="rounded-4xl border border-white/10 bg-ink/70 p-5">
@@ -216,6 +250,15 @@ export function TweetPreviewCard({ tweet, analysis }: Readonly<TweetPreviewCardP
 				</div>
 				<p className="whitespace-pre-wrap text-sm leading-relaxed text-white/90">{tweet.text}</p>
 				{renderLeadTweetMedia(tweet)}
+				{interactionItems.length > 0 ? (
+					<div id="tweet-interaction-metrics" className="mt-4 flex flex-wrap gap-2">
+						{interactionItems.map((item) => (
+							<span key={item.label} className="rounded-full border border-white/15 bg-charcoal/50 px-3 py-1 text-xs text-peach/80">
+								<span className="font-semibold text-white">{formatInteractionCount(item.value)}</span> {item.label}
+							</span>
+						))}
+					</div>
+				) : null}
 				<p className="mt-4 text-xs uppercase tracking-widest text-peach/50">Tweet ID: {tweet.id}</p>
 			</section>
 			<section className="rounded-4xl border border-coral/30 bg-coral/10 p-5">
@@ -225,13 +268,37 @@ export function TweetPreviewCard({ tweet, analysis }: Readonly<TweetPreviewCardP
 				<p className="mt-4 text-sm text-peach/70">
 					<span className="font-semibold text-white">Intent:</span> {analysis.intent}
 				</p>
-				<ul className="mt-4 space-y-2">
-					{analysis.novelConcepts.map((concept) => (
-						<li key={concept.name} className="rounded-3xl border border-white/10 bg-ink/40 px-3 py-2 text-xs leading-relaxed text-peach/90">
-							<span className="font-semibold text-white">{concept.name}:</span> {concept.whyItMattersInTweet}
-						</li>
-					))}
-				</ul>
+				<div id="analysis-concept-tags" className="mt-4 flex flex-wrap gap-2">
+					{analysis.novelConcepts.map((concept, index) => {
+						const normalizedTag = concept.name.trim().toLowerCase();
+						const isSelected = selectedConceptTagKeys?.has(normalizedTag) ?? false;
+						const className = isSelected
+							? "rounded-full border border-coral bg-coral/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-coral"
+							: "rounded-full border border-white/15 bg-ink/40 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white";
+
+						if (!onToggleConceptTag) {
+							return (
+								<span key={`${concept.name}-${index}`} className={className}>
+									{concept.name}
+								</span>
+							);
+						}
+
+						return (
+							<button
+								key={`${concept.name}-${index}`}
+								type="button"
+								aria-pressed={isSelected}
+								onClick={() => {
+									onToggleConceptTag(concept.name);
+								}}
+								className={`${className} transition-colors hover:border-coral/60 hover:text-coral`}
+							>
+								{concept.name}
+							</button>
+						);
+					})}
+				</div>
 			</section>
 		</div>
 	);
@@ -258,6 +325,27 @@ export function HeroTweetAnalyzer({
 		() => Boolean(tweet && analysis) && !isSavingBookmark,
 		[analysis, isSavingBookmark, tweet],
 	);
+	const selectedBookmarkTagKeys = useMemo(
+		() => new Set(parseBookmarkTags(bookmarkTagsInput).map((tag) => tag.toLowerCase())),
+		[bookmarkTagsInput],
+	);
+
+	function toggleConceptTag(tag: string): void {
+		setBookmarkTagsInput((current) => {
+			const existingTags = parseBookmarkTags(current);
+			const trimmedTag = tag.trim();
+			const normalizedTag = trimmedTag.toLowerCase();
+			if (normalizedTag.length === 0) {
+				return existingTags.join(", ");
+			}
+			const hasTag = existingTags.some((entry) => entry.toLowerCase() === normalizedTag);
+			const nextTags = hasTag
+				? existingTags.filter((entry) => entry.toLowerCase() !== normalizedTag)
+				: [...existingTags, trimmedTag];
+			return nextTags.join(", ");
+		});
+		setBookmarkSuccessMessage(null);
+	}
 
 	async function runAnalysis(value: string, options: { allowAuthPopup?: boolean } = {}): Promise<void> {
 		const allowAuthPopup = options.allowAuthPopup ?? true;
@@ -466,17 +554,22 @@ export function HeroTweetAnalyzer({
 				</p>
 			) : null}
 
-			{tweet && analysis ? (
-				<>
-					<TweetPreviewCard tweet={tweet} analysis={analysis} />
-					<section id="bookmark-save-controls" className="rounded-4xl border border-white/10 bg-ink/70 p-5">
-						<div className="flex flex-col gap-4">
-							<div>
-								<p className="text-xs font-semibold uppercase tracking-[0.2em] text-coral">Save Tweet</p>
-								<p className="mt-2 text-sm text-peach/70">
-									Add comma-separated tags, then save this analyzed tweet to your bookmarks.
-								</p>
-							</div>
+				{tweet && analysis ? (
+					<>
+						<TweetPreviewCard
+							tweet={tweet}
+							analysis={analysis}
+							selectedConceptTagKeys={selectedBookmarkTagKeys}
+							onToggleConceptTag={toggleConceptTag}
+						/>
+						<section id="bookmark-save-controls" className="rounded-4xl border border-white/10 bg-ink/70 p-5">
+							<div className="flex flex-col gap-4">
+								<div>
+									<p className="text-xs font-semibold uppercase tracking-[0.2em] text-coral">Save Tweet</p>
+									<p className="mt-2 text-sm text-peach/70">
+										Click analysis tags or add comma-separated tags, then save this analyzed tweet to your bookmarks.
+									</p>
+								</div>
 							<div className="flex flex-col gap-3 sm:flex-row">
 								<label htmlFor="bookmark-tags" className="sr-only">
 									Bookmark tags

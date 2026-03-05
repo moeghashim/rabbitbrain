@@ -28,6 +28,12 @@ test("POST /api/analyze returns tweet.media in response contract", async () => {
 				previewImageUrl: "https://pbs.twimg.com/ext_tw_video_thumb/example.jpg",
 			},
 		],
+		publicMetrics: {
+			replyCount: 12,
+			repostCount: 33,
+			likeCount: 240,
+			quoteCount: 4,
+		},
 		raw: {},
 	};
 
@@ -92,5 +98,6 @@ test("POST /api/analyze returns tweet.media in response contract", async () => {
 	};
 	assert.equal(payload.tweet.id, tweet.id);
 	assert.deepEqual(payload.tweet.media, tweet.media);
+	assert.deepEqual(payload.tweet.publicMetrics, tweet.publicMetrics);
 	assert.equal(payload.analysis.topic, saved.topic);
 });

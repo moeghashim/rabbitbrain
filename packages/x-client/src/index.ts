@@ -1,3 +1,8 @@
+import { toPositiveNumber, toTweetMediaType } from "./tweet-media-utils.js";
+import { parseTweetPublicMetrics, type TweetPublicMetrics } from "./tweet-public-metrics.js";
+
+export type { TweetPublicMetrics } from "./tweet-public-metrics.js";
+
 export type XProviderErrorCode =
 	| "UNAUTHORIZED"
 	| "FORBIDDEN"
@@ -56,6 +61,7 @@ export interface TweetPayload {
 	authorName?: string;
 	authorAvatarUrl?: string;
 	media?: TweetMedia[];
+	publicMetrics?: TweetPublicMetrics;
 	raw: unknown;
 }
 export type XProviderWarningCode = "MEDIA_METADATA_MISSING" | "MEDIA_KEYS_UNRESOLVED";
@@ -167,24 +173,6 @@ function firstNonEmptyString(values: unknown[]): string | undefined {
 		if (text) {
 			return text;
 		}
-	}
-	return undefined;
-}
-
-function toPositiveNumber(value: unknown): number | undefined {
-	if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
-		return undefined;
-	}
-	return value;
-}
-
-function toTweetMediaType(value: unknown): TweetMediaType | undefined {
-	const candidate = toNonEmptyString(value);
-	if (!candidate) {
-		return undefined;
-	}
-	if (candidate === "photo" || candidate === "video" || candidate === "animated_gif") {
-		return candidate;
 	}
 	return undefined;
 }
@@ -497,6 +485,8 @@ function readTweetPayload(responseBody: unknown, reportWarning: XProviderWarning
 		reportWarning,
 	});
 
+	const publicMetrics = parseTweetPublicMetrics(data.public_metrics);
+
 	return {
 		id,
 		text,
@@ -505,6 +495,7 @@ function readTweetPayload(responseBody: unknown, reportWarning: XProviderWarning
 		authorName: typeof authorName === "string" && authorName.length > 0 ? authorName : undefined,
 		authorAvatarUrl: typeof authorAvatarUrl === "string" && authorAvatarUrl.length > 0 ? authorAvatarUrl : undefined,
 		media,
+		publicMetrics,
 		raw: responseBody,
 	};
 }
@@ -540,7 +531,7 @@ export class XApiV2Client implements TweetSourceProvider {
 		const tweetId = parseTweetId(input);
 		const url = new URL(`https://api.x.com/2/tweets/${tweetId}`);
 		url.searchParams.set("expansions", "author_id,attachments.media_keys");
-		url.searchParams.set("tweet.fields", "author_id,attachments");
+		url.searchParams.set("tweet.fields", "author_id,attachments,public_metrics");
 		url.searchParams.set("user.fields", "id,username,name,profile_image_url");
 		url.searchParams.set("media.fields", "type,url,preview_image_url,alt_text,width,height");
 

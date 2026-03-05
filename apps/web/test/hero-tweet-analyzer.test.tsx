@@ -71,6 +71,56 @@ test("TweetPreviewCard renders video preview as Open on X link", () => {
 	assert.match(html, /Video - Open on X/);
 });
 
+test("TweetPreviewCard renders tweet interaction metrics", () => {
+	const html = renderToStaticMarkup(
+		<TweetPreviewCard
+			tweet={{
+				id: "2028960626685386994",
+				text: "New experimental flag",
+				authorUsername: "ctatedev",
+				publicMetrics: {
+					replyCount: 12,
+					repostCount: 33,
+					likeCount: 240,
+					quoteCount: 4,
+				},
+			}}
+			analysis={analysisFixture}
+		/>,
+	);
+
+	assert.match(html, /id="tweet-interaction-metrics"/);
+	assert.match(html, /Replies/);
+	assert.match(html, /Reposts/);
+	assert.match(html, /Likes/);
+	assert.match(html, /Quotes/);
+});
+
+test("TweetPreviewCard renders concept names as tags without explanation text", () => {
+	const html = renderToStaticMarkup(
+		<TweetPreviewCard
+			tweet={{
+				id: "2028960626685386994",
+				text: "New experimental flag",
+				authorUsername: "ctatedev",
+			}}
+			analysis={{
+				...analysisFixture,
+				novelConcepts: [
+					{
+						name: "Coding",
+						whyItMattersInTweet: "This term appears central to the tweet narrative: coding.",
+					},
+				],
+			}}
+		/>,
+	);
+
+	assert.match(html, /id="analysis-concept-tags"/);
+	assert.match(html, />Coding</);
+	assert.doesNotMatch(html, /This term appears central to the tweet narrative/);
+});
+
 test("selectLeadTweetMedia returns only the first media item", () => {
 	const leadMedia = selectLeadTweetMedia({
 		id: "1",

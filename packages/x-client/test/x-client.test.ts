@@ -46,6 +46,14 @@ test("XApiV2Client returns tweet payload on success", async () => {
 					attachments: {
 						media_keys: ["3_photo_1"],
 					},
+					public_metrics: {
+						reply_count: 12,
+						retweet_count: 33,
+						like_count: 240,
+						quote_count: 4,
+						bookmark_count: 7,
+						impression_count: 1100,
+					},
 				},
 				includes: {
 					users: [
@@ -101,10 +109,18 @@ test("XApiV2Client returns tweet payload on success", async () => {
 			height: 675,
 		},
 	]);
+	assert.deepEqual(tweet.publicMetrics, {
+		replyCount: 12,
+		repostCount: 33,
+		likeCount: 240,
+		quoteCount: 4,
+		bookmarkCount: 7,
+		impressionCount: 1100,
+	});
 
 	const requestUrl = new URL(calledUrl);
 	assert.equal(requestUrl.searchParams.get("expansions"), "author_id,attachments.media_keys");
-	assert.equal(requestUrl.searchParams.get("tweet.fields"), "author_id,attachments");
+	assert.equal(requestUrl.searchParams.get("tweet.fields"), "author_id,attachments,public_metrics");
 	assert.equal(requestUrl.searchParams.get("media.fields"), "type,url,preview_image_url,alt_text,width,height");
 });
 

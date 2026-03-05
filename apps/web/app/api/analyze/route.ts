@@ -89,17 +89,18 @@ export async function handleAnalyzePost(
 			tweet,
 		});
 
-		return NextResponse.json({
-			tweet: {
-				id: tweet.id,
-				text: tweet.text,
-				authorId: tweet.authorId,
-				authorUsername: tweet.authorUsername,
-				authorName: tweet.authorName,
-				authorAvatarUrl: tweet.authorAvatarUrl,
-				media: tweet.media,
-			},
-			analysis: {
+			return NextResponse.json({
+				tweet: {
+					id: tweet.id,
+					text: tweet.text,
+					authorId: tweet.authorId,
+					authorUsername: tweet.authorUsername,
+					authorName: tweet.authorName,
+					authorAvatarUrl: tweet.authorAvatarUrl,
+					media: tweet.media,
+					publicMetrics: tweet.publicMetrics,
+				},
+				analysis: {
 				topic: persisted.topic,
 				summary: persisted.summary,
 				intent: persisted.intent,
