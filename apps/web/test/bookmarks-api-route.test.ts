@@ -1,12 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import type {
+	DeleteBookmarkResult,
 	SaveBookmarkInput,
 	SavedBookmark,
+	UpdateBookmarkTagsInput,
 } from "@pi-starter/contracts";
 
 import {
+	handleBookmarksDelete,
 	handleBookmarksGet,
+	handleBookmarksPatch,
 	handleBookmarksPost,
 } from "../app/api/bookmarks/route.js";
 
@@ -32,6 +36,32 @@ function createSavedBookmark(input: SaveBookmarkInput, updatedAt: number): Saved
 	};
 }
 
+function createDependencies({
+	session = { user: { id: "user_1", email: "user@example.com", name: "User" } },
+	saveBookmarkForSession = async ({ input }: { input: SaveBookmarkInput }) => createSavedBookmark(input, 200),
+	listBookmarksForSession = async () => [] as SavedBookmark[],
+	updateBookmarkTagsForSession = async ({
+		input,
+	}: {
+		input: UpdateBookmarkTagsInput;
+	}) =>
+		createSavedBookmark(createInput(input.tags), 300),
+	deleteBookmarkForSession = async () =>
+		({
+			bookmarkId: "bookmark_1",
+		}) as DeleteBookmarkResult,
+} = {}) {
+	return {
+		validateStartupEnvIfNeeded: () => {},
+		getServerAuthSession: async () => session,
+		saveBookmarkForSession,
+		listBookmarksForSession,
+		updateBookmarkTagsForSession,
+		deleteBookmarkForSession,
+		reportServerError: () => {},
+	};
+}
+
 test("POST /api/bookmarks saves bookmark for authenticated user", async () => {
 	const input = createInput(["infra", "ux"]);
 	const response = await handleBookmarksPost(
@@ -42,13 +72,9 @@ test("POST /api/bookmarks saves bookmark for authenticated user", async () => {
 			},
 			body: JSON.stringify(input),
 		}),
-		{
-			validateStartupEnvIfNeeded: () => {},
-			getServerAuthSession: async () => ({ user: { id: "user_1", email: "user@example.com", name: "User" } }),
+		createDependencies({
 			saveBookmarkForSession: async () => createSavedBookmark(input, 200),
-			listBookmarksForSession: async () => [],
-			reportServerError: () => {},
-		},
+		}),
 	);
 
 	assert.equal(response.status, 200);
@@ -80,6 +106,27 @@ test("POST /api/bookmarks re-save updates existing bookmark without duplicates",
 			return created;
 		},
 		listBookmarksForSession: async () => Array.from(store.values()),
+		updateBookmarkTagsForSession: async ({ input }: { input: UpdateBookmarkTagsInput }) => {
+			const existing = Array.from(store.values()).find((item) => item.id === input.bookmarkId);
+			if (!existing) {
+				throw new Error("Bookmark not found");
+			}
+			const updated = {
+				...existing,
+				tags: input.tags,
+				updatedAt: existing.updatedAt + 50,
+			};
+			store.set(updated.tweetId, updated);
+			return updated;
+		},
+		deleteBookmarkForSession: async ({ bookmarkId }: { bookmarkId: string }) => {
+			const existing = Array.from(store.values()).find((item) => item.id === bookmarkId);
+			if (!existing) {
+				throw new Error("Bookmark not found");
+			}
+			store.delete(existing.tweetId);
+			return { bookmarkId };
+		},
 		reportServerError: () => {},
 	};
 
@@ -113,13 +160,12 @@ test("POST /api/bookmarks re-save updates existing bookmark without duplicates",
 
 test("GET /api/bookmarks returns current user bookmarks", async () => {
 	const saved = createSavedBookmark(createInput(["api"]), 300);
-	const response = await handleBookmarksGet({
-		validateStartupEnvIfNeeded: () => {},
-		getServerAuthSession: async () => ({ user: { id: "user_1", email: "user@example.com", name: "User" } }),
-		saveBookmarkForSession: async () => saved,
-		listBookmarksForSession: async () => [saved],
-		reportServerError: () => {},
-	});
+	const response = await handleBookmarksGet(
+		createDependencies({
+			saveBookmarkForSession: async () => saved,
+			listBookmarksForSession: async () => [saved],
+		}),
+	);
 
 	assert.equal(response.status, 200);
 	const payload = (await response.json()) as { bookmarks: SavedBookmark[] };
@@ -137,13 +183,10 @@ test("POST /api/bookmarks returns 401 when unauthenticated", async () => {
 			},
 			body: JSON.stringify(input),
 		}),
-		{
-			validateStartupEnvIfNeeded: () => {},
-			getServerAuthSession: async () => null,
+		createDependencies({
+			session: null,
 			saveBookmarkForSession: async () => createSavedBookmark(input, 200),
-			listBookmarksForSession: async () => [],
-			reportServerError: () => {},
-		},
+		}),
 	);
 
 	assert.equal(response.status, 401);
@@ -164,14 +207,75 @@ test("POST /api/bookmarks returns 400 when tags are invalid", async () => {
 				tags: [],
 			}),
 		}),
-		{
-			validateStartupEnvIfNeeded: () => {},
-			getServerAuthSession: async () => ({ user: { id: "user_1", email: "user@example.com", name: "User" } }),
+		createDependencies({
 			saveBookmarkForSession: async () => createSavedBookmark(createInput(["fallback"]), 200),
-			listBookmarksForSession: async () => [],
-			reportServerError: () => {},
-		},
+		}),
 	);
 
 	assert.equal(response.status, 400);
+});
+
+test("PATCH /api/bookmarks updates bookmark tags", async () => {
+	const saved = createSavedBookmark(createInput(["old"]), 200);
+	const response = await handleBookmarksPatch(
+		new Request("http://localhost/api/bookmarks", {
+			method: "PATCH",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				bookmarkId: saved.id,
+				tags: ["new", "updated"],
+			}),
+		}),
+		createDependencies({
+			updateBookmarkTagsForSession: async ({ input }) => ({
+				...saved,
+				id: input.bookmarkId,
+				tags: input.tags,
+				updatedAt: 400,
+			}),
+		}),
+	);
+
+	assert.equal(response.status, 200);
+	const payload = (await response.json()) as SavedBookmark;
+	assert.deepEqual(payload.tags, ["new", "updated"]);
+});
+
+test("PATCH /api/bookmarks returns 404 when bookmark is missing", async () => {
+	const response = await handleBookmarksPatch(
+		new Request("http://localhost/api/bookmarks", {
+			method: "PATCH",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				bookmarkId: "missing",
+				tags: ["one"],
+			}),
+		}),
+		createDependencies({
+			updateBookmarkTagsForSession: async () => {
+				throw new Error("Bookmark not found");
+			},
+		}),
+	);
+
+	assert.equal(response.status, 404);
+});
+
+test("DELETE /api/bookmarks deletes bookmark", async () => {
+	const response = await handleBookmarksDelete(
+		new Request("http://localhost/api/bookmarks", {
+			method: "DELETE",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				bookmarkId: "bookmark_1",
+			}),
+		}),
+		createDependencies({
+			deleteBookmarkForSession: async ({ bookmarkId }: { bookmarkId: string }) => ({ bookmarkId }),
+		}),
+	);
+
+	assert.equal(response.status, 200);
+	const payload = (await response.json()) as DeleteBookmarkResult;
+	assert.equal(payload.bookmarkId, "bookmark_1");
 });

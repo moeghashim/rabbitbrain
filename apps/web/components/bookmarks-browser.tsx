@@ -16,6 +16,10 @@ interface BookmarksResponseError {
 	};
 }
 
+interface DeleteBookmarkResponseSuccess {
+	bookmarkId: string;
+}
+
 function formatBookmarkDate(timestamp: number): string {
 	return new Date(timestamp).toLocaleString();
 }
@@ -41,12 +45,37 @@ function bookmarkAvatarLabel(bookmark: SavedBookmark): string {
 	return firstChar.length > 0 ? firstChar.toUpperCase() : "X";
 }
 
+function parseBookmarkTags(input: string): string[] {
+	const tags = input
+		.split(",")
+		.map((tag) => tag.trim())
+		.filter((tag) => tag.length > 0);
+	const seen = new Set<string>();
+	const deduped: string[] = [];
+
+	for (const tag of tags) {
+		const key = tag.toLowerCase();
+		if (seen.has(key)) {
+			continue;
+		}
+		seen.add(key);
+		deduped.push(tag);
+	}
+
+	return deduped;
+}
+
 export function BookmarksBrowser() {
 	const [bookmarks, setBookmarks] = useState<SavedBookmark[]>([]);
 	const [viewMode, setViewMode] = useState<BookmarkViewMode>("tile");
 	const [selectedBookmark, setSelectedBookmark] = useState<SavedBookmark | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
+	const [panelTagsInput, setPanelTagsInput] = useState("");
+	const [panelErrorMessage, setPanelErrorMessage] = useState<string | null>(null);
+	const [panelSuccessMessage, setPanelSuccessMessage] = useState<string | null>(null);
+	const [isUpdatingTags, setIsUpdatingTags] = useState(false);
+	const [isDeletingBookmark, setIsDeletingBookmark] = useState(false);
 
 	useEffect(() => {
 		let isCancelled = false;
@@ -106,10 +135,26 @@ export function BookmarksBrowser() {
 		}
 
 		const activeBookmark = bookmarks.find((bookmark) => bookmark.id === selectedBookmark.id);
+		if (activeBookmark) {
+			setSelectedBookmark(activeBookmark);
+			return;
+		}
 		if (!activeBookmark) {
 			setSelectedBookmark(null);
 		}
 	}, [bookmarks, selectedBookmark]);
+
+	useEffect(() => {
+		if (!selectedBookmark) {
+			setPanelTagsInput("");
+			setPanelErrorMessage(null);
+			setPanelSuccessMessage(null);
+			return;
+		}
+		setPanelTagsInput(selectedBookmark.tags.join(", "));
+		setPanelErrorMessage(null);
+		setPanelSuccessMessage(null);
+	}, [selectedBookmark]);
 
 	useEffect(() => {
 		if (!selectedBookmark) {
@@ -133,6 +178,115 @@ export function BookmarksBrowser() {
 		}
 		return "flex flex-col gap-3";
 	}, [viewMode]);
+
+	async function updateSelectedBookmarkTags(): Promise<void> {
+		if (!selectedBookmark) {
+			return;
+		}
+
+		const parsedTags = parseBookmarkTags(panelTagsInput);
+		if (parsedTags.length === 0) {
+			setPanelErrorMessage("Add at least one tag.");
+			setPanelSuccessMessage(null);
+			return;
+		}
+		if (parsedTags.length > 8) {
+			setPanelErrorMessage("Use up to 8 tags per tweet.");
+			setPanelSuccessMessage(null);
+			return;
+		}
+		if (parsedTags.some((tag) => tag.length > 24)) {
+			setPanelErrorMessage("Each tag must be 24 characters or fewer.");
+			setPanelSuccessMessage(null);
+			return;
+		}
+
+		setIsUpdatingTags(true);
+		setPanelErrorMessage(null);
+		setPanelSuccessMessage(null);
+		try {
+			const response = await fetch("/api/bookmarks", {
+				method: "PATCH",
+				headers: {
+					"content-type": "application/json",
+				},
+				body: JSON.stringify({
+					bookmarkId: selectedBookmark.id,
+					tags: parsedTags,
+				}),
+			});
+			const payload = (await response.json()) as SavedBookmark | BookmarksResponseError;
+			if (!response.ok) {
+				const fallbackMessage = "Unable to update tags right now.";
+				const message = "error" in payload && payload.error?.message ? payload.error.message : fallbackMessage;
+				setPanelErrorMessage(message);
+				return;
+			}
+
+			if (!("id" in payload)) {
+				setPanelErrorMessage("Unexpected response while updating tags.");
+				return;
+			}
+
+			setBookmarks((current) =>
+				current
+					.map((bookmark) => (bookmark.id === payload.id ? payload : bookmark))
+					.sort((left, right) => right.updatedAt - left.updatedAt),
+			);
+			setSelectedBookmark(payload);
+			setPanelTagsInput(payload.tags.join(", "));
+			setPanelSuccessMessage("Tags updated.");
+		} catch (error) {
+			setPanelErrorMessage(error instanceof Error ? error.message : "Unexpected network failure while updating tags.");
+		} finally {
+			setIsUpdatingTags(false);
+		}
+	}
+
+	async function deleteSelectedBookmark(): Promise<void> {
+		if (!selectedBookmark) {
+			return;
+		}
+		if (typeof window !== "undefined") {
+			const approved = window.confirm("Delete this bookmarked tweet?");
+			if (!approved) {
+				return;
+			}
+		}
+
+		setIsDeletingBookmark(true);
+		setPanelErrorMessage(null);
+		setPanelSuccessMessage(null);
+		try {
+			const response = await fetch("/api/bookmarks", {
+				method: "DELETE",
+				headers: {
+					"content-type": "application/json",
+				},
+				body: JSON.stringify({
+					bookmarkId: selectedBookmark.id,
+				}),
+			});
+			const payload = (await response.json()) as DeleteBookmarkResponseSuccess | BookmarksResponseError;
+			if (!response.ok) {
+				const fallbackMessage = "Unable to delete bookmark right now.";
+				const message = "error" in payload && payload.error?.message ? payload.error.message : fallbackMessage;
+				setPanelErrorMessage(message);
+				return;
+			}
+			if (!("bookmarkId" in payload)) {
+				setPanelErrorMessage("Unexpected response while deleting bookmark.");
+				return;
+			}
+
+			setBookmarks((current) => current.filter((bookmark) => bookmark.id !== payload.bookmarkId));
+			setSelectedBookmark(null);
+		} catch (error) {
+			setPanelErrorMessage(error instanceof Error ? error.message : "Unexpected network failure while deleting bookmark.");
+		} finally {
+			setIsDeletingBookmark(false);
+		}
+	}
 
 	return (
 		<div className="flex flex-col gap-5">
@@ -266,6 +420,54 @@ export function BookmarksBrowser() {
 									{tag}
 								</span>
 							))}
+						</div>
+						<div id="bookmark-tags-editor" className="mt-6 rounded-3xl border border-white/10 bg-ink/45 p-4">
+							<label htmlFor="bookmark-tags-edit-input" className="text-xs font-semibold uppercase tracking-[0.2em] text-coral">
+								Edit Tags
+							</label>
+							<input
+								id="bookmark-tags-edit-input"
+								type="text"
+								value={panelTagsInput}
+								onChange={(event) => {
+									setPanelTagsInput(event.target.value);
+									setPanelSuccessMessage(null);
+								}}
+								placeholder="strategy, growth, writing"
+								className="mt-3 w-full rounded-[16px] border border-white/20 bg-charcoal/70 px-4 py-3 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none"
+							/>
+							<div className="mt-3 flex flex-col gap-2 sm:flex-row">
+								<button
+									id="bookmark-update-tags-button"
+									type="button"
+									onClick={() => {
+										void updateSelectedBookmarkTags();
+									}}
+									disabled={isUpdatingTags || isDeletingBookmark}
+									className="inline-flex items-center justify-center rounded-[16px] bg-coral px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-coral-hover disabled:cursor-not-allowed disabled:opacity-60"
+								>
+									{isUpdatingTags ? "Saving..." : "Save Tags"}
+								</button>
+								<button
+									id="bookmark-delete-button"
+									type="button"
+									onClick={() => {
+										void deleteSelectedBookmark();
+									}}
+									disabled={isDeletingBookmark || isUpdatingTags}
+									className="inline-flex items-center justify-center rounded-[16px] border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+								>
+									{isDeletingBookmark ? "Deleting..." : "Delete Tweet"}
+								</button>
+							</div>
+							{panelErrorMessage ? (
+								<p role="alert" className="mt-3 rounded-2xl border border-coral/35 bg-coral/10 px-3 py-2 text-xs text-peach">
+									{panelErrorMessage}
+								</p>
+							) : null}
+							{panelSuccessMessage ? (
+								<p className="mt-3 text-xs text-peach/80">{panelSuccessMessage}</p>
+							) : null}
 						</div>
 						<a
 							href={buildBookmarkCanonicalUrl(selectedBookmark)}

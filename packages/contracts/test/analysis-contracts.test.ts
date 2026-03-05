@@ -6,12 +6,18 @@ import {
 	AnalyzeTweetInputSchema,
 	type AnalyzeTweetResult,
 	AnalyzeTweetResultSchema,
+	type DeleteBookmarkInput,
+	DeleteBookmarkInputSchema,
+	type DeleteBookmarkResult,
+	DeleteBookmarkResultSchema,
 	type SaveBookmarkInput,
 	SaveBookmarkInputSchema,
 	type SavedAnalysis,
 	SavedAnalysisSchema,
 	type SavedBookmark,
 	SavedBookmarkSchema,
+	type UpdateBookmarkTagsInput,
+	UpdateBookmarkTagsInputSchema,
 } from "../src/index.js";
 
 function sampleAnalysisResult(): AnalyzeTweetResult {
@@ -113,4 +119,27 @@ test("SavedBookmarkSchema validates persisted bookmark shape", () => {
 	const parsed = SavedBookmarkSchema.parse(payload);
 	assert.equal(parsed.id, "bookmark_1");
 	assert.equal(parsed.tags[0], "infra");
+});
+
+test("UpdateBookmarkTagsInputSchema validates bookmark tag updates", () => {
+	const payload: UpdateBookmarkTagsInput = {
+		bookmarkId: "bookmark_1",
+		tags: ["strategy", "distribution"],
+	};
+
+	const parsed = UpdateBookmarkTagsInputSchema.parse(payload);
+	assert.equal(parsed.bookmarkId, "bookmark_1");
+	assert.equal(parsed.tags.length, 2);
+});
+
+test("DeleteBookmarkInputSchema and DeleteBookmarkResultSchema validate bookmark deletion payloads", () => {
+	const input: DeleteBookmarkInput = {
+		bookmarkId: "bookmark_1",
+	};
+	const result: DeleteBookmarkResult = {
+		bookmarkId: "bookmark_1",
+	};
+
+	assert.equal(DeleteBookmarkInputSchema.parse(input).bookmarkId, "bookmark_1");
+	assert.equal(DeleteBookmarkResultSchema.parse(result).bookmarkId, "bookmark_1");
 });

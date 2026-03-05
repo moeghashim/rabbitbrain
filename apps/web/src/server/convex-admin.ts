@@ -1,10 +1,13 @@
 import {
 	type AnalyzeTweetInput,
+	DeleteBookmarkResultSchema,
+	type DeleteBookmarkResult,
 	type SaveBookmarkInput,
 	SavedAnalysisSchema,
 	type SavedAnalysis,
 	SavedBookmarkSchema,
 	type SavedBookmark,
+	type UpdateBookmarkTagsInput,
 } from "@pi-starter/contracts";
 import type { TweetPayload } from "@pi-starter/x-client";
 import { ConvexHttpClient } from "convex/browser";
@@ -58,6 +61,10 @@ const createFromTweetPayloadRef = makeFunctionReference<
 >("analysis:createFromTweetPayload");
 
 const saveBookmarkRef = makeFunctionReference<"mutation", SaveBookmarkInput, SavedBookmark>("bookmarks:save");
+const updateBookmarkTagsRef = makeFunctionReference<"mutation", UpdateBookmarkTagsInput, SavedBookmark>(
+	"bookmarks:updateTags",
+);
+const deleteBookmarkRef = makeFunctionReference<"mutation", { bookmarkId: string }, DeleteBookmarkResult>("bookmarks:remove");
 
 const listBookmarksByUserRef = makeFunctionReference<"query", Record<string, never>, SavedBookmark[]>(
 	"bookmarks:listByUser",
@@ -194,4 +201,68 @@ export async function listBookmarksForSession({
 
 	const bookmarks = await client.query(listBookmarksByUserRef, {});
 	return bookmarks.map((bookmark) => SavedBookmarkSchema.parse(bookmark));
+}
+
+export async function updateBookmarkTagsForSession({
+	sessionUser,
+	input,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	input: UpdateBookmarkTagsInput;
+	env?: ConvexEnv;
+}): Promise<SavedBookmark> {
+	const userId = sessionUser.id.trim();
+	if (!userId) {
+		throw new Error("Unauthorized");
+	}
+
+	const client = createAdminClient({
+		user: {
+			...sessionUser,
+			id: userId,
+		},
+		env,
+	});
+
+	await client.mutation(upsertCurrentUserRef, {
+		email: sessionUser.email ?? undefined,
+		name: sessionUser.name ?? undefined,
+	});
+
+	const updated = await client.mutation(updateBookmarkTagsRef, input);
+	return SavedBookmarkSchema.parse(updated);
+}
+
+export async function deleteBookmarkForSession({
+	sessionUser,
+	bookmarkId,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	bookmarkId: string;
+	env?: ConvexEnv;
+}): Promise<DeleteBookmarkResult> {
+	const userId = sessionUser.id.trim();
+	if (!userId) {
+		throw new Error("Unauthorized");
+	}
+
+	const client = createAdminClient({
+		user: {
+			...sessionUser,
+			id: userId,
+		},
+		env,
+	});
+
+	await client.mutation(upsertCurrentUserRef, {
+		email: sessionUser.email ?? undefined,
+		name: sessionUser.name ?? undefined,
+	});
+
+	const deleted = await client.mutation(deleteBookmarkRef, {
+		bookmarkId,
+	});
+	return DeleteBookmarkResultSchema.parse(deleted);
 }

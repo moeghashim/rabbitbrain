@@ -45,6 +45,27 @@ export const SavedAnalysisSchema = AnalyzeTweetResultSchema.extend({
 
 export const BookmarkTagSchema = z.string().min(1).max(24);
 
+const BookmarkTagsSchema = z
+	.array(BookmarkTagSchema)
+	.min(1)
+	.max(8)
+	.refine(
+		(tags) => {
+			const normalized = new Set<string>();
+			for (const tag of tags) {
+				const key = tag.toLowerCase();
+				if (normalized.has(key)) {
+					return false;
+				}
+				normalized.add(key);
+			}
+			return true;
+		},
+		{
+			message: "tags must be unique (case-insensitive)",
+		},
+	);
+
 export const BookmarkedTweetSchema = z.object({
 	tweetId: z.string().min(1),
 	tweetText: z.string().min(1),
@@ -55,26 +76,20 @@ export const BookmarkedTweetSchema = z.object({
 });
 
 export const SaveBookmarkInputSchema = BookmarkedTweetSchema.extend({
-	tags: z
-		.array(BookmarkTagSchema)
-		.min(1)
-		.max(8)
-		.refine(
-			(tags) => {
-				const normalized = new Set<string>();
-				for (const tag of tags) {
-					const key = tag.toLowerCase();
-					if (normalized.has(key)) {
-						return false;
-					}
-					normalized.add(key);
-				}
-				return true;
-			},
-			{
-				message: "tags must be unique (case-insensitive)",
-			},
-		),
+	tags: BookmarkTagsSchema,
+});
+
+export const UpdateBookmarkTagsInputSchema = z.object({
+	bookmarkId: z.string().min(1),
+	tags: BookmarkTagsSchema,
+});
+
+export const DeleteBookmarkInputSchema = z.object({
+	bookmarkId: z.string().min(1),
+});
+
+export const DeleteBookmarkResultSchema = z.object({
+	bookmarkId: z.string().min(1),
 });
 
 export const SavedBookmarkSchema = SaveBookmarkInputSchema.extend({
@@ -89,6 +104,9 @@ export type AnalyzeTweetResult = z.infer<typeof AnalyzeTweetResultSchema>;
 export type SavedAnalysis = z.infer<typeof SavedAnalysisSchema>;
 export type SaveBookmarkInput = z.infer<typeof SaveBookmarkInputSchema>;
 export type SavedBookmark = z.infer<typeof SavedBookmarkSchema>;
+export type UpdateBookmarkTagsInput = z.infer<typeof UpdateBookmarkTagsInputSchema>;
+export type DeleteBookmarkInput = z.infer<typeof DeleteBookmarkInputSchema>;
+export type DeleteBookmarkResult = z.infer<typeof DeleteBookmarkResultSchema>;
 
 export const LearningTrackTaskSetSchema = z.object({
 	learn: z.string().min(1),

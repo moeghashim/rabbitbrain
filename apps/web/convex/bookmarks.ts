@@ -1,6 +1,9 @@
 import {
+	DeleteBookmarkInputSchema,
+	DeleteBookmarkResultSchema,
 	SaveBookmarkInputSchema,
 	SavedBookmarkSchema,
+	UpdateBookmarkTagsInputSchema,
 } from "@pi-starter/contracts";
 import {
 	mutationGeneric,
@@ -9,6 +12,36 @@ import {
 import { v } from "convex/values";
 
 import { requireUserBySession } from "./auth_helpers.js";
+
+function toSavedBookmark(
+	record: {
+		_id: string;
+		userId: string;
+		tweetId: string;
+		tweetText: string;
+		tweetUrlOrId: string;
+		authorUsername: string;
+		authorName?: string;
+		authorAvatarUrl?: string;
+		tags: string[];
+		createdAt: number;
+		updatedAt: number;
+	},
+) {
+	return SavedBookmarkSchema.parse({
+		id: record._id,
+		userId: record.userId,
+		tweetId: record.tweetId,
+		tweetText: record.tweetText,
+		tweetUrlOrId: record.tweetUrlOrId,
+		authorUsername: record.authorUsername,
+		authorName: record.authorName,
+		authorAvatarUrl: record.authorAvatarUrl,
+		tags: record.tags,
+		createdAt: record.createdAt,
+		updatedAt: record.updatedAt,
+	});
+}
 
 export const save = mutationGeneric({
 	args: {
@@ -79,6 +112,70 @@ export const save = mutationGeneric({
 	},
 });
 
+export const updateTags = mutationGeneric({
+	args: {
+		bookmarkId: v.string(),
+		tags: v.array(v.string()),
+	},
+	handler: async (ctx, args) => {
+		const user = await requireUserBySession(ctx);
+		const validated = UpdateBookmarkTagsInputSchema.parse(args);
+		const bookmarkId = ctx.db.normalizeId("bookmarks", validated.bookmarkId);
+		if (!bookmarkId) {
+			throw new Error("Bookmark not found");
+		}
+
+		const existing = await ctx.db.get(bookmarkId);
+		if (!existing || String(existing.userId) !== String(user._id)) {
+			throw new Error("Bookmark not found");
+		}
+
+		const now = Date.now();
+		await ctx.db.patch(bookmarkId, {
+			tags: validated.tags,
+			updatedAt: now,
+		});
+
+		return toSavedBookmark({
+			_id: String(existing._id),
+			userId: String(existing.userId),
+			tweetId: existing.tweetId,
+			tweetText: existing.tweetText,
+			tweetUrlOrId: existing.tweetUrlOrId,
+			authorUsername: existing.authorUsername,
+			authorName: existing.authorName,
+			authorAvatarUrl: existing.authorAvatarUrl,
+			tags: validated.tags,
+			createdAt: existing.createdAt,
+			updatedAt: now,
+		});
+	},
+});
+
+export const remove = mutationGeneric({
+	args: {
+		bookmarkId: v.string(),
+	},
+	handler: async (ctx, args) => {
+		const user = await requireUserBySession(ctx);
+		const validated = DeleteBookmarkInputSchema.parse(args);
+		const bookmarkId = ctx.db.normalizeId("bookmarks", validated.bookmarkId);
+		if (!bookmarkId) {
+			throw new Error("Bookmark not found");
+		}
+
+		const existing = await ctx.db.get(bookmarkId);
+		if (!existing || String(existing.userId) !== String(user._id)) {
+			throw new Error("Bookmark not found");
+		}
+
+		await ctx.db.delete(bookmarkId);
+		return DeleteBookmarkResultSchema.parse({
+			bookmarkId: validated.bookmarkId,
+		});
+	},
+});
+
 export const listByUser = queryGeneric({
 	args: {},
 	handler: async (ctx) => {
@@ -91,8 +188,8 @@ export const listByUser = queryGeneric({
 		return records
 			.sort((left, right) => right.updatedAt - left.updatedAt)
 			.map((item) =>
-				SavedBookmarkSchema.parse({
-					id: String(item._id),
+				toSavedBookmark({
+					_id: String(item._id),
 					userId: String(item.userId),
 					tweetId: item.tweetId,
 					tweetText: item.tweetText,
