@@ -1,6 +1,7 @@
 "use client";
 
 import type { SavedBookmark } from "@pi-starter/contracts";
+import { buildBookmarkCanonicalUrl, buildBookmarksArchiveFileName, buildBookmarksMarkdownArchive } from "../src/bookmarks/export-markdown.js";
 import React, { useEffect, useMemo, useState } from "react";
 
 type BookmarkViewMode = "tile" | "row";
@@ -35,14 +36,6 @@ function truncateForPreview(text: string, maxLength = 170): string {
 		return text;
 	}
 	return `${text.slice(0, maxLength).trimEnd()}…`;
-}
-
-function buildBookmarkCanonicalUrl(bookmark: SavedBookmark): string {
-	const rawUrl = bookmark.tweetUrlOrId.trim();
-	if (rawUrl.startsWith("http://") || rawUrl.startsWith("https://")) {
-		return rawUrl;
-	}
-	return `https://x.com/${bookmark.authorUsername}/status/${bookmark.tweetId}`;
 }
 
 function bookmarkAvatarLabel(bookmark: SavedBookmark): string {
@@ -124,6 +117,8 @@ export function BookmarksBrowser() {
 	const [panelSuccessMessage, setPanelSuccessMessage] = useState<string | null>(null);
 	const [isUpdatingTags, setIsUpdatingTags] = useState(false);
 	const [isDeletingBookmark, setIsDeletingBookmark] = useState(false);
+	const [isExporting, setIsExporting] = useState(false);
+	const [exportMessage, setExportMessage] = useState<string | null>(null);
 
 	useEffect(() => {
 		let isCancelled = false;
@@ -245,6 +240,34 @@ export function BookmarksBrowser() {
 		});
 	}
 
+	async function exportVisibleBookmarks(): Promise<void> {
+		if (filteredBookmarks.length === 0 || typeof window === "undefined") {
+			return;
+		}
+
+		setIsExporting(true);
+		setExportMessage(null);
+		try {
+			const archive = buildBookmarksMarkdownArchive(filteredBookmarks);
+			const fileName = buildBookmarksArchiveFileName(activeTagFilters);
+			const blobBytes = Uint8Array.from(archive);
+			const blob = new Blob([blobBytes.buffer], { type: "application/zip" });
+			const downloadUrl = window.URL.createObjectURL(blob);
+			const link = document.createElement("a");
+			link.href = downloadUrl;
+			link.download = fileName;
+			document.body.append(link);
+			link.click();
+			link.remove();
+			window.URL.revokeObjectURL(downloadUrl);
+			setExportMessage(`Exported ${filteredBookmarks.length} bookmark${filteredBookmarks.length === 1 ? "" : "s"} as Markdown.`);
+		} catch (error) {
+			setExportMessage(error instanceof Error ? error.message : "Unexpected export failure.");
+		} finally {
+			setIsExporting(false);
+		}
+	}
+
 	async function updateSelectedBookmarkTags(): Promise<void> {
 		if (!selectedBookmark) {
 			return;
@@ -356,33 +379,47 @@ export function BookmarksBrowser() {
 
 		return (
 			<div className="flex flex-col gap-5">
-				<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+				<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 					<p className="text-sm text-peach/70">Open any card to read the full tweet in the side panel. Filter by one or more tags.</p>
-					<div className="inline-flex rounded-[18px] border border-white/15 bg-ink/60 p-1">
+					<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
 						<button
-						id="bookmarks-view-tile"
-						type="button"
-						aria-pressed={viewMode === "tile"}
-						onClick={() => setViewMode("tile")}
-						className={`rounded-[14px] px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
-							viewMode === "tile" ? "bg-coral text-white" : "text-peach/70 hover:text-white"
-						}`}
-					>
-						Tile
-					</button>
-					<button
-						id="bookmarks-view-row"
-						type="button"
-						aria-pressed={viewMode === "row"}
-						onClick={() => setViewMode("row")}
-						className={`rounded-[14px] px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
-							viewMode === "row" ? "bg-coral text-white" : "text-peach/70 hover:text-white"
-						}`}
-					>
-						Row
+							id="bookmarks-export-button"
+							type="button"
+							disabled={isLoading || filteredBookmarks.length === 0 || isExporting}
+							onClick={() => {
+								void exportVisibleBookmarks();
+							}}
+							className="inline-flex items-center justify-center rounded-[18px] border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+						>
+							{isExporting ? "Exporting..." : "Export Markdown"}
 						</button>
+						<div className="inline-flex rounded-[18px] border border-white/15 bg-ink/60 p-1">
+							<button
+								id="bookmarks-view-tile"
+								type="button"
+								aria-pressed={viewMode === "tile"}
+								onClick={() => setViewMode("tile")}
+								className={`rounded-[14px] px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
+									viewMode === "tile" ? "bg-coral text-white" : "text-peach/70 hover:text-white"
+								}`}
+							>
+								Tile
+							</button>
+							<button
+								id="bookmarks-view-row"
+								type="button"
+								aria-pressed={viewMode === "row"}
+								onClick={() => setViewMode("row")}
+								className={`rounded-[14px] px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors ${
+									viewMode === "row" ? "bg-coral text-white" : "text-peach/70 hover:text-white"
+								}`}
+							>
+								Row
+							</button>
+						</div>
 					</div>
 				</div>
+				{exportMessage ? <p className="text-xs text-peach/70">{exportMessage}</p> : null}
 				{tagFilterOptions.length > 0 ? (
 					<div className="flex flex-wrap items-center gap-2">
 						<button
