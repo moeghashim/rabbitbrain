@@ -3,23 +3,75 @@ import test from "node:test";
 
 import type { SavedBookmark } from "@pi-starter/contracts";
 
-import { filterBookmarksByTags } from "../components/bookmarks-browser.js";
+import { filterBookmarksBySearch, filterBookmarksByTags } from "../components/bookmarks-browser.js";
 
-function createBookmark(id: string, tags: string[]): SavedBookmark {
+function createBookmark(
+	id: string,
+	tags: string[],
+	overrides: Partial<Pick<SavedBookmark, "tweetText" | "authorUsername" | "authorName">> = {},
+): SavedBookmark {
 	return {
 		id,
 		userId: "user_1",
 		tweetId: `tweet_${id}`,
-		tweetText: `tweet text ${id}`,
+		tweetText: overrides.tweetText ?? `tweet text ${id}`,
 		tweetUrlOrId: `https://x.com/user/status/${id}`,
-		authorUsername: "user",
-		authorName: "User",
+		authorUsername: overrides.authorUsername ?? "user",
+		authorName: overrides.authorName ?? "User",
 		authorAvatarUrl: undefined,
 		tags,
 		createdAt: 100,
 		updatedAt: 100,
 	};
 }
+
+test("filterBookmarksBySearch returns all bookmarks when query is blank", () => {
+	const bookmarks = [createBookmark("1", ["Strategy"]), createBookmark("2", ["Growth"])];
+	assert.deepEqual(filterBookmarksBySearch(bookmarks, ""), bookmarks);
+	assert.deepEqual(filterBookmarksBySearch(bookmarks, "   "), bookmarks);
+});
+
+test("filterBookmarksBySearch matches tweet text case-insensitively", () => {
+	const bookmarks = [
+		createBookmark("1", ["Strategy"], { tweetText: "Building a Better Workflow" }),
+		createBookmark("2", ["Growth"], { tweetText: "Shipping notes" }),
+	];
+
+	const filtered = filterBookmarksBySearch(bookmarks, "workflow");
+	assert.deepEqual(
+		filtered.map((bookmark) => bookmark.id),
+		["1"],
+	);
+});
+
+test("filterBookmarksBySearch matches author name and username", () => {
+	const bookmarks = [
+		createBookmark("1", ["Strategy"], { authorUsername: "opslead", authorName: "Morgan Lee" }),
+		createBookmark("2", ["Growth"], { authorUsername: "growthgal", authorName: "Riley West" }),
+	];
+
+	assert.deepEqual(
+		filterBookmarksBySearch(bookmarks, "morgan").map((bookmark) => bookmark.id),
+		["1"],
+	);
+	assert.deepEqual(
+		filterBookmarksBySearch(bookmarks, "GROWTHGAL").map((bookmark) => bookmark.id),
+		["2"],
+	);
+});
+
+test("filterBookmarksBySearch matches tags", () => {
+	const bookmarks = [
+		createBookmark("1", ["Strategy", "Writing"]),
+		createBookmark("2", ["Growth"]),
+	];
+
+	const filtered = filterBookmarksBySearch(bookmarks, "writing");
+	assert.deepEqual(
+		filtered.map((bookmark) => bookmark.id),
+		["1"],
+	);
+});
 
 test("filterBookmarksByTags returns all bookmarks when no tags are selected", () => {
 	const bookmarks = [createBookmark("1", ["Strategy"]), createBookmark("2", ["Growth"])];
@@ -44,4 +96,18 @@ test("filterBookmarksByTags ignores empty selected values", () => {
 	const bookmarks = [createBookmark("1", ["Strategy"]), createBookmark("2", ["Growth"])];
 	const filtered = filterBookmarksByTags(bookmarks, ["", "  "]);
 	assert.deepEqual(filtered, bookmarks);
+});
+
+test("bookmark search and tag filters combine as an intersection", () => {
+	const bookmarks = [
+		createBookmark("1", ["Strategy"], { tweetText: "Workflow strategy" }),
+		createBookmark("2", ["Growth"], { tweetText: "Workflow experiments" }),
+		createBookmark("3", ["Strategy"], { tweetText: "Team rituals" }),
+	];
+
+	const filtered = filterBookmarksByTags(filterBookmarksBySearch(bookmarks, "workflow"), ["strategy"]);
+	assert.deepEqual(
+		filtered.map((bookmark) => bookmark.id),
+		["1"],
+	);
 });

@@ -28,6 +28,10 @@ interface BookmarkTagFilterOption {
 	count: number;
 }
 
+function normalizeBookmarkSearchQuery(query: string): string {
+	return query.trim().toLowerCase();
+}
+
 function formatBookmarkDate(timestamp: number): string {
 	return new Date(timestamp).toLocaleString();
 }
@@ -86,9 +90,27 @@ export function filterBookmarksByTags(bookmarks: SavedBookmark[], selectedTagKey
 	return bookmarks.filter((bookmark) => bookmark.tags.some((tag) => normalizedKeys.has(tag.trim().toLowerCase())));
 }
 
+export function filterBookmarksBySearch(bookmarks: SavedBookmark[], query: string): SavedBookmark[] {
+	const normalizedQuery = normalizeBookmarkSearchQuery(query);
+	if (!normalizedQuery) {
+		return bookmarks;
+	}
+
+	return bookmarks.filter((bookmark) => {
+		const fields = [
+			bookmark.tweetText,
+			bookmark.authorName ?? "",
+			bookmark.authorUsername,
+			...bookmark.tags,
+		];
+		return fields.some((field) => field.toLowerCase().includes(normalizedQuery));
+	});
+}
+
 export function BookmarksBrowser() {
 	const [bookmarks, setBookmarks] = useState<SavedBookmark[]>([]);
 	const [viewMode, setViewMode] = useState<BookmarkViewMode>("tile");
+	const [searchQuery, setSearchQuery] = useState("");
 	const [activeTagFilters, setActiveTagFilters] = useState<string[]>([]);
 	const [selectedBookmark, setSelectedBookmark] = useState<SavedBookmark | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
@@ -205,8 +227,20 @@ export function BookmarksBrowser() {
 
 	const tagFilterOptions = useMemo(() => buildTagFilterOptions(bookmarks), [bookmarks]);
 
-	const filteredBookmarks = useMemo(() => filterBookmarksByTags(bookmarks, activeTagFilters), [bookmarks, activeTagFilters]);
+	const searchedBookmarks = useMemo(() => filterBookmarksBySearch(bookmarks, searchQuery), [bookmarks, searchQuery]);
+	const filteredBookmarks = useMemo(
+		() => filterBookmarksByTags(searchedBookmarks, activeTagFilters),
+		[searchedBookmarks, activeTagFilters],
+	);
 	const selectedBookmarkUrl = selectedBookmark ? buildBookmarkCanonicalUrl(selectedBookmark) : "";
+	const hasActiveSearch = normalizeBookmarkSearchQuery(searchQuery).length > 0;
+	const hasActiveTagFilters = activeTagFilters.length > 0;
+	const emptyStateMessage =
+		hasActiveSearch && hasActiveTagFilters
+			? "No bookmarks match the current search and selected tags."
+			: hasActiveSearch
+				? "No bookmarks match the current search."
+				: "No bookmarks match the selected tags.";
 
 	useEffect(() => {
 		const availableTagKeys = new Set(tagFilterOptions.map((option) => option.key));
@@ -355,6 +389,19 @@ export function BookmarksBrowser() {
 				<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 					<p className="text-sm text-peach/70">Open any card to read the full tweet in the side panel. Filter by one or more tags.</p>
 					<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+						<div className="min-w-0 sm:min-w-[280px]">
+							<label htmlFor="bookmarks-search-input" className="sr-only">
+								Search bookmarks
+							</label>
+							<input
+								id="bookmarks-search-input"
+								type="search"
+								value={searchQuery}
+								onChange={(event) => setSearchQuery(event.target.value)}
+								placeholder="Search tweets, authors, and tags"
+								className="w-full rounded-[18px] border border-white/20 bg-ink/60 px-4 py-2 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none"
+							/>
+						</div>
 						<button
 							id="bookmarks-export-button"
 							type="button"
@@ -439,24 +486,27 @@ export function BookmarksBrowser() {
 				<p role="alert" className="rounded-3xl border border-coral/40 bg-coral/10 px-4 py-3 text-sm text-peach">
 					{errorMessage}
 				</p>
-				) : bookmarks.length === 0 ? (
-					<div className="rounded-4xl border border-white/10 bg-ink/60 p-6">
-						<p className="text-sm text-peach/70">
-							No bookmarks yet. Analyze a tweet and save it with tags from the dashboard.
-						</p>
-					</div>
-				) : filteredBookmarks.length === 0 ? (
-					<div className="rounded-4xl border border-white/10 bg-ink/60 p-6">
-						<p className="text-sm text-peach/70">No bookmarks match the selected tags.</p>
-						<button
-							type="button"
-							onClick={() => setActiveTagFilters([])}
-							className="mt-3 inline-flex rounded-[16px] border border-white/20 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-white/10"
-						>
-							Clear Filters
-						</button>
-					</div>
-				) : (
+					) : bookmarks.length === 0 ? (
+						<div className="rounded-4xl border border-white/10 bg-ink/60 p-6">
+							<p className="text-sm text-peach/70">
+								No bookmarks yet. Analyze a tweet and save it with tags from the dashboard.
+							</p>
+						</div>
+						) : filteredBookmarks.length === 0 ? (
+							<div className="rounded-4xl border border-white/10 bg-ink/60 p-6">
+								<p className="text-sm text-peach/70">{emptyStateMessage}</p>
+								<button
+								type="button"
+								onClick={() => {
+									setSearchQuery("");
+									setActiveTagFilters([]);
+								}}
+								className="mt-3 inline-flex rounded-[16px] border border-white/20 px-3 py-2 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-white/10"
+							>
+								Clear Search and Filters
+							</button>
+						</div>
+					) : (
 					<div id="bookmarks-list" className={listContainerClass}>
 						{filteredBookmarks.map((bookmark) => (
 						<button
