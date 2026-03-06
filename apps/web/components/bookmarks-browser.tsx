@@ -206,6 +206,7 @@ export function BookmarksBrowser() {
 	const tagFilterOptions = useMemo(() => buildTagFilterOptions(bookmarks), [bookmarks]);
 
 	const filteredBookmarks = useMemo(() => filterBookmarksByTags(bookmarks, activeTagFilters), [bookmarks, activeTagFilters]);
+	const selectedBookmarkUrl = selectedBookmark ? buildBookmarkCanonicalUrl(selectedBookmark) : "";
 
 	useEffect(() => {
 		const availableTagKeys = new Set(tagFilterOptions.map((option) => option.key));
@@ -509,6 +510,17 @@ export function BookmarksBrowser() {
 							<div>
 								<p className="text-xs font-semibold uppercase tracking-[0.2em] text-coral">Saved Tweet</p>
 								<p className="mt-2 text-sm text-peach/70">Updated {formatBookmarkDate(selectedBookmark.updatedAt)}</p>
+								{selectedBookmarkUrl ? (
+									<a
+										id="bookmark-original-link"
+										href={selectedBookmarkUrl}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="mt-3 inline-flex text-xs font-semibold uppercase tracking-[0.2em] text-coral underline decoration-coral/50 underline-offset-4 transition-colors hover:text-coral-hover hover:decoration-coral-hover"
+									>
+										Original Tweet
+									</a>
+								) : null}
 							</div>
 							<button
 								id="bookmark-panel-close"
@@ -593,7 +605,7 @@ export function BookmarksBrowser() {
 							) : null}
 						</div>
 						<a
-							href={buildBookmarkCanonicalUrl(selectedBookmark)}
+							href={selectedBookmarkUrl}
 							target="_blank"
 							rel="noopener noreferrer"
 							className="mt-7 inline-flex rounded-[20px] bg-coral px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-coral-hover"
