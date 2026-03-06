@@ -14,6 +14,7 @@
 		"baseUrl": ".",
 		"paths": {
 			"@pi-starter/contracts": ["../../packages/contracts/src/index.ts"],
+			"@pi-starter/contracts/bookmark-tags": ["../../packages/contracts/src/bookmark-tags.ts"],
 			"@pi-starter/core": ["../../packages/core/src/index.ts"],
 			"@pi-starter/x-client": ["../../packages/x-client/src/index.ts"]
 		}

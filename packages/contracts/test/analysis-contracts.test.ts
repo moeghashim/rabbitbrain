@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-
+import { parseBookmarkTags, validateBookmarkTags } from "../src/bookmark-tags.js";
 import {
 	type AnalyzeTweetInput,
 	AnalyzeTweetInputSchema,
@@ -99,6 +99,41 @@ test("SaveBookmarkInputSchema rejects case-insensitive duplicate tags", () => {
 			}),
 		/unique/i,
 	);
+});
+
+test("SaveBookmarkInputSchema rejects simple singular and plural duplicate tags", () => {
+	assert.throws(
+		() =>
+			SaveBookmarkInputSchema.parse({
+				tweetId: "123",
+				tweetText: "Tweet text",
+				tweetUrlOrId: "https://x.com/user/status/123",
+				authorUsername: "user",
+				tags: ["agent", "agents"],
+			}),
+		/simple singular\/plural/i,
+	);
+});
+
+test("validateBookmarkTags allows broader English inflections outside the simple trailing-s rule", () => {
+	assert.equal(validateBookmarkTags(["story", "stories"]), null);
+	assert.equal(validateBookmarkTags(["class", "classes"]), null);
+});
+
+test("validateBookmarkTags keeps existing count and length limits", () => {
+	assert.equal(validateBookmarkTags([]), "Add at least one tag.");
+	assert.equal(
+		validateBookmarkTags(Array.from({ length: 9 }, (_, index) => `tag-${index}`)),
+		"Use up to 8 tags per tweet.",
+	);
+	assert.equal(
+		validateBookmarkTags(["this-tag-is-way-too-long-for-the-contract"]),
+		"Each tag must be 24 characters or fewer.",
+	);
+});
+
+test("parseBookmarkTags trims values and collapses exact case-insensitive duplicates", () => {
+	assert.deepEqual(parseBookmarkTags(" Strategy, writing ,strategy, Growth "), ["Strategy", "writing", "Growth"]);
 });
 
 test("SavedBookmarkSchema validates persisted bookmark shape", () => {

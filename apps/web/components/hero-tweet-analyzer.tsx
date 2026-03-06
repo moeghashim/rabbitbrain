@@ -1,5 +1,6 @@
 "use client";
 
+import { parseBookmarkTags, validateBookmarkTags } from "@pi-starter/contracts/bookmark-tags";
 import type {
 	AnalyzeTweetResult,
 	SavedBookmark,
@@ -9,6 +10,8 @@ import Link from "next/link";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { buildTwitterAuthStartPath, startTwitterPopupAuth } from "../src/auth/popup-client.js";
+
+export { parseBookmarkTags, validateBookmarkTags };
 
 export interface TweetPreview {
 	id: string;
@@ -95,26 +98,6 @@ function normalizeUsername(username?: string): string | undefined {
 		return undefined;
 	}
 	return trimmed.startsWith("@") ? trimmed.slice(1) : trimmed;
-}
-
-export function parseBookmarkTags(input: string): string[] {
-	const tags = input
-		.split(",")
-		.map((tag) => tag.trim())
-		.filter((tag) => tag.length > 0);
-	const seen = new Set<string>();
-	const deduped: string[] = [];
-
-	for (const tag of tags) {
-		const key = tag.toLowerCase();
-		if (seen.has(key)) {
-			continue;
-		}
-		seen.add(key);
-		deduped.push(tag);
-	}
-
-	return deduped;
 }
 
 export function buildTweetCanonicalUrl(tweet: TweetPreview): string {
@@ -433,19 +416,9 @@ export function HeroTweetAnalyzer({
 		}
 
 		const tags = parseBookmarkTags(bookmarkTagsInput);
-		if (tags.length === 0) {
-			setBookmarkErrorMessage("Add at least one tag before saving.");
-			setBookmarkSuccessMessage(null);
-			return;
-		}
-		if (tags.length > 8) {
-			setBookmarkErrorMessage("Use up to 8 tags per tweet.");
-			setBookmarkSuccessMessage(null);
-			return;
-		}
-		const hasLongTag = tags.some((tag) => tag.length > 24);
-		if (hasLongTag) {
-			setBookmarkErrorMessage("Each tag must be 24 characters or fewer.");
+		const validationError = validateBookmarkTags(tags);
+		if (validationError) {
+			setBookmarkErrorMessage(validationError);
 			setBookmarkSuccessMessage(null);
 			return;
 		}

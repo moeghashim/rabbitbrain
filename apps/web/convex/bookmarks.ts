@@ -12,6 +12,7 @@ import {
 import { v } from "convex/values";
 
 import { requireUserBySession } from "./auth_helpers.js";
+import { BOOKMARK_ALREADY_EXISTS_ERROR_CODE } from "../src/bookmarks/errors.js";
 
 function toSavedBookmark(
 	record: {
@@ -64,29 +65,7 @@ export const save = mutationGeneric({
 			.unique();
 
 		if (existing) {
-			await ctx.db.patch(existing._id, {
-				tweetText: validated.tweetText,
-				tweetUrlOrId: validated.tweetUrlOrId,
-				authorUsername: validated.authorUsername,
-				authorName: validated.authorName,
-				authorAvatarUrl: validated.authorAvatarUrl,
-				tags: validated.tags,
-				updatedAt: now,
-			});
-
-			return SavedBookmarkSchema.parse({
-				id: String(existing._id),
-				userId: String(user._id),
-				tweetId: validated.tweetId,
-				tweetText: validated.tweetText,
-				tweetUrlOrId: validated.tweetUrlOrId,
-				authorUsername: validated.authorUsername,
-				authorName: validated.authorName,
-				authorAvatarUrl: validated.authorAvatarUrl,
-				tags: validated.tags,
-				createdAt: existing.createdAt,
-				updatedAt: now,
-			});
+			throw new Error(BOOKMARK_ALREADY_EXISTS_ERROR_CODE);
 		}
 
 		const bookmarkId = await ctx.db.insert("bookmarks", {

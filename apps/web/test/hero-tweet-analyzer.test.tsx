@@ -9,6 +9,7 @@ import {
 	parseBookmarkTags,
 	selectLeadTweetMedia,
 	TweetPreviewCard,
+	validateBookmarkTags,
 } from "../components/hero-tweet-analyzer.js";
 
 const analysisFixture: AnalyzeTweetResult = {
@@ -137,6 +138,14 @@ test("selectLeadTweetMedia returns only the first media item", () => {
 test("parseBookmarkTags trims values and deduplicates case-insensitively", () => {
 	const tags = parseBookmarkTags("  Product, growth,product,  GTM , gtm ");
 	assert.deepEqual(tags, ["Product", "growth", "GTM"]);
+});
+
+test("validateBookmarkTags rejects simple singular and plural duplicates", () => {
+	assert.equal(
+		validateBookmarkTags(["agent", "agents"]),
+		'Tags must be unique, including simple singular/plural pairs like "agent" and "agents".',
+	);
+	assert.equal(validateBookmarkTags(["story", "stories"]), null);
 });
 
 test("HeroTweetAnalyzer hides bookmark controls before analysis result is available", () => {

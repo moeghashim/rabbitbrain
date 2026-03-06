@@ -7,6 +7,10 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
 import { getServerAuthSession } from "../../../src/auth/auth.js";
+import {
+	BOOKMARK_ALREADY_EXISTS_ERROR_CODE,
+	BOOKMARK_ALREADY_EXISTS_MESSAGE,
+} from "../../../src/bookmarks/errors.js";
 import { validateStartupEnvIfNeeded } from "../../../src/config/startup-env.js";
 import {
 	deleteBookmarkForSession,
@@ -121,6 +125,18 @@ export async function handleBookmarksPost(
 					},
 				},
 				{ status: 400 },
+			);
+		}
+
+		if (error instanceof Error && error.message === BOOKMARK_ALREADY_EXISTS_ERROR_CODE) {
+			return NextResponse.json(
+				{
+					error: {
+						code: BOOKMARK_ALREADY_EXISTS_ERROR_CODE,
+						message: BOOKMARK_ALREADY_EXISTS_MESSAGE,
+					},
+				},
+				{ status: 409 },
 			);
 		}
 

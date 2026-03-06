@@ -59,5 +59,6 @@ test("buildBookmarksMarkdownArchive creates a zip with one markdown file per boo
 
 test("buildBookmarksArchiveFileName uses active tags when present", () => {
 	const fileName = buildBookmarksArchiveFileName(["Deep Work", "Agent Ops"]);
-	assert.match(fileName, /^rabbitbrain-bookmarks-deep-work-agent-ops-2026-03-05\.zip$/);
+	const dateSegment = new Date().toISOString().slice(0, 10);
+	assert.equal(fileName, `rabbitbrain-bookmarks-deep-work-agent-ops-${dateSegment}.zip`);
 });

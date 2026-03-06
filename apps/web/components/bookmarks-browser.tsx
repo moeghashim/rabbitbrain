@@ -1,5 +1,6 @@
 "use client";
 
+import { parseBookmarkTags, validateBookmarkTags } from "@pi-starter/contracts/bookmark-tags";
 import type { SavedBookmark } from "@pi-starter/contracts";
 import { buildBookmarkCanonicalUrl, buildBookmarksArchiveFileName, buildBookmarksMarkdownArchive } from "../src/bookmarks/export-markdown.js";
 import React, { useEffect, useMemo, useState } from "react";
@@ -42,26 +43,6 @@ function bookmarkAvatarLabel(bookmark: SavedBookmark): string {
 	const preferred = bookmark.authorName ?? bookmark.authorUsername;
 	const firstChar = preferred.trim().charAt(0);
 	return firstChar.length > 0 ? firstChar.toUpperCase() : "X";
-}
-
-function parseBookmarkTags(input: string): string[] {
-	const tags = input
-		.split(",")
-		.map((tag) => tag.trim())
-		.filter((tag) => tag.length > 0);
-	const seen = new Set<string>();
-	const deduped: string[] = [];
-
-	for (const tag of tags) {
-		const key = tag.toLowerCase();
-		if (seen.has(key)) {
-			continue;
-		}
-		seen.add(key);
-		deduped.push(tag);
-	}
-
-	return deduped;
 }
 
 function buildTagFilterOptions(bookmarks: SavedBookmark[]): BookmarkTagFilterOption[] {
@@ -274,18 +255,9 @@ export function BookmarksBrowser() {
 		}
 
 		const parsedTags = parseBookmarkTags(panelTagsInput);
-		if (parsedTags.length === 0) {
-			setPanelErrorMessage("Add at least one tag.");
-			setPanelSuccessMessage(null);
-			return;
-		}
-		if (parsedTags.length > 8) {
-			setPanelErrorMessage("Use up to 8 tags per tweet.");
-			setPanelSuccessMessage(null);
-			return;
-		}
-		if (parsedTags.some((tag) => tag.length > 24)) {
-			setPanelErrorMessage("Each tag must be 24 characters or fewer.");
+		const validationError = validateBookmarkTags(parsedTags);
+		if (validationError) {
+			setPanelErrorMessage(validationError);
 			setPanelSuccessMessage(null);
 			return;
 		}

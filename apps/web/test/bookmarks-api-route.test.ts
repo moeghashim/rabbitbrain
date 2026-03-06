@@ -83,7 +83,7 @@ test("POST /api/bookmarks saves bookmark for authenticated user", async () => {
 	assert.deepEqual(payload.tags, input.tags);
 });
 
-test("POST /api/bookmarks re-save updates existing bookmark without duplicates", async () => {
+test("POST /api/bookmarks rejects duplicate saves for the same tweet", async () => {
 	const store = new Map<string, SavedBookmark>();
 
 	const dependencies = {
@@ -92,13 +92,7 @@ test("POST /api/bookmarks re-save updates existing bookmark without duplicates",
 		saveBookmarkForSession: async ({ input }: { input: SaveBookmarkInput }) => {
 			const existing = store.get(input.tweetId);
 			if (existing) {
-				const next = {
-					...existing,
-					...input,
-					updatedAt: existing.updatedAt + 100,
-				};
-				store.set(input.tweetId, next);
-				return next;
+				throw new Error("BOOKMARK_ALREADY_EXISTS");
 			}
 
 			const created = createSavedBookmark(input, 200);
@@ -142,7 +136,7 @@ test("POST /api/bookmarks re-save updates existing bookmark without duplicates",
 		dependencies,
 	);
 
-	await handleBookmarksPost(
+	const duplicateResponse = await handleBookmarksPost(
 		new Request("http://localhost/api/bookmarks", {
 			method: "POST",
 			headers: { "content-type": "application/json" },
@@ -151,11 +145,19 @@ test("POST /api/bookmarks re-save updates existing bookmark without duplicates",
 		dependencies,
 	);
 
+	assert.equal(duplicateResponse.status, 409);
+	assert.deepEqual(await duplicateResponse.json(), {
+		error: {
+			code: "BOOKMARK_ALREADY_EXISTS",
+			message: "This tweet is already in your bookmarks.",
+		},
+	});
+
 	const listResponse = await handleBookmarksGet(dependencies);
 	assert.equal(listResponse.status, 200);
 	const payload = (await listResponse.json()) as { bookmarks: SavedBookmark[] };
 	assert.equal(payload.bookmarks.length, 1);
-	assert.deepEqual(payload.bookmarks[0]?.tags, secondInput.tags);
+	assert.deepEqual(payload.bookmarks[0]?.tags, firstInput.tags);
 });
 
 test("GET /api/bookmarks returns current user bookmarks", async () => {
@@ -239,6 +241,29 @@ test("PATCH /api/bookmarks updates bookmark tags", async () => {
 	assert.equal(response.status, 200);
 	const payload = (await response.json()) as SavedBookmark;
 	assert.deepEqual(payload.tags, ["new", "updated"]);
+});
+
+test("PATCH /api/bookmarks returns 400 when tags include simple singular and plural duplicates", async () => {
+	const saved = createSavedBookmark(createInput(["old"]), 200);
+	const response = await handleBookmarksPatch(
+		new Request("http://localhost/api/bookmarks", {
+			method: "PATCH",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				bookmarkId: saved.id,
+				tags: ["agent", "agents"],
+			}),
+		}),
+		createDependencies(),
+	);
+
+	assert.equal(response.status, 400);
+	assert.deepEqual(await response.json(), {
+		error: {
+			code: "INVALID_INPUT",
+			message: 'Tags must be unique, including simple singular/plural pairs like "agent" and "agents".',
+		},
+	});
 });
 
 test("PATCH /api/bookmarks returns 404 when bookmark is missing", async () => {

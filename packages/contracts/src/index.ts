@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { validateBookmarkTags } from "./bookmark-tags.js";
+
 export interface ServiceHealth {
 	service: string;
 	ok: boolean;
@@ -35,6 +37,56 @@ export const AnalyzeTweetResultSchema = z.object({
 	novelConcepts: z.array(AnalyzeConceptSchema).length(5),
 });
 
+export const TweetMediaSchema = z.object({
+	mediaKey: z.string().min(1),
+	type: z.enum(["photo", "video", "animated_gif"]),
+	url: z.string().url().optional(),
+	previewImageUrl: z.string().url().optional(),
+	altText: z.string().min(1).optional(),
+	width: z.number().int().positive().optional(),
+	height: z.number().int().positive().optional(),
+});
+
+export const TweetPublicMetricsSchema = z.object({
+	replyCount: z.number().int().nonnegative().optional(),
+	repostCount: z.number().int().nonnegative().optional(),
+	likeCount: z.number().int().nonnegative().optional(),
+	quoteCount: z.number().int().nonnegative().optional(),
+	bookmarkCount: z.number().int().nonnegative().optional(),
+});
+
+export const TweetPreviewSchema = z.object({
+	id: z.string().min(1),
+	text: z.string().min(1),
+	authorId: z.string().min(1).optional(),
+	authorUsername: z.string().min(1).optional(),
+	authorName: z.string().min(1).optional(),
+	authorAvatarUrl: z.string().url().optional(),
+	media: z.array(TweetMediaSchema).optional(),
+	publicMetrics: TweetPublicMetricsSchema.optional(),
+});
+
+export const AnalyzeTweetResponseSchema = z.object({
+	tweet: TweetPreviewSchema,
+	analysis: AnalyzeTweetResultSchema,
+});
+
+export const ExtensionSessionUserSchema = z.object({
+	id: z.string().min(1),
+	xUsername: z.string().min(1).optional(),
+	name: z.string().min(1).nullable().optional(),
+});
+
+export const ExtensionSessionStatusSchema = z
+	.object({
+		authenticated: z.boolean(),
+		user: ExtensionSessionUserSchema.optional(),
+	})
+	.refine((value) => !value.authenticated || value.user !== undefined, {
+		message: "Authenticated extension sessions must include a user.",
+		path: ["user"],
+	});
+
 export const SavedAnalysisSchema = AnalyzeTweetResultSchema.extend({
 	id: z.string().min(1),
 	userId: z.string().min(1),
@@ -45,26 +97,17 @@ export const SavedAnalysisSchema = AnalyzeTweetResultSchema.extend({
 
 export const BookmarkTagSchema = z.string().min(1).max(24);
 
-const BookmarkTagsSchema = z
-	.array(BookmarkTagSchema)
-	.min(1)
-	.max(8)
-	.refine(
-		(tags) => {
-			const normalized = new Set<string>();
-			for (const tag of tags) {
-				const key = tag.toLowerCase();
-				if (normalized.has(key)) {
-					return false;
-				}
-				normalized.add(key);
-			}
-			return true;
-		},
-		{
-			message: "tags must be unique (case-insensitive)",
-		},
-	);
+const BookmarkTagsSchema = z.array(BookmarkTagSchema).superRefine((tags, context) => {
+	const validationError = validateBookmarkTags(tags);
+	if (!validationError) {
+		return;
+	}
+
+	context.addIssue({
+		code: z.ZodIssueCode.custom,
+		message: validationError,
+	});
+});
 
 export const BookmarkedTweetSchema = z.object({
 	tweetId: z.string().min(1),
@@ -101,6 +144,12 @@ export const SavedBookmarkSchema = SaveBookmarkInputSchema.extend({
 
 export type AnalyzeTweetInput = z.infer<typeof AnalyzeTweetInputSchema>;
 export type AnalyzeTweetResult = z.infer<typeof AnalyzeTweetResultSchema>;
+export type TweetMedia = z.infer<typeof TweetMediaSchema>;
+export type TweetPublicMetrics = z.infer<typeof TweetPublicMetricsSchema>;
+export type TweetPreview = z.infer<typeof TweetPreviewSchema>;
+export type AnalyzeTweetResponse = z.infer<typeof AnalyzeTweetResponseSchema>;
+export type ExtensionSessionUser = z.infer<typeof ExtensionSessionUserSchema>;
+export type ExtensionSessionStatus = z.infer<typeof ExtensionSessionStatusSchema>;
 export type SavedAnalysis = z.infer<typeof SavedAnalysisSchema>;
 export type SaveBookmarkInput = z.infer<typeof SaveBookmarkInputSchema>;
 export type SavedBookmark = z.infer<typeof SavedBookmarkSchema>;
