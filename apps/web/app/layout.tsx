@@ -3,6 +3,7 @@ import { Newsreader, Space_Grotesk } from "next/font/google";
 import type { ReactNode } from "react";
 import React from "react";
 
+import { AgentationDevtools } from "../components/agentation-devtools.js";
 import "./globals.css";
 
 const newsreader = Newsreader({
@@ -25,7 +26,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
 	return (
 		<html lang="en" className={`${newsreader.variable} ${spaceGrotesk.variable} scroll-smooth`}>
-			<body className="font-sans antialiased">{children}</body>
+			<body className="font-sans antialiased">
+				{children}
+				<AgentationDevtools />
+			</body>
 		</html>
 	);
 }
