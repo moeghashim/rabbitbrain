@@ -18,7 +18,7 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-	title: "Red Sun | Editorial SaaS",
+	title: "Rabbit Brain | Editorial SaaS",
 	description: "Transform raw thoughts into compelling narratives with editorial precision.",
 };
 

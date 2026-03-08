@@ -5,13 +5,13 @@ import {
 	PenTool,
 	SlidersHorizontal,
 	Sparkles,
-	Sun,
 	Zap,
 } from "lucide-react";
 import Link from "next/link";
 import React from "react";
 
 import { HeroTweetAnalyzer } from "../components/hero-tweet-analyzer.js";
+import { RabbitBrandMark } from "../components/rabbit-brand-mark.js";
 import { Reveal } from "../components/reveal.js";
 import { workspaceMenuLinks } from "../components/workspace-menu.js";
 import { getServerAuthSession } from "../src/auth/auth.js";
@@ -82,10 +82,8 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 
 			<nav className="fixed left-1/2 top-6 z-50 flex w-[95%] max-w-7xl -translate-x-1/2 items-center justify-between rounded-[48px] border border-white/10 bg-ink/60 px-8 py-4 shadow-[0_8px_32px_rgba(0,0,0,0.2)] backdrop-blur-xl transition-all duration-500 ease-redsun">
 				<Link href="/" id="nav-logo" className="group flex items-center gap-2">
-					<div className="flex h-8 w-8 items-center justify-center rounded-full bg-coral text-white">
-						<Sun className="text-lg transition-transform duration-700 ease-redsun group-hover:rotate-90" />
-					</div>
-					<span className="mt-1 font-serif text-2xl tracking-tight text-white">Red Sun</span>
+					<RabbitBrandMark className="h-8 w-8 transition-transform duration-700 ease-redsun group-hover:-rotate-12 group-hover:scale-105" />
+					<span className="mt-1 font-serif text-2xl tracking-tight text-white">Rabbit Brain</span>
 				</Link>
 
 					<div className="hidden items-center gap-10 md:flex">
@@ -240,10 +238,8 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 				<div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-10 md:flex-row md:items-end">
 					<div className="flex flex-col gap-6">
 						<Link href="/" className="flex items-center gap-2">
-							<div className="flex h-6 w-6 items-center justify-center rounded-full bg-coral text-white">
-								<Sun className="h-4 w-4" />
-							</div>
-							<span className="font-serif text-2xl tracking-tight text-white">Red Sun</span>
+							<RabbitBrandMark className="h-6 w-6" />
+							<span className="font-serif text-2xl tracking-tight text-white">Rabbit Brain</span>
 						</Link>
 						<p className="max-w-xs text-sm text-peach/40">
 							The premium standard for digital expression and thought refinement.
@@ -269,7 +265,7 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 					</div>
 				</div>
 				<div className="mx-auto mt-20 flex max-w-7xl flex-col items-center justify-between gap-4 border-t border-white/5 pt-8 text-xs text-peach/30 sm:flex-row">
-					<p>&copy; 2024 Red Sun Inc. All rights reserved.</p>
+					<p>&copy; 2024 Rabbit Brain Inc. All rights reserved.</p>
 					<div className="flex gap-6">
 						<Link href="#" className="transition-colors hover:text-peach">
 							X / Twitter
