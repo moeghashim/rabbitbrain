@@ -8,10 +8,15 @@
 		"apps/*"
 	],
 	"scripts": {
+		"dev": "npm run -w @pi-starter/web dev",
 		"clean": "npm run clean --workspaces --if-present",
 		"build": "npm run build --workspaces --if-present",
 		"test": "npm run test --workspaces --if-present",
 		"check": "biome check --write --error-on-warnings . && node scripts/check-file-length.mjs && tsgo --noEmit",
+		"extension:dev": "npm run -w @pi-starter/extension dev",
+		"extension:build": "npm run -w @pi-starter/extension build",
+		"extension:package": "npm run -w @pi-starter/extension package",
+		"extension:test": "npm run -w @pi-starter/extension test",
 		"version:patch": "npm version patch -ws --no-git-tag-version && node scripts/sync-versions.js && rm -rf node_modules packages/*/node_modules package-lock.json && npm install",
 		"version:minor": "npm version minor -ws --no-git-tag-version && node scripts/sync-versions.js && rm -rf node_modules packages/*/node_modules package-lock.json && npm install",
 		"version:major": "npm version major -ws --no-git-tag-version && node scripts/sync-versions.js && rm -rf node_modules packages/*/node_modules package-lock.json && npm install",

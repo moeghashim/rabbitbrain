@@ -117,9 +117,7 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 							Twitter Signal Lab
 						</div>
 						<h1 className="text-glow mb-8 font-serif text-[3.4rem] leading-[0.92] tracking-tight text-white sm:text-[5rem] lg:text-[6.5rem]">
-							Paste a tweet.
-							<br />
-							<span className="italic text-coral">Get analysis instantly.</span>
+							Capture knowledge on X
 						</h1>
 						<div className="w-full">
 							<HeroTweetAnalyzer initialTweetUrlOrId={initialTweetUrlOrId} autoAnalyze={autoAnalyze} />
@@ -248,30 +246,38 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 					<div className="flex flex-col gap-12 text-sm sm:flex-row md:gap-24">
 						<div className="flex flex-col gap-4">
 							<span className="text-xs font-semibold uppercase tracking-widest text-peach">Platform</span>
-							{["The Studio", "Features", "Pricing"].map((item) => (
-								<Link key={item} href="#" className="text-peach/60 transition-colors hover:text-coral">
-									{item}
-								</Link>
-							))}
+							<Link href="/" className="text-peach/60 transition-colors hover:text-coral">
+								The Studio
+							</Link>
+							<Link href="/app" className="text-peach/60 transition-colors hover:text-coral">
+								Workspace
+							</Link>
+							<Link href="/app/bookmarks" className="text-peach/60 transition-colors hover:text-coral">
+								Bookmarks
+							</Link>
 						</div>
 						<div className="flex flex-col gap-4">
 							<span className="text-xs font-semibold uppercase tracking-widest text-peach">Company</span>
-							{["Manifesto", "Journal", "Contact"].map((item) => (
-								<Link key={item} href="#" className="text-peach/60 transition-colors hover:text-coral">
-									{item}
-								</Link>
-							))}
+							<Link href="/privacy" className="text-peach/60 transition-colors hover:text-coral">
+								Privacy
+							</Link>
+							<Link href="/support" className="text-peach/60 transition-colors hover:text-coral">
+								Support
+							</Link>
+							<Link href="mailto:support@rabbitbrain.app" className="text-peach/60 transition-colors hover:text-coral">
+								Contact
+							</Link>
 						</div>
 					</div>
 				</div>
 				<div className="mx-auto mt-20 flex max-w-7xl flex-col items-center justify-between gap-4 border-t border-white/5 pt-8 text-xs text-peach/30 sm:flex-row">
 					<p>&copy; 2024 Rabbit Brain Inc. All rights reserved.</p>
 					<div className="flex gap-6">
-						<Link href="#" className="transition-colors hover:text-peach">
+						<Link href="https://x.com" className="transition-colors hover:text-peach">
 							X / Twitter
 						</Link>
-						<Link href="#" className="transition-colors hover:text-peach">
-							LinkedIn
+						<Link href="/support" className="transition-colors hover:text-peach">
+							Support
 						</Link>
 					</div>
 				</div>
