@@ -28,6 +28,21 @@ interface BookmarkTagFilterOption {
 	count: number;
 }
 
+function compareBookmarksByRecency(left: Pick<SavedBookmark, "updatedAt" | "createdAt">, right: Pick<SavedBookmark, "updatedAt" | "createdAt">): number {
+	if (right.updatedAt !== left.updatedAt) {
+		return right.updatedAt - left.updatedAt;
+	}
+	return right.createdAt - left.createdAt;
+}
+
+function buildBookmarkIdentityKey(bookmark: SavedBookmark): string {
+	const tweetId = bookmark.tweetId.trim();
+	if (tweetId.length > 0) {
+		return tweetId;
+	}
+	return bookmark.tweetUrlOrId.trim().toLowerCase();
+}
+
 function normalizeBookmarkSearchQuery(query: string): string {
 	return query.trim().toLowerCase();
 }
@@ -75,6 +90,19 @@ function buildTagFilterOptions(bookmarks: SavedBookmark[]): BookmarkTagFilterOpt
 	}
 
 	return Array.from(byKey.values()).sort((left, right) => left.label.localeCompare(right.label, undefined, { sensitivity: "base" }));
+}
+
+export function dedupeBookmarks(bookmarks: SavedBookmark[]): SavedBookmark[] {
+	const dedupedByIdentity = new Map<string, SavedBookmark>();
+	for (const bookmark of bookmarks) {
+		const identity = buildBookmarkIdentityKey(bookmark);
+		const existing = dedupedByIdentity.get(identity);
+		if (!existing || compareBookmarksByRecency(existing, bookmark) > 0) {
+			dedupedByIdentity.set(identity, bookmark);
+		}
+	}
+
+	return Array.from(dedupedByIdentity.values()).sort(compareBookmarksByRecency);
 }
 
 export function filterBookmarksByTags(bookmarks: SavedBookmark[], selectedTagKeys: string[]): SavedBookmark[] {
@@ -155,7 +183,7 @@ export function BookmarksBrowser() {
 				}
 
 				if (!isCancelled) {
-					setBookmarks(payload.bookmarks);
+					setBookmarks(dedupeBookmarks(payload.bookmarks));
 				}
 			} catch (error) {
 				if (!isCancelled) {
@@ -325,9 +353,7 @@ export function BookmarksBrowser() {
 			}
 
 			setBookmarks((current) =>
-				current
-					.map((bookmark) => (bookmark.id === payload.id ? payload : bookmark))
-					.sort((left, right) => right.updatedAt - left.updatedAt),
+				dedupeBookmarks(current.map((bookmark) => (bookmark.id === payload.id ? payload : bookmark))),
 			);
 			setSelectedBookmark(payload);
 			setPanelTagsInput(payload.tags.join(", "));

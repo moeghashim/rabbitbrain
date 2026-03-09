@@ -3,7 +3,7 @@ import test from "node:test";
 
 import type { SavedBookmark } from "@pi-starter/contracts";
 
-import { filterBookmarksBySearch, filterBookmarksByTags } from "../components/bookmarks-browser.js";
+import { dedupeBookmarks, filterBookmarksBySearch, filterBookmarksByTags } from "../components/bookmarks-browser.js";
 
 function createBookmark(
 	id: string,
@@ -96,6 +96,27 @@ test("filterBookmarksByTags ignores empty selected values", () => {
 	const bookmarks = [createBookmark("1", ["Strategy"]), createBookmark("2", ["Growth"])];
 	const filtered = filterBookmarksByTags(bookmarks, ["", "  "]);
 	assert.deepEqual(filtered, bookmarks);
+});
+
+test("dedupeBookmarks keeps the most recently updated copy of the same tweet", () => {
+	const older = createBookmark("1", ["Tip"], { tweetText: "Older copy" });
+	const newer = {
+		...createBookmark("2", ["Tips"], { tweetText: "Newer copy" }),
+		tweetId: older.tweetId,
+		tweetUrlOrId: older.tweetUrlOrId,
+		updatedAt: 200,
+	};
+	const unrelated = {
+		...createBookmark("3", ["Tools"]),
+		updatedAt: 150,
+	};
+
+	const deduped = dedupeBookmarks([older, newer, unrelated]);
+	assert.deepEqual(
+		deduped.map((bookmark) => bookmark.id),
+		["2", "3"],
+	);
+	assert.equal(deduped[0]?.tweetText, "Newer copy");
 });
 
 test("bookmark search and tag filters combine as an intersection", () => {

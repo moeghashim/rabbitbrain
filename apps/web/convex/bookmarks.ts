@@ -14,20 +14,22 @@ import { v } from "convex/values";
 import { requireUserBySession } from "./auth_helpers.js";
 import { BOOKMARK_ALREADY_EXISTS_ERROR_CODE } from "../src/bookmarks/errors.js";
 
+interface BookmarkRecord {
+	_id: string;
+	userId: string;
+	tweetId: string;
+	tweetText: string;
+	tweetUrlOrId: string;
+	authorUsername: string;
+	authorName?: string;
+	authorAvatarUrl?: string;
+	tags: string[];
+	createdAt: number;
+	updatedAt: number;
+}
+
 function toSavedBookmark(
-	record: {
-		_id: string;
-		userId: string;
-		tweetId: string;
-		tweetText: string;
-		tweetUrlOrId: string;
-		authorUsername: string;
-		authorName?: string;
-		authorAvatarUrl?: string;
-		tags: string[];
-		createdAt: number;
-		updatedAt: number;
-	},
+	record: BookmarkRecord,
 ) {
 	return SavedBookmarkSchema.parse({
 		id: record._id,
@@ -44,6 +46,41 @@ function toSavedBookmark(
 	});
 }
 
+function compareBookmarksByRecency(left: Pick<BookmarkRecord, "updatedAt" | "createdAt">, right: Pick<BookmarkRecord, "updatedAt" | "createdAt">): number {
+	if (right.updatedAt !== left.updatedAt) {
+		return right.updatedAt - left.updatedAt;
+	}
+	return right.createdAt - left.createdAt;
+}
+
+function toBookmarkRecord(record: {
+	_id: string;
+	userId: string;
+	tweetId: string;
+	tweetText: string;
+	tweetUrlOrId: string;
+	authorUsername: string;
+	authorName?: string;
+	authorAvatarUrl?: string;
+	tags: string[];
+	createdAt: number;
+	updatedAt: number;
+}): BookmarkRecord {
+	return {
+		_id: String(record._id),
+		userId: String(record.userId),
+		tweetId: record.tweetId,
+		tweetText: record.tweetText,
+		tweetUrlOrId: record.tweetUrlOrId,
+		authorUsername: record.authorUsername,
+		authorName: record.authorName,
+		authorAvatarUrl: record.authorAvatarUrl,
+		tags: record.tags,
+		createdAt: record.createdAt,
+		updatedAt: record.updatedAt,
+	};
+}
+
 export const save = mutationGeneric({
 	args: {
 		tweetId: v.string(),
@@ -57,17 +94,25 @@ export const save = mutationGeneric({
 	handler: async (ctx, args) => {
 		const user = await requireUserBySession(ctx);
 		const validated = SaveBookmarkInputSchema.parse(args);
-		const now = Date.now();
-		const existing = await ctx.db
-			.query("bookmarks")
-			.withIndex("by_user_id_tweet_id", (query) => query.eq("userId", user._id))
-			.filter((query) => query.eq(query.field("tweetId"), validated.tweetId))
-			.unique();
+		const existing = (
+			await ctx.db
+				.query("bookmarks")
+				.withIndex("by_user_id_tweet_id", (query) => query.eq("userId", user._id).eq("tweetId", validated.tweetId))
+				.collect()
+		).map((record) => toBookmarkRecord(record));
 
-		if (existing) {
+		if (existing.length > 0) {
+			const canonical = existing.toSorted(compareBookmarksByRecency);
+			for (const duplicate of canonical.slice(1)) {
+				const duplicateId = ctx.db.normalizeId("bookmarks", duplicate._id);
+				if (duplicateId) {
+					await ctx.db.delete(duplicateId);
+				}
+			}
 			throw new Error(BOOKMARK_ALREADY_EXISTS_ERROR_CODE);
 		}
 
+		const now = Date.now();
 		const bookmarkId = await ctx.db.insert("bookmarks", {
 			userId: user._id,
 			tweetId: validated.tweetId,
@@ -110,10 +155,22 @@ export const updateTags = mutationGeneric({
 		}
 
 		const now = Date.now();
-		await ctx.db.patch(bookmarkId, {
-			tags: validated.tags,
-			updatedAt: now,
-		});
+		const related = (
+			await ctx.db
+				.query("bookmarks")
+				.withIndex("by_user_id_tweet_id", (query) => query.eq("userId", user._id).eq("tweetId", existing.tweetId))
+				.collect()
+		).map((record) => toBookmarkRecord(record));
+		for (const bookmark of related) {
+			const relatedBookmarkId = ctx.db.normalizeId("bookmarks", bookmark._id);
+			if (!relatedBookmarkId) {
+				continue;
+			}
+			await ctx.db.patch(relatedBookmarkId, {
+				tags: validated.tags,
+				updatedAt: now,
+			});
+		}
 
 		return toSavedBookmark({
 			_id: String(existing._id),
@@ -148,7 +205,20 @@ export const remove = mutationGeneric({
 			throw new Error("Bookmark not found");
 		}
 
-		await ctx.db.delete(bookmarkId);
+		const related = (
+			await ctx.db
+				.query("bookmarks")
+				.withIndex("by_user_id_tweet_id", (query) => query.eq("userId", user._id).eq("tweetId", existing.tweetId))
+				.collect()
+		).map((record) => toBookmarkRecord(record));
+		for (const bookmark of related) {
+			const relatedBookmarkId = ctx.db.normalizeId("bookmarks", bookmark._id);
+			if (!relatedBookmarkId) {
+				continue;
+			}
+			await ctx.db.delete(relatedBookmarkId);
+		}
+
 		return DeleteBookmarkResultSchema.parse({
 			bookmarkId: validated.bookmarkId,
 		});
@@ -164,22 +234,17 @@ export const listByUser = queryGeneric({
 			.withIndex("by_user_id_updated_at", (query) => query.eq("userId", user._id))
 			.collect();
 
-		return records
-			.sort((left, right) => right.updatedAt - left.updatedAt)
-			.map((item) =>
-				toSavedBookmark({
-					_id: String(item._id),
-					userId: String(item.userId),
-					tweetId: item.tweetId,
-					tweetText: item.tweetText,
-					tweetUrlOrId: item.tweetUrlOrId,
-					authorUsername: item.authorUsername,
-					authorName: item.authorName,
-					authorAvatarUrl: item.authorAvatarUrl,
-					tags: item.tags,
-					createdAt: item.createdAt,
-					updatedAt: item.updatedAt,
-				}),
-			);
+		const dedupedByTweetId = new Map<string, BookmarkRecord>();
+		for (const item of records) {
+			const candidate = toBookmarkRecord(item);
+			const existing = dedupedByTweetId.get(candidate.tweetId);
+			if (!existing || compareBookmarksByRecency(existing, candidate) > 0) {
+				dedupedByTweetId.set(candidate.tweetId, candidate);
+			}
+		}
+
+		return Array.from(dedupedByTweetId.values())
+			.sort(compareBookmarksByRecency)
+			.map((item) => toSavedBookmark(item));
 	},
 });
