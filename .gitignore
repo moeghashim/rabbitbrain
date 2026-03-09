@@ -8,6 +8,11 @@ packages/*/dist/
 .DS_Store
 
 .env
+.env.local
+apps/*/.env.local
+
+.vercel/
+.superdesign/
 
 .vscode/
 .zed/
@@ -22,4 +27,26 @@ packages/*/dist/
 .factory/
 .trae/
 .windsurf/
+.codebuddy/
+.codex/config.toml
+.commandcode/
+.continue/
+.crush/
+.goose/
+.junie/
+.kilocode/
+.kiro/
+.kode/
+.mcpjam/
+.mux/
+.neovate/
+.openhands/
+.pi/
+.pochi/
+.qoder/
+.qwen/
+.roo/
+.zencoder/
+
+skills/superdesign
 skills-lock.json

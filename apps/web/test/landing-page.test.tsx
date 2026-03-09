@@ -9,7 +9,7 @@ import LandingPage from "../app/page.js";
 test("landing page renders headline and core sections", async () => {
 	const page = await LandingPage({});
 	const html = renderToStaticMarkup(page);
-	assert.match(html, /Paste a tweet/);
+	assert.match(html, /Capture knowledge on X/);
 	assert.match(html, /Twitter Signal Lab/);
 	assert.doesNotMatch(html, /Analyze any tweet instantly/);
 	assert.match(html, /The Studio/);
@@ -21,7 +21,8 @@ test("landing page ctas route to auth pages", async () => {
 	const html = renderToStaticMarkup(page);
 	assert.match(html, /id=\"nav-cta\"[^>]*href=\"\/auth\/popup-start\?redirect_url=%2Fapp\"/);
 	assert.match(html, /href=\"\/app\/bookmarks\"[^>]*>Bookmarks<\/a>/);
-	assert.doesNotMatch(html, />Platform<\/a>/);
+	assert.match(html, /href=\"\/privacy\"[^>]*>Privacy<\/a>/);
+	assert.match(html, /href=\"\/support\"[^>]*>Support<\/a>/);
 	assert.match(html, /id=\"hero-analyze-button\"/);
 	assert.match(html, /Login with Twitter<\/a>/);
 });

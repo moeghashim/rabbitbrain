@@ -22,9 +22,10 @@ Optional runtime control:
 
 1. Configure X app callback URLs for both preview and production:
    - `https://<preview-domain>/api/auth/callback/twitter`
-   - `https://<production-domain>/api/auth/callback/twitter`
-2. Use `/sign-in` as the application entry route for authentication.
-3. Keep protected routes:
+   - `https://www.rabbitbrain.app/api/auth/callback/twitter`
+2. If the apex host redirects to `www`, register the `www` callback URL in X exactly as shown above. Auth.js uses the request host when building the Twitter callback URL.
+3. Use `/sign-in` as the application entry route for authentication.
+4. Keep protected routes:
    - `/app`
    - `/account`
 

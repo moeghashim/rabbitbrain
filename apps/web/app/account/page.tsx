@@ -1,6 +1,8 @@
 import Link from "next/link";
 import React from "react";
 
+import { SignOutButton } from "../../components/sign-out-button.js";
+
 export default function AccountPage() {
 	return (
 		<main className="min-h-screen bg-ink px-6 py-16 text-peach">
@@ -53,13 +55,7 @@ export default function AccountPage() {
 							>
 								Save Preferences
 							</button>
-							<button
-								formAction="/sign-out"
-								type="submit"
-								className="rounded-[48px] border border-white/25 px-7 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
-							>
-								Sign Out
-							</button>
+							<SignOutButton />
 						</div>
 					</form>
 				</section>

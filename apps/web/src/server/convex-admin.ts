@@ -79,7 +79,7 @@ function readRequiredEnv(name: keyof ConvexEnv, env: ConvexEnv): string {
 }
 
 function createActingIdentity(user: SessionUserIdentity): ConvexActingIdentity {
-	const issuer = "https://rabbitbrain.app/authjs";
+	const issuer = "https://www.rabbitbrain.app/authjs";
 	return {
 		subject: user.id,
 		issuer,
