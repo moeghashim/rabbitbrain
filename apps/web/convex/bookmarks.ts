@@ -97,12 +97,13 @@ export const save = mutationGeneric({
 		const existing = (
 			await ctx.db
 				.query("bookmarks")
-				.withIndex("by_user_id_tweet_id", (query) => query.eq("userId", user._id).eq("tweetId", validated.tweetId))
+				.withIndex("by_user_id_tweet_id", (query) => query.eq("userId", user._id))
+				.filter((query) => query.eq(query.field("tweetId"), validated.tweetId))
 				.collect()
 		).map((record) => toBookmarkRecord(record));
 
 		if (existing.length > 0) {
-			const canonical = existing.toSorted(compareBookmarksByRecency);
+			const canonical = [...existing].sort(compareBookmarksByRecency);
 			for (const duplicate of canonical.slice(1)) {
 				const duplicateId = ctx.db.normalizeId("bookmarks", duplicate._id);
 				if (duplicateId) {
@@ -158,7 +159,8 @@ export const updateTags = mutationGeneric({
 		const related = (
 			await ctx.db
 				.query("bookmarks")
-				.withIndex("by_user_id_tweet_id", (query) => query.eq("userId", user._id).eq("tweetId", existing.tweetId))
+				.withIndex("by_user_id_tweet_id", (query) => query.eq("userId", user._id))
+				.filter((query) => query.eq(query.field("tweetId"), existing.tweetId))
 				.collect()
 		).map((record) => toBookmarkRecord(record));
 		for (const bookmark of related) {
@@ -208,7 +210,8 @@ export const remove = mutationGeneric({
 		const related = (
 			await ctx.db
 				.query("bookmarks")
-				.withIndex("by_user_id_tweet_id", (query) => query.eq("userId", user._id).eq("tweetId", existing.tweetId))
+				.withIndex("by_user_id_tweet_id", (query) => query.eq("userId", user._id))
+				.filter((query) => query.eq(query.field("tweetId"), existing.tweetId))
 				.collect()
 		).map((record) => toBookmarkRecord(record));
 		for (const bookmark of related) {
