@@ -154,25 +154,17 @@ async function chooseModelInteractively(defaultProvider: ProviderId, defaultMode
 			const marker = name === defaultModel ? " (default)" : "";
 			console.log(`  ${index + 1}. ${name}${marker}`);
 		});
-		console.log(`  ${models.length + 1}. custom`);
 
-		const answer = (await rl.question(`Choose [1-${models.length + 1}] (default: ${defaultModel}): `)).trim();
+		const answer = (await rl.question(`Choose [1-${models.length}] (default: ${defaultModel}): `)).trim();
 		if (!answer) {
 			return defaultModel;
 		}
 
 		const selected = Number.parseInt(answer, 10);
-		if (Number.isNaN(selected) || selected < 1 || selected > models.length + 1) {
+		if (Number.isNaN(selected) || selected < 1 || selected > models.length) {
 			throw new Error(`Invalid model selection: ${answer}`);
 		}
-		if (selected <= models.length) {
-			return models[selected - 1] ?? defaultModel;
-		}
-		const custom = (await rl.question("Enter custom model name: ")).trim();
-		if (!custom) {
-			throw new Error("Custom model cannot be empty");
-		}
-		return custom;
+		return models[selected - 1] ?? defaultModel;
 	} finally {
 		rl.close();
 	}

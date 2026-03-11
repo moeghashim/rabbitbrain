@@ -1,6 +1,6 @@
 "use client";
 
-import { PROVIDER_OPTIONS, getProviderCatalogEntry } from "@pi-starter/ai";
+import { PROVIDER_OPTIONS, getProviderCatalogEntry, resolveProviderCatalogModel } from "@pi-starter/ai";
 import type { ProviderCredentialSummary, ProviderId, UserPreferencesResult } from "@pi-starter/contracts";
 import React, { useEffect, useMemo, useState } from "react";
 
@@ -15,12 +15,10 @@ interface PreferencesErrorPayload {
 	};
 }
 
-const CUSTOM_MODEL_VALUE = "__custom__";
-
 const DEFAULT_PREFERENCES: UserPreferencesResult = {
 	userId: "pending",
 	defaultProvider: "openai",
-	defaultModel: "gpt-4.1-mini",
+	defaultModel: resolveProviderCatalogModel("openai"),
 	learningMinutes: 10,
 	updatedAt: 0,
 };
@@ -44,7 +42,10 @@ export function AccountSettingsPanel() {
 			const errorPayload = payload as PreferencesErrorPayload;
 			throw new Error(errorPayload.error?.message ?? "Unable to load account settings.");
 		}
-		setPreferences(payload.preferences);
+		setPreferences({
+			...payload.preferences,
+			defaultModel: resolveProviderCatalogModel(payload.preferences.defaultProvider, payload.preferences.defaultModel),
+		});
 		setCredentials({
 			openai: payload.credentials.find((item) => item.provider === "openai"),
 			google: payload.credentials.find((item) => item.provider === "google"),
@@ -63,9 +64,6 @@ export function AccountSettingsPanel() {
 		() => getProviderCatalogEntry(preferences.defaultProvider).models,
 		[preferences.defaultProvider],
 	);
-	const selectedModelOption = modelSuggestions.includes(preferences.defaultModel)
-		? preferences.defaultModel
-		: CUSTOM_MODEL_VALUE;
 
 	async function savePreferences(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -181,12 +179,11 @@ export function AccountSettingsPanel() {
 					<input type="hidden" name="defaultModel" value={preferences.defaultModel} />
 					<select
 						id="defaultModel"
-						value={selectedModelOption}
+						value={resolveProviderCatalogModel(preferences.defaultProvider, preferences.defaultModel)}
 						onChange={(event) => {
-							const nextValue = event.target.value;
 							setPreferences((current) => ({
 								...current,
-								defaultModel: nextValue === CUSTOM_MODEL_VALUE ? "" : nextValue,
+								defaultModel: event.target.value,
 							}));
 						}}
 						className="mt-2 w-full rounded-4xl border border-white/20 bg-ink/70 px-5 py-4 text-white"
@@ -196,22 +193,7 @@ export function AccountSettingsPanel() {
 								{model}
 							</option>
 						))}
-						<option value={CUSTOM_MODEL_VALUE}>Custom model</option>
 					</select>
-					{selectedModelOption === CUSTOM_MODEL_VALUE ? (
-						<input
-							id="defaultModelCustom"
-							value={preferences.defaultModel}
-							onChange={(event) => {
-								setPreferences((current) => ({
-									...current,
-									defaultModel: event.target.value,
-								}));
-							}}
-							placeholder="Enter a model ID"
-							className="mt-3 w-full rounded-4xl border border-white/20 bg-ink/70 px-5 py-4 text-white placeholder:text-peach/40"
-						/>
-					) : null}
 				</div>
 				<div>
 					<label htmlFor="learningMinutes" className="text-sm font-semibold uppercase tracking-widest text-peach/70">

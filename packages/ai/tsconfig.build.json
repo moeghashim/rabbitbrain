@@ -2,7 +2,12 @@
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
 		"outDir": "./dist",
-		"rootDir": "./src"
+		"rootDir": "./src",
+		"paths": {
+			"@pi-starter/contracts": ["../contracts/src/index.ts"],
+			"@pi-starter/core": ["../core/src/index.ts"],
+			"@pi-starter/x-client": ["../x-client/src/index.ts"]
+		}
 	},
 	"include": [
 		"src/**/*.ts"

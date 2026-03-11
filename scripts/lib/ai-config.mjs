@@ -17,16 +17,16 @@ export const PROVIDER_OPTIONS = [
 	{ id: "anthropic", label: "Claude", envVar: "ANTHROPIC_API_KEY" },
 ];
 export const DEFAULT_MODELS = {
-	openai: "gpt-4.1-mini",
-	google: "gemini-2.0-flash",
-	xai: "grok-3-mini",
-	anthropic: "claude-3-5-sonnet-latest",
+	openai: "gpt-5-mini",
+	google: "gemini-2.5-flash",
+	xai: "grok-4-fast",
+	anthropic: "claude-sonnet-4-6",
 };
 export const RECOMMENDED_MODELS = {
-	openai: ["gpt-4.1-mini", "gpt-4.1", "gpt-4o-mini", "gpt-4o"],
-	google: ["gemini-2.0-flash", "gemini-2.0-flash-lite", "gemini-1.5-pro"],
-	xai: ["grok-3-mini", "grok-3-fast", "grok-2-latest"],
-	anthropic: ["claude-3-5-haiku-latest", "claude-3-5-sonnet-latest", "claude-3-7-sonnet-latest"],
+	openai: ["gpt-5-mini", "gpt-5.4", "gpt-4.1", "gpt-4.1-mini"],
+	google: ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.5-pro"],
+	xai: ["grok-4-fast", "grok-4", "grok-3-mini"],
+	anthropic: ["claude-haiku-4-5", "claude-sonnet-4-6", "claude-opus-4-6"],
 };
 
 export function getProviderOption(provider) {

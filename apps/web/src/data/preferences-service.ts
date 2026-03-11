@@ -1,3 +1,4 @@
+import { resolveProviderCatalogModel } from "@pi-starter/ai";
 import {
 	type ProviderId,
 	UserPreferencesInputSchema,
@@ -29,7 +30,7 @@ export interface UserIdentityInput {
 
 const DEFAULT_PREFERENCES: Omit<UserPreferencesResult, "userId" | "updatedAt"> = {
 	defaultProvider: "openai",
-	defaultModel: "gpt-4.1",
+	defaultModel: resolveProviderCatalogModel("openai"),
 	learningMinutes: 10,
 };
 

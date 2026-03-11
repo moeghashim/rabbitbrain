@@ -8,9 +8,16 @@ import manifest from "./manifest.config.js";
 export default defineConfig({
 	plugins: [react(), crx({ manifest })],
 	resolve: {
-		alias: {
-			"@pi-starter/contracts": fileURLToPath(new URL("../../packages/contracts/src/index.ts", import.meta.url)),
-		},
+		alias: [
+			{
+				find: "@pi-starter/contracts/bookmark-tags",
+				replacement: fileURLToPath(new URL("../../packages/contracts/src/bookmark-tags.ts", import.meta.url)),
+			},
+			{
+				find: "@pi-starter/contracts",
+				replacement: fileURLToPath(new URL("../../packages/contracts/src/index.ts", import.meta.url)),
+			},
+		],
 	},
 	build: {
 		outDir: "dist",

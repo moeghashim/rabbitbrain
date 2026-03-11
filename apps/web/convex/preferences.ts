@@ -1,3 +1,4 @@
+import { resolveProviderCatalogModel } from "@pi-starter/ai";
 import { ProviderIdSchema, UserPreferencesInputSchema, UserPreferencesResultSchema } from "@pi-starter/contracts";
 import {
 	mutationGeneric,
@@ -16,21 +17,7 @@ export function normalizeStoredModel(
 	model: string | undefined,
 	provider: "openai" | "google" | "xai" | "anthropic",
 ): string {
-	const trimmed = model?.trim();
-	if (trimmed) {
-		return trimmed;
-	}
-	switch (provider) {
-		case "google":
-			return "gemini-2.0-flash";
-		case "xai":
-			return "grok-3-mini";
-		case "anthropic":
-			return "claude-3-5-sonnet-latest";
-		case "openai":
-		default:
-			return "gpt-4.1";
-	}
+	return resolveProviderCatalogModel(provider, model);
 }
 
 export const getPreferences = queryGeneric({
@@ -55,7 +42,7 @@ export const getPreferences = queryGeneric({
 		return UserPreferencesResultSchema.parse({
 			userId: String(user._id),
 			defaultProvider: "openai",
-			defaultModel: "gpt-4.1",
+			defaultModel: resolveProviderCatalogModel("openai"),
 			learningMinutes: 10,
 			updatedAt: Date.now(),
 		});

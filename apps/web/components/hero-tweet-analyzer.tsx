@@ -1,6 +1,6 @@
 "use client";
 
-import { PROVIDER_OPTIONS, getProviderCatalogEntry } from "@pi-starter/ai";
+import { PROVIDER_OPTIONS, getProviderCatalogEntry, resolveProviderCatalogModel } from "@pi-starter/ai";
 import { parseBookmarkTags, validateBookmarkTags } from "@pi-starter/contracts/bookmark-tags";
 import type {
 	AnalyzeTweetResult,
@@ -47,8 +47,6 @@ interface SaveBookmarkResponseError {
 		message?: string;
 	};
 }
-
-const CUSTOM_MODEL_VALUE = "__custom__";
 
 export interface HeroTweetAnalyzerProps {
 	initialTweetUrlOrId?: string;
@@ -307,7 +305,7 @@ export function HeroTweetAnalyzer({
 }: Readonly<HeroTweetAnalyzerProps>) {
 	const [tweetUrlOrId, setTweetUrlOrId] = useState(initialTweetUrlOrId);
 	const [provider, setProvider] = useState<ProviderId>(initialProvider);
-	const [model, setModel] = useState(initialModel ?? getProviderCatalogEntry(initialProvider).defaultModel);
+	const [model, setModel] = useState(resolveProviderCatalogModel(initialProvider, initialModel));
 	const [isLoading, setIsLoading] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [tweet, setTweet] = useState<TweetPreview | null>(null);
@@ -321,7 +319,6 @@ export function HeroTweetAnalyzer({
 	const hasLoadedPreferencesRef = useRef(false);
 
 	const modelOptions = useMemo(() => getProviderCatalogEntry(provider).models, [provider]);
-	const selectedModelOption = modelOptions.includes(model) ? model : CUSTOM_MODEL_VALUE;
 	const canSubmit = useMemo(
 		() => tweetUrlOrId.trim().length > 0 && model.trim().length > 0 && !isLoading,
 		[isLoading, model, tweetUrlOrId],
@@ -430,7 +427,7 @@ export function HeroTweetAnalyzer({
 				setProvider(payload.provider);
 			}
 			if ("model" in payload && payload.model) {
-				setModel(payload.model);
+				setModel(resolveProviderCatalogModel(payload.provider ?? provider, payload.model));
 			}
 		} catch (error) {
 			setErrorMessage(error instanceof Error ? error.message : "Unexpected network failure while analyzing tweet.");
@@ -516,14 +513,14 @@ export function HeroTweetAnalyzer({
 			const defaultModel = payload.preferences?.defaultModel;
 			if (defaultProvider) {
 				setProvider(defaultProvider);
-				setModel(defaultModel ?? getProviderCatalogEntry(defaultProvider).defaultModel);
+				setModel(resolveProviderCatalogModel(defaultProvider, defaultModel));
 				return;
 			}
 			if (defaultModel) {
-				setModel(defaultModel);
+				setModel(resolveProviderCatalogModel(provider, defaultModel));
 			}
 		})().catch(() => {});
-	}, []);
+	}, [provider]);
 
 	useEffect(() => {
 		return () => {
@@ -598,10 +595,9 @@ export function HeroTweetAnalyzer({
 						</label>
 						<select
 							id="hero-model"
-							value={selectedModelOption}
+							value={resolveProviderCatalogModel(provider, model)}
 							onChange={(event) => {
-								const nextValue = event.target.value;
-								setModel(nextValue === CUSTOM_MODEL_VALUE ? "" : nextValue);
+								setModel(event.target.value);
 							}}
 							className="w-full rounded-[20px] border border-white/20 bg-ink/70 px-5 py-4 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base"
 						>
@@ -610,17 +606,7 @@ export function HeroTweetAnalyzer({
 									{candidate}
 								</option>
 							))}
-							<option value={CUSTOM_MODEL_VALUE}>Custom model</option>
 						</select>
-						{selectedModelOption === CUSTOM_MODEL_VALUE ? (
-							<input
-								id="hero-model-custom"
-								value={model}
-								onChange={(event) => setModel(event.target.value)}
-								placeholder="Enter a model ID"
-								className="w-full rounded-[20px] border border-white/20 bg-ink/70 px-5 py-4 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base"
-							/>
-						) : null}
 					</>
 				) : null}
 				<button
