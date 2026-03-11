@@ -104,14 +104,27 @@ export async function handleAnalyzePost(
 		});
 		const provider = (input.provider ?? preferences.defaultProvider) as ProviderId;
 		const model = input.model ?? preferences.defaultModel;
-		const apiKey = await dependencies.getProviderApiKeyForSession({
-			sessionUser: {
-				id: userId,
-				email: sessionUser.email,
-				name: sessionUser.name,
-			},
-			provider,
-		});
+		let apiKey: string | null;
+		try {
+			apiKey = await dependencies.getProviderApiKeyForSession({
+				sessionUser: {
+					id: userId,
+					email: sessionUser.email,
+					name: sessionUser.name,
+				},
+				provider,
+			});
+		} catch (error) {
+			dependencies.reportServerError({
+				scope: "api.analyze.provider_key_read_failure",
+				error,
+				metadata: {
+					provider,
+				},
+			});
+			const mapped = mapAiErrorCodeToResponse("CONFIG_ERROR", "Saved API key could not be read. Re-save it and try again.");
+			return NextResponse.json(mapped.body, { status: mapped.status });
+		}
 		if (!apiKey) {
 			const mapped = mapAiErrorCodeToResponse("CONFIG_ERROR");
 			return NextResponse.json(mapped.body, { status: mapped.status });
@@ -124,19 +137,30 @@ export async function handleAnalyzePost(
 			model,
 			tweet,
 		});
-		const persisted = await dependencies.persistAnalysisForSession({
-			sessionUser: {
-				id: userId,
-				email: sessionUser.email,
-				name: sessionUser.name,
-			},
-			input: {
-				...input,
-				provider,
-				model,
-			},
-			analysis,
-		});
+		try {
+			await dependencies.persistAnalysisForSession({
+				sessionUser: {
+					id: userId,
+					email: sessionUser.email,
+					name: sessionUser.name,
+				},
+				input: {
+					...input,
+					provider,
+					model,
+				},
+				analysis,
+			});
+		} catch (error) {
+			dependencies.reportServerError({
+				scope: "api.analyze.persist_failure",
+				error,
+				metadata: {
+					provider,
+					model,
+				},
+			});
+		}
 
 		return NextResponse.json({
 			tweet: {
@@ -150,10 +174,10 @@ export async function handleAnalyzePost(
 				publicMetrics: tweet.publicMetrics,
 			},
 			analysis: {
-				topic: persisted.topic,
-				summary: persisted.summary,
-				intent: persisted.intent,
-				novelConcepts: persisted.novelConcepts,
+				topic: analysis.topic,
+				summary: analysis.summary,
+				intent: analysis.intent,
+				novelConcepts: analysis.novelConcepts,
 			},
 			provider,
 			model,
