@@ -77,21 +77,40 @@ Use onboarding first. It checks:
 
 - `xurl` installed
 - X OAuth2 auth available (and can run `xurl auth oauth2`)
-- OpenAI analyze auth available (and can run `npm run xurl:analyze:auth`)
+- provider analyze auth available (and can run `npm run xurl:analyze:auth`)
 
-Set up OpenAI once (stores config locally under `~/.config/rabbitbrain/openai-analyze.json`):
+Set up a provider once. Config now lives under `~/.config/rabbitbrain/ai-providers.json` and will auto-migrate legacy OpenAI config from `~/.config/rabbitbrain/openai-analyze.json` if present:
 
 ```bash
 npm run xurl:analyze:auth
+npm run xurl:analyze:auth -- --provider openai
+npm run xurl:analyze:auth -- --provider anthropic
 ```
 
 Then analyze tweets:
 
 ```bash
 npm run xurl:analyze -- "https://x.com/user/status/1234567890"
+npm run xurl:analyze -- "https://x.com/user/status/1234567890" --provider google
+npm run xurl:analyze -- "https://x.com/user/status/1234567890" --provider xai --model grok-3-fast
+npm run xurl:analyze -- "https://x.com/user/status/1234567890" --choose-provider --choose-model
 npm run xurl:analyze -- "https://x.com/user/status/1234567890" --choose-model
 npm run xurl:analyze -- "https://x.com/user/status/1234567890" --model gpt-4.1
 ```
+
+Supported providers:
+
+- `openai`
+- `google` (Gemini)
+- `xai` (Grok)
+- `anthropic` (Claude)
+
+Environment variable overrides are provider-specific:
+
+- `OPENAI_API_KEY` / `OPENAI_MODEL`
+- `GOOGLE_API_KEY` / `GOOGLE_MODEL`
+- `XAI_API_KEY` / `XAI_MODEL`
+- `ANTHROPIC_API_KEY` / `ANTHROPIC_MODEL`
 
 ## Expected behavior before auth
 

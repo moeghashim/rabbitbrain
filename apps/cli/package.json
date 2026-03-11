@@ -9,6 +9,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@pi-starter/ai": "0.0.1",
     "@pi-starter/contracts": "0.0.1",
     "@pi-starter/core": "0.0.1"
   },

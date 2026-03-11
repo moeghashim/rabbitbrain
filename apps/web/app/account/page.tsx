@@ -1,6 +1,7 @@
 import Link from "next/link";
 import React from "react";
 
+import { AccountSettingsPanel } from "../../components/account-settings-panel.js";
 import { SignOutButton } from "../../components/sign-out-button.js";
 
 export default function AccountPage() {
@@ -20,44 +21,12 @@ export default function AccountPage() {
 
 				<section className="rounded-5xl border border-white/10 bg-charcoal/90 p-8">
 					<h2 className="font-serif text-3xl text-white">Learning Preferences</h2>
-					<form action="/api/me/preferences" method="post" className="mt-6 flex flex-col gap-5">
-						<div>
-							<label htmlFor="defaultModel" className="text-sm font-semibold uppercase tracking-widest text-peach/70">
-								Default model
-							</label>
-							<select
-								id="defaultModel"
-								name="defaultModel"
-								className="mt-2 w-full rounded-4xl border border-white/20 bg-ink/70 px-5 py-4 text-white"
-							>
-								<option value="gpt-4.1">gpt-4.1</option>
-								<option value="gpt-4.1-mini">gpt-4.1-mini</option>
-							</select>
-						</div>
-						<div>
-							<label htmlFor="learningMinutes" className="text-sm font-semibold uppercase tracking-widest text-peach/70">
-								Minutes per day
-							</label>
-							<input
-								id="learningMinutes"
-								name="learningMinutes"
-								type="number"
-								defaultValue={10}
-								min={5}
-								max={120}
-								className="mt-2 w-full rounded-4xl border border-white/20 bg-ink/70 px-5 py-4 text-white"
-							/>
-						</div>
-						<div className="flex flex-wrap gap-3">
-							<button
-								type="submit"
-								className="rounded-[48px] bg-coral px-7 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-coral-hover"
-							>
-								Save Preferences
-							</button>
-							<SignOutButton />
-						</div>
-					</form>
+					<div className="mt-6">
+						<AccountSettingsPanel />
+					</div>
+					<div className="mt-6">
+						<SignOutButton />
+					</div>
 				</section>
 			</div>
 		</main>

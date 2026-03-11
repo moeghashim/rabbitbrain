@@ -18,6 +18,7 @@ export const getPreferences = queryGeneric({
 		if (existing) {
 			return UserPreferencesResultSchema.parse({
 				userId: String(existing.userId),
+				defaultProvider: existing.defaultProvider,
 				defaultModel: existing.defaultModel,
 				learningMinutes: existing.learningMinutes,
 				updatedAt: existing.updatedAt,
@@ -26,6 +27,7 @@ export const getPreferences = queryGeneric({
 
 		return UserPreferencesResultSchema.parse({
 			userId: String(user._id),
+			defaultProvider: "openai",
 			defaultModel: "gpt-4.1",
 			learningMinutes: 10,
 			updatedAt: Date.now(),
@@ -35,6 +37,7 @@ export const getPreferences = queryGeneric({
 
 export const updatePreferences = mutationGeneric({
 	args: {
+		defaultProvider: v.string(),
 		defaultModel: v.string(),
 		learningMinutes: v.number(),
 	},
@@ -48,12 +51,14 @@ export const updatePreferences = mutationGeneric({
 			.unique();
 		if (existing) {
 			await ctx.db.patch(existing._id, {
+				defaultProvider: validated.defaultProvider,
 				defaultModel: validated.defaultModel,
 				learningMinutes: validated.learningMinutes,
 				updatedAt: now,
 			});
 			return UserPreferencesResultSchema.parse({
 				userId: String(user._id),
+				defaultProvider: validated.defaultProvider,
 				defaultModel: validated.defaultModel,
 				learningMinutes: validated.learningMinutes,
 				updatedAt: now,
@@ -62,12 +67,14 @@ export const updatePreferences = mutationGeneric({
 
 		await ctx.db.insert("userPreferences", {
 			userId: user._id,
+			defaultProvider: validated.defaultProvider,
 			defaultModel: validated.defaultModel,
 			learningMinutes: validated.learningMinutes,
 			updatedAt: now,
 		});
 		return UserPreferencesResultSchema.parse({
 			userId: String(user._id),
+			defaultProvider: validated.defaultProvider,
 			defaultModel: validated.defaultModel,
 			learningMinutes: validated.learningMinutes,
 			updatedAt: now,

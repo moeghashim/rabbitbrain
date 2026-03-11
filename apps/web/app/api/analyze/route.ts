@@ -1,15 +1,26 @@
 import {
+	type AnalyzeTweetResult,
 	AnalyzeTweetInputSchema,
+	type ProviderId,
 	type AnalyzeTweetInput,
 } from "@pi-starter/contracts";
+import { AiProviderError, analyzeTweetPayload } from "@pi-starter/ai";
 import { XApiV2Client, type TweetSourceProvider, XProviderError } from "@pi-starter/x-client";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
-import { buildResumeSignInRedirect, mapXErrorCodeToResponse } from "../../../src/analyze/analyze-route-helpers.js";
+import {
+	buildResumeSignInRedirect,
+	mapAiErrorCodeToResponse,
+	mapXErrorCodeToResponse,
+} from "../../../src/analyze/analyze-route-helpers.js";
 import { getServerAuthSession } from "../../../src/auth/auth.js";
 import { validateStartupEnvIfNeeded } from "../../../src/config/startup-env.js";
-import { persistAnalysisForSession } from "../../../src/server/convex-admin.js";
+import {
+	getPreferencesForSession,
+	getProviderApiKeyForSession,
+	persistAnalysisForSession,
+} from "../../../src/server/convex-admin.js";
 import { reportServerError } from "../../../src/telemetry/report-error.js";
 
 interface SessionUserLike {
@@ -26,6 +37,9 @@ interface AnalyzeRouteDependencies {
 	validateStartupEnvIfNeeded: () => void;
 	getServerAuthSession: () => Promise<SessionLike | null>;
 	createXClient: () => TweetSourceProvider;
+	getPreferencesForSession: typeof getPreferencesForSession;
+	getProviderApiKeyForSession: typeof getProviderApiKeyForSession;
+	analyzeTweetPayload: typeof analyzeTweetPayload;
 	persistAnalysisForSession: typeof persistAnalysisForSession;
 	reportServerError: typeof reportServerError;
 }
@@ -34,6 +48,9 @@ const defaultDependencies: AnalyzeRouteDependencies = {
 	validateStartupEnvIfNeeded,
 	getServerAuthSession,
 	createXClient: () => new XApiV2Client(),
+	getPreferencesForSession,
+	getProviderApiKeyForSession,
+	analyzeTweetPayload,
 	persistAnalysisForSession,
 	reportServerError,
 };
@@ -78,34 +95,68 @@ export async function handleAnalyzePost(
 		}
 
 		const client = dependencies.createXClient();
+		const preferences = await dependencies.getPreferencesForSession({
+			sessionUser: {
+				id: userId,
+				email: sessionUser.email,
+				name: sessionUser.name,
+			},
+		});
+		const provider = (input.provider ?? preferences.defaultProvider) as ProviderId;
+		const model = input.model ?? preferences.defaultModel;
+		const apiKey = await dependencies.getProviderApiKeyForSession({
+			sessionUser: {
+				id: userId,
+				email: sessionUser.email,
+				name: sessionUser.name,
+			},
+			provider,
+		});
+		if (!apiKey) {
+			const mapped = mapAiErrorCodeToResponse("CONFIG_ERROR");
+			return NextResponse.json(mapped.body, { status: mapped.status });
+		}
+
 		const tweet = await client.getTweetByUrlOrId(input.tweetUrlOrId);
+		const analysis = await dependencies.analyzeTweetPayload({
+			provider,
+			apiKey,
+			model,
+			tweet,
+		});
 		const persisted = await dependencies.persistAnalysisForSession({
 			sessionUser: {
 				id: userId,
 				email: sessionUser.email,
 				name: sessionUser.name,
 			},
-			input,
-			tweet,
+			input: {
+				...input,
+				provider,
+				model,
+			},
+			analysis,
 		});
 
-			return NextResponse.json({
-				tweet: {
-					id: tweet.id,
-					text: tweet.text,
-					authorId: tweet.authorId,
-					authorUsername: tweet.authorUsername,
-					authorName: tweet.authorName,
-					authorAvatarUrl: tweet.authorAvatarUrl,
-					media: tweet.media,
-					publicMetrics: tweet.publicMetrics,
-				},
-				analysis: {
+		return NextResponse.json({
+			tweet: {
+				id: tweet.id,
+				text: tweet.text,
+				authorId: tweet.authorId,
+				authorUsername: tweet.authorUsername,
+				authorName: tweet.authorName,
+				authorAvatarUrl: tweet.authorAvatarUrl,
+				media: tweet.media,
+				publicMetrics: tweet.publicMetrics,
+			},
+			analysis: {
 				topic: persisted.topic,
 				summary: persisted.summary,
 				intent: persisted.intent,
 				novelConcepts: persisted.novelConcepts,
 			},
+			provider,
+			model,
 		});
 	} catch (error) {
 		if (error instanceof ZodError) {
@@ -134,6 +185,20 @@ export async function handleAnalyzePost(
 				},
 			});
 			const mapped = mapXErrorCodeToResponse(error.code, error.message);
+			return NextResponse.json(mapped.body, { status: mapped.status });
+		}
+
+		if (error instanceof AiProviderError) {
+			dependencies.reportServerError({
+				scope: "api.analyze.ai_provider_error",
+				error,
+				metadata: {
+					code: error.code,
+					provider: error.provider,
+					retryable: error.retryable,
+				},
+			});
+			const mapped = mapAiErrorCodeToResponse(error.code, error.message);
 			return NextResponse.json(mapped.body, { status: mapped.status });
 		}
 

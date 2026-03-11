@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildResumeSignInRedirect, mapXErrorCodeToResponse } from "../src/analyze/analyze-route-helpers.js";
+import {
+	buildResumeSignInRedirect,
+	mapAiErrorCodeToResponse,
+	mapXErrorCodeToResponse,
+} from "../src/analyze/analyze-route-helpers.js";
 
 test("buildResumeSignInRedirect preserves tweet input for auth callback", () => {
 	const redirect = buildResumeSignInRedirect("https://x.com/moe/status/123");
@@ -29,4 +33,14 @@ test("mapXErrorCodeToResponse uses provider details for upstream and invalid inp
 	const invalidInput = mapXErrorCodeToResponse("INVALID_INPUT", "Tweet id value is not valid.");
 	assert.equal(invalidInput.status, 400);
 	assert.equal(invalidInput.body.error.message, "Tweet id value is not valid.");
+});
+
+test("mapAiErrorCodeToResponse maps missing configuration and invalid responses", () => {
+	const config = mapAiErrorCodeToResponse("CONFIG_ERROR");
+	assert.equal(config.status, 400);
+	assert.match(config.body.error.message, /Configure an API key/i);
+
+	const invalid = mapAiErrorCodeToResponse("INVALID_RESPONSE", "Provider returned malformed JSON.");
+	assert.equal(invalid.status, 502);
+	assert.equal(invalid.body.error.message, "Provider returned malformed JSON.");
 });

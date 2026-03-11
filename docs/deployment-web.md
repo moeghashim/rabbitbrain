@@ -10,6 +10,7 @@ Set these in both Vercel Preview and Production:
 - `NEXT_PUBLIC_CONVEX_URL`
 - `CONVEX_DEPLOYMENT`
 - `CONVEX_DEPLOY_KEY` (server-only; used for authenticated server-to-Convex writes)
+- `USER_SECRETS_ENCRYPTION_KEY` (server-only; used to encrypt user-supplied model provider API keys before storage)
 - `X_API_KEY`
 - `X_API_SECRET`
 - `X_BEARER_TOKEN`
@@ -35,6 +36,10 @@ Optional runtime control:
 2. Set `NEXT_PUBLIC_CONVEX_URL` matching the deployment.
 3. Set `CONVEX_DEPLOY_KEY` for trusted server-side mutation access.
 4. Sync environment variables in Convex dashboard for server functions using X API.
+5. Deploy the latest schema before sending traffic to the new web build. The app now expects:
+   - `userPreferences.defaultProvider`
+   - `analyses.provider`
+   - `userProviderCredentials`
 
 ## X Production Keys (App-Only Ingestion)
 
@@ -44,6 +49,13 @@ Optional runtime control:
    - `X_BEARER_TOKEN`
 2. Rotate keys on a regular cadence and immediately after incidents.
 3. Never print key values in logs or telemetry payloads.
+
+## Model Provider Runtime Notes
+
+1. Rabbitbrain no longer needs app-owned OpenAI, Gemini, Grok, or Claude keys for end-user analysis.
+2. End users bring their own provider keys through `/account`.
+3. `USER_SECRETS_ENCRYPTION_KEY` is required even if only one provider is used. Without it, startup validation fails.
+4. Rotating `USER_SECRETS_ENCRYPTION_KEY` without a migration will invalidate previously stored user provider credentials.
 
 ## Route Configuration
 
@@ -65,3 +77,12 @@ Missing keys fail fast at runtime startup/middleware execution.
 2. Run `npm run check`.
 3. Run `npm run -w @pi-starter/web typecheck`.
 4. Build preview: `npm run -w @pi-starter/web build`.
+
+## Post-Deploy Smoke Test
+
+1. Sign in on the deployed web app.
+2. Open `/account` and save an API key for at least one provider.
+3. Save a default provider and model.
+4. Analyze a public tweet from `/` or `/app`.
+5. Confirm the response succeeds and the saved analysis appears in Convex with both `provider` and `model`.
+6. Remove the saved provider key and confirm analysis fails with a clear configuration error.

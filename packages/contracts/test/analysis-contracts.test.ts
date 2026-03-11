@@ -38,10 +38,12 @@ function sampleAnalysisResult(): AnalyzeTweetResult {
 test("AnalyzeTweetInputSchema accepts required tweet input", () => {
 	const payload: AnalyzeTweetInput = {
 		tweetUrlOrId: "https://x.com/user/status/123",
+		provider: "openai",
 		model: "gpt-4.1",
 	};
 	const parsed = AnalyzeTweetInputSchema.parse(payload);
 	assert.equal(parsed.tweetUrlOrId, payload.tweetUrlOrId);
+	assert.equal(parsed.provider, "openai");
 });
 
 test("AnalyzeTweetResultSchema enforces exactly 5 concepts", () => {
@@ -62,6 +64,7 @@ test("SavedAnalysisSchema validates persisted analysis shape", () => {
 		id: "analysis_1",
 		userId: "user_1",
 		tweetUrlOrId: "https://x.com/user/status/123",
+		provider: "openai",
 		model: "gpt-4.1",
 		createdAt: 1_700_000_000_000,
 		...sampleAnalysisResult(),

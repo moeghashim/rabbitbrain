@@ -40,6 +40,7 @@ test("getOrCreatePreferences returns defaults for new user", () => {
 	const user = upsertUserByXId(store, { xUserId: "user_abc" }, 100);
 	const prefs = getOrCreatePreferences(store, user.id, 150);
 	assert.equal(prefs.userId, user.id);
+	assert.equal(prefs.defaultProvider, "openai");
 	assert.equal(prefs.defaultModel, "gpt-4.1");
 	assert.equal(prefs.learningMinutes, 10);
 });
@@ -51,12 +52,14 @@ test("updatePreferences persists validated values", () => {
 		store,
 		user.id,
 		{
+			defaultProvider: "anthropic",
 			defaultModel: "gpt-4.1-mini",
 			learningMinutes: 25,
 		},
 		400,
 	);
 	assert.equal(updated.userId, user.id);
+	assert.equal(updated.defaultProvider, "anthropic");
 	assert.equal(updated.defaultModel, "gpt-4.1-mini");
 	assert.equal(updated.learningMinutes, 25);
 	assert.equal(updated.updatedAt, 400);
@@ -71,6 +74,7 @@ test("updatePreferences rejects invalid payload", () => {
 				store,
 				user.id,
 				{
+					defaultProvider: "openai",
 					defaultModel: "gpt-4.1",
 					learningMinutes: 1,
 				},

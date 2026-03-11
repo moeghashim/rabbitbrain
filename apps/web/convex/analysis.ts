@@ -13,6 +13,7 @@ import { requireUserBySession } from "./auth_helpers.js";
 export const createFromTweetUrl = mutationGeneric({
 	args: {
 		tweetUrlOrId: v.string(),
+		provider: v.optional(v.string()),
 		model: v.optional(v.string()),
 	},
 	handler: async (ctx, args) => {
@@ -26,6 +27,7 @@ export const createFromTweetUrl = mutationGeneric({
 			const id = await ctx.db.insert("analyses", {
 				userId: user._id,
 				tweetUrlOrId: args.tweetUrlOrId,
+				provider: args.provider ?? "openai",
 				model: args.model ?? "gpt-4.1",
 				topic: analysis.topic,
 				summary: analysis.summary,
@@ -38,6 +40,7 @@ export const createFromTweetUrl = mutationGeneric({
 				id: String(id),
 				userId: String(user._id),
 				tweetUrlOrId: args.tweetUrlOrId,
+				provider: args.provider ?? "openai",
 				model: args.model ?? "gpt-4.1",
 				topic: analysis.topic,
 				summary: analysis.summary,
@@ -51,6 +54,7 @@ export const createFromTweetUrl = mutationGeneric({
 				error,
 				metadata: {
 					hasModelOverride: Boolean(args.model),
+					provider: args.provider ?? "openai",
 				},
 			});
 			throw error;
@@ -61,6 +65,7 @@ export const createFromTweetUrl = mutationGeneric({
 export const createFromComputed = mutationGeneric({
 	args: {
 		tweetUrlOrId: v.string(),
+		provider: v.optional(v.string()),
 		model: v.optional(v.string()),
 		topic: v.string(),
 		summary: v.string(),
@@ -78,6 +83,7 @@ export const createFromComputed = mutationGeneric({
 		const id = await ctx.db.insert("analyses", {
 			userId: user._id,
 			tweetUrlOrId: args.tweetUrlOrId,
+			provider: args.provider ?? "openai",
 			model: args.model ?? "gpt-4.1",
 			topic: args.topic,
 			summary: args.summary,
@@ -90,6 +96,7 @@ export const createFromComputed = mutationGeneric({
 			id: String(id),
 			userId: String(user._id),
 			tweetUrlOrId: args.tweetUrlOrId,
+			provider: args.provider ?? "openai",
 			model: args.model ?? "gpt-4.1",
 			topic: args.topic,
 			summary: args.summary,
@@ -103,6 +110,7 @@ export const createFromComputed = mutationGeneric({
 export const createFromTweetPayload = mutationGeneric({
 	args: {
 		tweetUrlOrId: v.string(),
+		provider: v.string(),
 		model: v.optional(v.string()),
 		tweet: v.object({
 			id: v.string(),
@@ -128,6 +136,7 @@ export const createFromTweetPayload = mutationGeneric({
 		const id = await ctx.db.insert("analyses", {
 			userId: user._id,
 			tweetUrlOrId: args.tweetUrlOrId,
+			provider: args.provider,
 			model: args.model ?? "gpt-4.1",
 			topic: analysis.topic,
 			summary: analysis.summary,
@@ -140,6 +149,7 @@ export const createFromTweetPayload = mutationGeneric({
 			id: String(id),
 			userId: String(user._id),
 			tweetUrlOrId: args.tweetUrlOrId,
+			provider: args.provider,
 			model: args.model ?? "gpt-4.1",
 			topic: analysis.topic,
 			summary: analysis.summary,
@@ -166,6 +176,7 @@ export const listByUser = queryGeneric({
 					id: String(item._id),
 					userId: String(item.userId),
 					tweetUrlOrId: item.tweetUrlOrId,
+					provider: item.provider ?? "openai",
 					model: item.model,
 					topic: item.topic,
 					summary: item.summary,

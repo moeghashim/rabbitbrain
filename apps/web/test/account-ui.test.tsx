@@ -22,8 +22,10 @@ test("dashboard page includes analyze action controls", () => {
 test("account page includes preferences and sign-out actions", () => {
 	const html = renderToStaticMarkup(<AccountPage />);
 	assert.match(html, /action=\"\/api\/me\/preferences\"/);
+	assert.match(html, /name=\"defaultProvider\"/);
 	assert.match(html, /name=\"defaultModel\"/);
 	assert.match(html, /name=\"learningMinutes\"/);
+	assert.match(html, /Provider API Keys/);
 	assert.match(html, /id=\"sign-out-button\"/);
 	assert.match(html, /Save Preferences/);
 	assert.match(html, /Sign Out/);

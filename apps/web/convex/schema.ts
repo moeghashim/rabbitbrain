@@ -12,13 +12,22 @@ export default defineSchema({
 	}).index("by_x_user_id", ["xUserId"]),
 	userPreferences: defineTable({
 		userId: v.id("users"),
+		defaultProvider: v.string(),
 		defaultModel: v.string(),
 		learningMinutes: v.number(),
 		updatedAt: v.number(),
 	}).index("by_user_id", ["userId"]),
+	userProviderCredentials: defineTable({
+		userId: v.id("users"),
+		provider: v.string(),
+		encryptedApiKey: v.string(),
+		keyHint: v.optional(v.string()),
+		updatedAt: v.number(),
+	}).index("by_user_id_provider", ["userId", "provider"]),
 	analyses: defineTable({
 		userId: v.id("users"),
 		tweetUrlOrId: v.string(),
+		provider: v.string(),
 		model: v.string(),
 		topic: v.string(),
 		summary: v.string(),

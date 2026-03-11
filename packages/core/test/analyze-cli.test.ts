@@ -20,6 +20,7 @@ test("xurl:analyze --help includes --learn", () => {
 	const output = `${result.stdout}\n${result.stderr}`;
 	assert.equal(result.status, 0);
 	assert.match(output, /--learn/);
+	assert.match(output, /--choose-provider/);
 	assert.match(output, /--choose-model/);
 });
 

@@ -1,4 +1,5 @@
 import {
+	type ProviderId,
 	UserPreferencesInputSchema,
 	UserPreferencesResultSchema,
 	type UserPreferencesInput,
@@ -27,9 +28,12 @@ export interface UserIdentityInput {
 }
 
 const DEFAULT_PREFERENCES: Omit<UserPreferencesResult, "userId" | "updatedAt"> = {
+	defaultProvider: "openai",
 	defaultModel: "gpt-4.1",
 	learningMinutes: 10,
 };
+
+export const DEFAULT_PROVIDER: ProviderId = "openai";
 
 export function createPreferencesStore(): PreferencesStore {
 	return {

@@ -9,6 +9,7 @@ export interface StartupEnv {
 	convexUrl: string;
 	convexDeployment: string;
 	convexDeployKey: string;
+	userSecretsEncryptionKey: string;
 }
 
 export interface MiddlewareStartupEnv {
@@ -35,6 +36,7 @@ export function validateStartupEnv(env: EnvMap = process.env): StartupEnv {
 		convexUrl: readRequiredEnv("NEXT_PUBLIC_CONVEX_URL", env),
 		convexDeployment: readRequiredEnv("CONVEX_DEPLOYMENT", env),
 		convexDeployKey: readRequiredEnv("CONVEX_DEPLOY_KEY", env),
+		userSecretsEncryptionKey: readRequiredEnv("USER_SECRETS_ENCRYPTION_KEY", env),
 	};
 }
 

@@ -1,8 +1,10 @@
 "use client";
 
+import { PROVIDER_OPTIONS, getProviderCatalogEntry } from "@pi-starter/ai";
 import { parseBookmarkTags, validateBookmarkTags } from "@pi-starter/contracts/bookmark-tags";
 import type {
 	AnalyzeTweetResult,
+	ProviderId,
 	SavedBookmark,
 } from "@pi-starter/contracts";
 import type { TweetMedia, TweetPublicMetrics } from "@pi-starter/x-client";
@@ -27,6 +29,8 @@ export interface TweetPreview {
 interface AnalyzeResponseSuccess {
 	tweet: TweetPreview;
 	analysis: AnalyzeTweetResult;
+	provider?: ProviderId;
+	model?: string;
 }
 
 interface AnalyzeResponseError {
@@ -47,6 +51,8 @@ interface SaveBookmarkResponseError {
 export interface HeroTweetAnalyzerProps {
 	initialTweetUrlOrId?: string;
 	autoAnalyze?: boolean;
+	initialProvider?: ProviderId;
+	initialModel?: string;
 }
 
 function cleanAnalyzeFlagInUrl(): void {
@@ -290,8 +296,12 @@ export function TweetPreviewCard({
 export function HeroTweetAnalyzer({
 	initialTweetUrlOrId = "",
 	autoAnalyze = false,
+	initialProvider = "openai",
+	initialModel,
 }: Readonly<HeroTweetAnalyzerProps>) {
 	const [tweetUrlOrId, setTweetUrlOrId] = useState(initialTweetUrlOrId);
+	const [provider, setProvider] = useState<ProviderId>(initialProvider);
+	const [model, setModel] = useState(initialModel ?? getProviderCatalogEntry(initialProvider).defaultModel);
 	const [isLoading, setIsLoading] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [tweet, setTweet] = useState<TweetPreview | null>(null);
@@ -302,6 +312,7 @@ export function HeroTweetAnalyzer({
 	const [bookmarkSuccessMessage, setBookmarkSuccessMessage] = useState<string | null>(null);
 	const hasAutoRunRef = useRef(false);
 	const authPopupCleanupRef = useRef<(() => void) | null>(null);
+	const hasLoadedPreferencesRef = useRef(false);
 
 	const canSubmit = useMemo(() => tweetUrlOrId.trim().length > 0 && !isLoading, [isLoading, tweetUrlOrId]);
 	const canSaveBookmark = useMemo(
@@ -352,6 +363,8 @@ export function HeroTweetAnalyzer({
 				},
 				body: JSON.stringify({
 					tweetUrlOrId: trimmedValue,
+					provider,
+					model,
 				}),
 			});
 			const payload = (await response.json()) as AnalyzeResponseSuccess | AnalyzeResponseError;
@@ -402,6 +415,12 @@ export function HeroTweetAnalyzer({
 			setTweet(payload.tweet);
 			setAnalysis(payload.analysis);
 			setTweetUrlOrId(trimmedValue);
+			if ("provider" in payload && payload.provider) {
+				setProvider(payload.provider);
+			}
+			if ("model" in payload && payload.model) {
+				setModel(payload.model);
+			}
 		} catch (error) {
 			setErrorMessage(error instanceof Error ? error.message : "Unexpected network failure while analyzing tweet.");
 		} finally {
@@ -467,6 +486,35 @@ export function HeroTweetAnalyzer({
 	}
 
 	useEffect(() => {
+		if (hasLoadedPreferencesRef.current) {
+			return;
+		}
+		hasLoadedPreferencesRef.current = true;
+		void (async () => {
+			const response = await fetch("/api/me/preferences", { credentials: "same-origin" });
+			if (!response.ok) {
+				return;
+			}
+			const payload = (await response.json()) as {
+				preferences?: {
+					defaultProvider?: ProviderId;
+					defaultModel?: string;
+				};
+			};
+			const defaultProvider = payload.preferences?.defaultProvider;
+			const defaultModel = payload.preferences?.defaultModel;
+			if (defaultProvider) {
+				setProvider(defaultProvider);
+				setModel(defaultModel ?? getProviderCatalogEntry(defaultProvider).defaultModel);
+				return;
+			}
+			if (defaultModel) {
+				setModel(defaultModel);
+			}
+		})().catch(() => {});
+	}, []);
+
+	useEffect(() => {
 		return () => {
 			authPopupCleanupRef.current?.();
 			authPopupCleanupRef.current = null;
@@ -494,6 +542,26 @@ export function HeroTweetAnalyzer({
 				}}
 				className="flex w-full flex-col gap-3 sm:flex-row"
 			>
+				<label htmlFor="hero-provider" className="sr-only">
+					Model provider
+				</label>
+				<select
+					id="hero-provider"
+					name="provider"
+					value={provider}
+					onChange={(event) => {
+						const nextProvider = event.target.value as ProviderId;
+						setProvider(nextProvider);
+						setModel(getProviderCatalogEntry(nextProvider).defaultModel);
+					}}
+					className="rounded-[20px] border border-white/20 bg-ink/70 px-4 py-4 text-sm text-white focus:border-coral focus:outline-none md:text-base"
+				>
+					{PROVIDER_OPTIONS.map((option) => (
+						<option key={option.id} value={option.id}>
+							{option.label}
+						</option>
+					))}
+				</select>
 				<label htmlFor="hero-tweet-url" className="sr-only">
 					Tweet URL
 				</label>
@@ -507,6 +575,22 @@ export function HeroTweetAnalyzer({
 					placeholder="https://x.com/username/status/123456789"
 					className="w-full rounded-[20px] border border-white/20 bg-ink/70 px-5 py-4 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base"
 				/>
+				<label htmlFor="hero-model" className="sr-only">
+					Model
+				</label>
+				<input
+					id="hero-model"
+					name="model"
+					list="hero-model-options"
+					value={model}
+					onChange={(event) => setModel(event.target.value)}
+					className="w-full rounded-[20px] border border-white/20 bg-ink/70 px-5 py-4 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base"
+				/>
+				<datalist id="hero-model-options">
+					{getProviderCatalogEntry(provider).models.map((candidate) => (
+						<option key={candidate} value={candidate} />
+					))}
+				</datalist>
 				<button
 					id="hero-analyze-button"
 					type="submit"

@@ -62,6 +62,7 @@ export async function createAnalysisFromTweetUrl({
 	return await storage.insert({
 		userId,
 		tweetUrlOrId: validatedInput.tweetUrlOrId,
+		provider: validatedInput.provider ?? "openai",
 		model: validatedInput.model ?? "gpt-4.1",
 		topic: analysis.topic,
 		summary: analysis.summary,

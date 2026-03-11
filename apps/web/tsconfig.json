@@ -13,6 +13,7 @@
 		"isolatedModules": true,
 		"baseUrl": ".",
 		"paths": {
+			"@pi-starter/ai": ["../../packages/ai/src/index.ts"],
 			"@pi-starter/contracts": ["../../packages/contracts/src/index.ts"],
 			"@pi-starter/contracts/bookmark-tags": ["../../packages/contracts/src/bookmark-tags.ts"],
 			"@pi-starter/core": ["../../packages/core/src/index.ts"],

@@ -13,6 +13,7 @@ function createSavedAnalysis(): SavedAnalysis {
 		id: "analysis_1",
 		userId: "user_1",
 		tweetUrlOrId: "https://x.com/user/status/123",
+		provider: "openai",
 		model: "gpt-4.1",
 		topic: "Model deployment",
 		summary: "Summary",

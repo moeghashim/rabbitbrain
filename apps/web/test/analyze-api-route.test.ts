@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { SavedAnalysis } from "@pi-starter/contracts";
+import type { AnalyzeTweetResult, SavedAnalysis } from "@pi-starter/contracts";
 import type { TweetPayload, TweetSourceProvider } from "@pi-starter/x-client";
 
 import { handleAnalyzePost } from "../app/api/analyze/route.js";
@@ -47,6 +47,7 @@ test("POST /api/analyze returns tweet.media in response contract", async () => {
 		id: "analysis_1",
 		userId: "user_1",
 		tweetUrlOrId: "https://x.com/ctatedev/status/2028960626685386994",
+		provider: "openai",
 		model: "gpt-4.1",
 		topic: "Topic",
 		summary: "Summary",
@@ -59,6 +60,12 @@ test("POST /api/analyze returns tweet.media in response contract", async () => {
 			{ name: "Five", whyItMattersInTweet: "E" },
 		],
 		createdAt: 1,
+	};
+	const analysis: AnalyzeTweetResult = {
+		topic: "Topic",
+		summary: "Summary",
+		intent: "Intent",
+		novelConcepts: saved.novelConcepts,
 	};
 
 	const response = await handleAnalyzePost(
@@ -81,6 +88,15 @@ test("POST /api/analyze returns tweet.media in response contract", async () => {
 				},
 			}),
 			createXClient: () => fakeClient,
+			getPreferencesForSession: async () => ({
+				userId: "user_1",
+				defaultProvider: "openai",
+				defaultModel: "gpt-4.1",
+				learningMinutes: 10,
+				updatedAt: 1,
+			}),
+			getProviderApiKeyForSession: async () => "sk-test",
+			analyzeTweetPayload: async () => analysis,
 			persistAnalysisForSession: async () => saved,
 			reportServerError: () => {},
 		},

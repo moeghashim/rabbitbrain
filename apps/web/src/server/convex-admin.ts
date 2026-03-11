@@ -1,17 +1,28 @@
 import {
 	type AnalyzeTweetInput,
+	type AnalyzeTweetResult,
 	DeleteBookmarkResultSchema,
 	type DeleteBookmarkResult,
+	ProviderCredentialSummaryListSchema,
+	ProviderIdSchema,
 	type SaveBookmarkInput,
 	SavedAnalysisSchema,
 	type SavedAnalysis,
 	SavedBookmarkSchema,
 	type SavedBookmark,
+	type ProviderCredentialSummary,
+	type ProviderId,
 	type UpdateBookmarkTagsInput,
+	type UserPreferencesInput,
+	UserPreferencesInputSchema,
+	UserPreferencesResultSchema,
+	type UserPreferencesResult,
 } from "@pi-starter/contracts";
 import type { TweetPayload } from "@pi-starter/x-client";
 import { ConvexHttpClient } from "convex/browser";
 import { makeFunctionReference } from "convex/server";
+
+import { buildKeyHint, decryptSecret, encryptSecret } from "./secret-crypto.js";
 
 interface SessionUserIdentity {
 	id: string;
@@ -43,22 +54,42 @@ const upsertCurrentUserRef = makeFunctionReference<
 	string
 >("users:upsertCurrentUser");
 
-const createFromTweetPayloadRef = makeFunctionReference<
+const createFromComputedRef = makeFunctionReference<
 	"mutation",
 	{
 		tweetUrlOrId: string;
+		provider: ProviderId;
 		model?: string;
-		tweet: {
-			id: string;
-			text: string;
-			authorId?: string;
-			authorUsername?: string;
-			authorName?: string;
-			authorAvatarUrl?: string;
-		};
+		topic: string;
+		summary: string;
+		intent: string;
+		novelConcepts: AnalyzeTweetResult["novelConcepts"];
 	},
 	SavedAnalysis
->("analysis:createFromTweetPayload");
+>("analysis:createFromComputed");
+
+const getPreferencesRef = makeFunctionReference<"query", Record<string, never>, UserPreferencesResult>(
+	"preferences:getPreferences",
+);
+const updatePreferencesRef = makeFunctionReference<"mutation", UserPreferencesInput, UserPreferencesResult>(
+	"preferences:updatePreferences",
+);
+const listProviderCredentialsRef = makeFunctionReference<"query", Record<string, never>, ProviderCredentialSummary[]>(
+	"provider_credentials:listByUser",
+);
+const getProviderCredentialRef = makeFunctionReference<
+	"query",
+	{ provider: ProviderId },
+	{ provider: ProviderId; encryptedApiKey: string; keyHint?: string; updatedAt: number } | null
+>("provider_credentials:getByProvider");
+const upsertProviderCredentialRef = makeFunctionReference<
+	"mutation",
+	{ provider: ProviderId; encryptedApiKey: string; keyHint?: string },
+	ProviderCredentialSummary
+>("provider_credentials:upsert");
+const removeProviderCredentialRef = makeFunctionReference<"mutation", { provider: ProviderId }, { provider: ProviderId }>(
+	"provider_credentials:remove",
+);
 
 const saveBookmarkRef = makeFunctionReference<"mutation", SaveBookmarkInput, SavedBookmark>("bookmarks:save");
 const updateBookmarkTagsRef = makeFunctionReference<"mutation", UpdateBookmarkTagsInput, SavedBookmark>(
@@ -98,17 +129,13 @@ function createAdminClient({ user, env = process.env }: { user: SessionUserIdent
 	return client;
 }
 
-export async function persistAnalysisForSession({
+async function createAuthedAdminClient({
 	sessionUser,
-	input,
-	tweet,
 	env,
 }: {
 	sessionUser: SessionUserIdentity;
-	input: AnalyzeTweetInput;
-	tweet: TweetPayload;
 	env?: ConvexEnv;
-}): Promise<SavedAnalysis> {
+}): Promise<{ client: ConvexHttpClient; userId: string }> {
 	const userId = sessionUser.id.trim();
 	if (!userId) {
 		throw new Error("Unauthorized");
@@ -127,17 +154,123 @@ export async function persistAnalysisForSession({
 		name: sessionUser.name ?? undefined,
 	});
 
-	const saved = await client.mutation(createFromTweetPayloadRef, {
+	return { client, userId };
+}
+
+export async function getPreferencesForSession({
+	sessionUser,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	env?: ConvexEnv;
+}): Promise<UserPreferencesResult> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return UserPreferencesResultSchema.parse(await client.query(getPreferencesRef, {}));
+}
+
+export async function updatePreferencesForSession({
+	sessionUser,
+	input,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	input: UserPreferencesInput;
+	env?: ConvexEnv;
+}): Promise<UserPreferencesResult> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	const validated = UserPreferencesInputSchema.parse(input);
+	return UserPreferencesResultSchema.parse(await client.mutation(updatePreferencesRef, validated));
+}
+
+export async function listProviderCredentialsForSession({
+	sessionUser,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	env?: ConvexEnv;
+}): Promise<ProviderCredentialSummary[]> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return ProviderCredentialSummaryListSchema.parse(await client.query(listProviderCredentialsRef, {}));
+}
+
+export async function getProviderApiKeyForSession({
+	sessionUser,
+	provider,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	provider: ProviderId;
+	env?: ConvexEnv;
+}): Promise<string | null> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	const record = await client.query(getProviderCredentialRef, { provider: ProviderIdSchema.parse(provider) });
+	if (!record) {
+		return null;
+	}
+	return decryptSecret(record.encryptedApiKey);
+}
+
+export async function upsertProviderCredentialForSession({
+	sessionUser,
+	provider,
+	apiKey,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	provider: ProviderId;
+	apiKey: string;
+	env?: ConvexEnv;
+}): Promise<ProviderCredentialSummary> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	const validatedProvider = ProviderIdSchema.parse(provider);
+	const trimmedApiKey = apiKey.trim();
+	if (trimmedApiKey.length === 0) {
+		throw new Error("API key is required.");
+	}
+
+	return await client.mutation(upsertProviderCredentialRef, {
+		provider: validatedProvider,
+		encryptedApiKey: encryptSecret(trimmedApiKey),
+		keyHint: buildKeyHint(trimmedApiKey),
+	});
+}
+
+export async function deleteProviderCredentialForSession({
+	sessionUser,
+	provider,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	provider: ProviderId;
+	env?: ConvexEnv;
+}): Promise<void> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	await client.mutation(removeProviderCredentialRef, {
+		provider: ProviderIdSchema.parse(provider),
+	});
+}
+
+export async function persistAnalysisForSession({
+	sessionUser,
+	input,
+	analysis,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	input: AnalyzeTweetInput & { provider: ProviderId; model: string };
+	analysis: AnalyzeTweetResult;
+	env?: ConvexEnv;
+}): Promise<SavedAnalysis> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+
+	const saved = await client.mutation(createFromComputedRef, {
 		tweetUrlOrId: input.tweetUrlOrId,
+		provider: input.provider,
 		model: input.model,
-		tweet: {
-			id: tweet.id,
-			text: tweet.text,
-			authorId: tweet.authorId,
-			authorUsername: tweet.authorUsername,
-			authorName: tweet.authorName,
-			authorAvatarUrl: tweet.authorAvatarUrl,
-		},
+		topic: analysis.topic,
+		summary: analysis.summary,
+		intent: analysis.intent,
+		novelConcepts: analysis.novelConcepts,
 	});
 
 	return SavedAnalysisSchema.parse(saved);
@@ -152,23 +285,7 @@ export async function saveBookmarkForSession({
 	input: SaveBookmarkInput;
 	env?: ConvexEnv;
 }): Promise<SavedBookmark> {
-	const userId = sessionUser.id.trim();
-	if (!userId) {
-		throw new Error("Unauthorized");
-	}
-
-	const client = createAdminClient({
-		user: {
-			...sessionUser,
-			id: userId,
-		},
-		env,
-	});
-
-	await client.mutation(upsertCurrentUserRef, {
-		email: sessionUser.email ?? undefined,
-		name: sessionUser.name ?? undefined,
-	});
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
 
 	const saved = await client.mutation(saveBookmarkRef, input);
 	return SavedBookmarkSchema.parse(saved);
@@ -181,23 +298,7 @@ export async function listBookmarksForSession({
 	sessionUser: SessionUserIdentity;
 	env?: ConvexEnv;
 }): Promise<SavedBookmark[]> {
-	const userId = sessionUser.id.trim();
-	if (!userId) {
-		throw new Error("Unauthorized");
-	}
-
-	const client = createAdminClient({
-		user: {
-			...sessionUser,
-			id: userId,
-		},
-		env,
-	});
-
-	await client.mutation(upsertCurrentUserRef, {
-		email: sessionUser.email ?? undefined,
-		name: sessionUser.name ?? undefined,
-	});
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
 
 	const bookmarks = await client.query(listBookmarksByUserRef, {});
 	return bookmarks.map((bookmark) => SavedBookmarkSchema.parse(bookmark));
@@ -212,23 +313,7 @@ export async function updateBookmarkTagsForSession({
 	input: UpdateBookmarkTagsInput;
 	env?: ConvexEnv;
 }): Promise<SavedBookmark> {
-	const userId = sessionUser.id.trim();
-	if (!userId) {
-		throw new Error("Unauthorized");
-	}
-
-	const client = createAdminClient({
-		user: {
-			...sessionUser,
-			id: userId,
-		},
-		env,
-	});
-
-	await client.mutation(upsertCurrentUserRef, {
-		email: sessionUser.email ?? undefined,
-		name: sessionUser.name ?? undefined,
-	});
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
 
 	const updated = await client.mutation(updateBookmarkTagsRef, input);
 	return SavedBookmarkSchema.parse(updated);
@@ -243,23 +328,7 @@ export async function deleteBookmarkForSession({
 	bookmarkId: string;
 	env?: ConvexEnv;
 }): Promise<DeleteBookmarkResult> {
-	const userId = sessionUser.id.trim();
-	if (!userId) {
-		throw new Error("Unauthorized");
-	}
-
-	const client = createAdminClient({
-		user: {
-			...sessionUser,
-			id: userId,
-		},
-		env,
-	});
-
-	await client.mutation(upsertCurrentUserRef, {
-		email: sessionUser.email ?? undefined,
-		name: sessionUser.name ?? undefined,
-	});
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
 
 	const deleted = await client.mutation(deleteBookmarkRef, {
 		bookmarkId,

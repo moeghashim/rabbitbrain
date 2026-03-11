@@ -7,7 +7,10 @@ export interface ServiceHealth {
 	ok: boolean;
 }
 
+export const ProviderIdSchema = z.enum(["openai", "google", "xai", "anthropic"]);
+
 export const UserPreferencesInputSchema = z.object({
+	defaultProvider: ProviderIdSchema,
 	defaultModel: z.string().min(1, "defaultModel is required"),
 	learningMinutes: z.number().int().min(5).max(120),
 });
@@ -19,9 +22,11 @@ export const UserPreferencesResultSchema = UserPreferencesInputSchema.extend({
 
 export type UserPreferencesInput = z.infer<typeof UserPreferencesInputSchema>;
 export type UserPreferencesResult = z.infer<typeof UserPreferencesResultSchema>;
+export type ProviderId = z.infer<typeof ProviderIdSchema>;
 
 export const AnalyzeTweetInputSchema = z.object({
 	tweetUrlOrId: z.string().min(1, "tweetUrlOrId is required"),
+	provider: ProviderIdSchema.optional(),
 	model: z.string().min(1).optional(),
 });
 
@@ -91,8 +96,23 @@ export const SavedAnalysisSchema = AnalyzeTweetResultSchema.extend({
 	id: z.string().min(1),
 	userId: z.string().min(1),
 	tweetUrlOrId: z.string().min(1),
+	provider: ProviderIdSchema,
 	model: z.string().min(1),
 	createdAt: z.number().int().nonnegative(),
+});
+
+export const ProviderCredentialSummarySchema = z.object({
+	provider: ProviderIdSchema,
+	configured: z.boolean(),
+	keyHint: z.string().min(1).optional(),
+	updatedAt: z.number().int().nonnegative().nullable().optional(),
+});
+
+export const ProviderCredentialSummaryListSchema = z.array(ProviderCredentialSummarySchema);
+
+export const ProviderCredentialInputSchema = z.object({
+	provider: ProviderIdSchema,
+	apiKey: z.string().min(1, "apiKey is required"),
 });
 
 export const BookmarkTagSchema = z.string().min(1).max(24);
@@ -151,6 +171,8 @@ export type AnalyzeTweetResponse = z.infer<typeof AnalyzeTweetResponseSchema>;
 export type ExtensionSessionUser = z.infer<typeof ExtensionSessionUserSchema>;
 export type ExtensionSessionStatus = z.infer<typeof ExtensionSessionStatusSchema>;
 export type SavedAnalysis = z.infer<typeof SavedAnalysisSchema>;
+export type ProviderCredentialSummary = z.infer<typeof ProviderCredentialSummarySchema>;
+export type ProviderCredentialInput = z.infer<typeof ProviderCredentialInputSchema>;
 export type SaveBookmarkInput = z.infer<typeof SaveBookmarkInputSchema>;
 export type SavedBookmark = z.infer<typeof SavedBookmarkSchema>;
 export type UpdateBookmarkTagsInput = z.infer<typeof UpdateBookmarkTagsInputSchema>;
