@@ -82,7 +82,33 @@ function extractOpenAiText(payload: unknown): string {
 	if (typeof outputText === "string" && outputText.trim()) {
 		return outputText.trim();
 	}
-	return "";
+
+	const output = (payload as JsonObject).output;
+	if (!Array.isArray(output)) {
+		return "";
+	}
+
+	return output
+		.flatMap((item) => {
+			if (typeof item !== "object" || item === null) {
+				return [];
+			}
+
+			const content = (item as JsonObject).content;
+			if (!Array.isArray(content)) {
+				return [];
+			}
+
+			return content.flatMap((entry) => {
+				if (typeof entry !== "object" || entry === null) {
+					return [];
+				}
+				const text = (entry as JsonObject).text;
+				return typeof text === "string" && text.trim() ? [text.trim()] : [];
+			});
+		})
+		.join("\n")
+		.trim();
 }
 
 function extractAnthropicText(payload: unknown): string {

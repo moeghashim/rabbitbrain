@@ -21,7 +21,7 @@ export default function AppHomePage() {
 					<section className="rounded-5xl border border-white/10 bg-charcoal/90 p-8">
 						<h2 className="font-serif text-4xl text-white">Analyze Tweet</h2>
 						<div className="mt-6">
-							<HeroTweetAnalyzer />
+							<HeroTweetAnalyzer showProviderSelector={false} showModelSelector={false} />
 						</div>
 					</section>
 

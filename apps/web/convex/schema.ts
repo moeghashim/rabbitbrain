@@ -12,7 +12,7 @@ export default defineSchema({
 	}).index("by_x_user_id", ["xUserId"]),
 	userPreferences: defineTable({
 		userId: v.id("users"),
-		defaultProvider: v.string(),
+		defaultProvider: v.optional(v.string()),
 		defaultModel: v.string(),
 		learningMinutes: v.number(),
 		updatedAt: v.number(),
@@ -27,7 +27,7 @@ export default defineSchema({
 	analyses: defineTable({
 		userId: v.id("users"),
 		tweetUrlOrId: v.string(),
-		provider: v.string(),
+		provider: v.optional(v.string()),
 		model: v.string(),
 		topic: v.string(),
 		summary: v.string(),
