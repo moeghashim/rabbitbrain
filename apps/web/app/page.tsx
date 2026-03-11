@@ -120,7 +120,12 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 							Capture knowledge on X
 						</h1>
 						<div className="w-full">
-							<HeroTweetAnalyzer initialTweetUrlOrId={initialTweetUrlOrId} autoAnalyze={autoAnalyze} />
+							<HeroTweetAnalyzer
+								initialTweetUrlOrId={initialTweetUrlOrId}
+								autoAnalyze={autoAnalyze}
+								showProviderSelector={false}
+								showModelSelector={false}
+							/>
 						</div>
 					</Reveal>
 					<div className="absolute bottom-10 left-1/2 flex -translate-x-1/2 animate-bounce flex-col items-center gap-2 opacity-50">

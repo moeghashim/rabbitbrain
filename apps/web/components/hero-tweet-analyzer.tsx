@@ -55,6 +55,8 @@ export interface HeroTweetAnalyzerProps {
 	autoAnalyze?: boolean;
 	initialProvider?: ProviderId;
 	initialModel?: string;
+	showProviderSelector?: boolean;
+	showModelSelector?: boolean;
 }
 
 function cleanAnalyzeFlagInUrl(): void {
@@ -300,6 +302,8 @@ export function HeroTweetAnalyzer({
 	autoAnalyze = false,
 	initialProvider = "openai",
 	initialModel,
+	showProviderSelector = true,
+	showModelSelector = true,
 }: Readonly<HeroTweetAnalyzerProps>) {
 	const [tweetUrlOrId, setTweetUrlOrId] = useState(initialTweetUrlOrId);
 	const [provider, setProvider] = useState<ProviderId>(initialProvider);
@@ -549,26 +553,30 @@ export function HeroTweetAnalyzer({
 				}}
 				className="flex w-full flex-col gap-3 sm:flex-row"
 			>
-				<label htmlFor="hero-provider" className="sr-only">
-					Model provider
-				</label>
-				<select
-					id="hero-provider"
-					name="provider"
-					value={provider}
-					onChange={(event) => {
-						const nextProvider = event.target.value as ProviderId;
-						setProvider(nextProvider);
-						setModel(getProviderCatalogEntry(nextProvider).defaultModel);
-					}}
-					className="rounded-[20px] border border-white/20 bg-ink/70 px-4 py-4 text-sm text-white focus:border-coral focus:outline-none md:text-base"
-				>
-					{PROVIDER_OPTIONS.map((option) => (
-						<option key={option.id} value={option.id}>
-							{option.label}
-						</option>
-					))}
-				</select>
+				{showProviderSelector ? (
+					<>
+						<label htmlFor="hero-provider" className="sr-only">
+							Model provider
+						</label>
+						<select
+							id="hero-provider"
+							name="provider"
+							value={provider}
+							onChange={(event) => {
+								const nextProvider = event.target.value as ProviderId;
+								setProvider(nextProvider);
+								setModel(getProviderCatalogEntry(nextProvider).defaultModel);
+							}}
+							className="rounded-[20px] border border-white/20 bg-ink/70 px-4 py-4 text-sm text-white focus:border-coral focus:outline-none md:text-base"
+						>
+							{PROVIDER_OPTIONS.map((option) => (
+								<option key={option.id} value={option.id}>
+									{option.label}
+								</option>
+							))}
+						</select>
+					</>
+				) : null}
 				<label htmlFor="hero-tweet-url" className="sr-only">
 					Tweet URL
 				</label>
@@ -582,34 +590,38 @@ export function HeroTweetAnalyzer({
 					placeholder="https://x.com/username/status/123456789"
 					className="w-full rounded-[20px] border border-white/20 bg-ink/70 px-5 py-4 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base"
 				/>
-				<label htmlFor="hero-model" className="sr-only">
-					Model
-				</label>
 				<input type="hidden" name="model" value={model} />
-				<select
-					id="hero-model"
-					value={selectedModelOption}
-					onChange={(event) => {
-						const nextValue = event.target.value;
-						setModel(nextValue === CUSTOM_MODEL_VALUE ? "" : nextValue);
-					}}
-					className="w-full rounded-[20px] border border-white/20 bg-ink/70 px-5 py-4 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base"
-				>
-					{modelOptions.map((candidate) => (
-						<option key={candidate} value={candidate}>
-							{candidate}
-						</option>
-					))}
-					<option value={CUSTOM_MODEL_VALUE}>Custom model</option>
-				</select>
-				{selectedModelOption === CUSTOM_MODEL_VALUE ? (
-					<input
-						id="hero-model-custom"
-						value={model}
-						onChange={(event) => setModel(event.target.value)}
-						placeholder="Enter a model ID"
-						className="w-full rounded-[20px] border border-white/20 bg-ink/70 px-5 py-4 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base"
-					/>
+				{showModelSelector ? (
+					<>
+						<label htmlFor="hero-model" className="sr-only">
+							Model
+						</label>
+						<select
+							id="hero-model"
+							value={selectedModelOption}
+							onChange={(event) => {
+								const nextValue = event.target.value;
+								setModel(nextValue === CUSTOM_MODEL_VALUE ? "" : nextValue);
+							}}
+							className="w-full rounded-[20px] border border-white/20 bg-ink/70 px-5 py-4 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base"
+						>
+							{modelOptions.map((candidate) => (
+								<option key={candidate} value={candidate}>
+									{candidate}
+								</option>
+							))}
+							<option value={CUSTOM_MODEL_VALUE}>Custom model</option>
+						</select>
+						{selectedModelOption === CUSTOM_MODEL_VALUE ? (
+							<input
+								id="hero-model-custom"
+								value={model}
+								onChange={(event) => setModel(event.target.value)}
+								placeholder="Enter a model ID"
+								className="w-full rounded-[20px] border border-white/20 bg-ink/70 px-5 py-4 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base"
+							/>
+						) : null}
+					</>
 				) : null}
 				<button
 					id="hero-analyze-button"

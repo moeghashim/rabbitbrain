@@ -152,3 +152,10 @@ test("HeroTweetAnalyzer hides bookmark controls before analysis result is availa
 	const html = renderToStaticMarkup(<HeroTweetAnalyzer />);
 	assert.doesNotMatch(html, /id=\"bookmark-save-controls\"/);
 });
+
+test("HeroTweetAnalyzer can hide provider and model selectors", () => {
+	const html = renderToStaticMarkup(<HeroTweetAnalyzer showProviderSelector={false} showModelSelector={false} />);
+	assert.doesNotMatch(html, /id=\"hero-provider\"/);
+	assert.doesNotMatch(html, /id=\"hero-model\"/);
+	assert.match(html, /id=\"hero-tweet-url\"/);
+});

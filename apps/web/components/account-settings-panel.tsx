@@ -31,22 +31,27 @@ export function AccountSettingsPanel() {
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [pendingProvider, setPendingProvider] = useState<ProviderId | null>(null);
 
+	async function loadPreferences() {
+		const response = await fetch("/api/me/preferences", { credentials: "same-origin" });
+		const payload = (await response.json()) as
+			| PreferencesPayload
+			| { error?: { message?: string } };
+		if (!response.ok || !("preferences" in payload) || !("credentials" in payload)) {
+			throw new Error(payload.error?.message ?? "Unable to load account settings.");
+		}
+		setPreferences(payload.preferences);
+		setCredentials({
+			openai: payload.credentials.find((item) => item.provider === "openai"),
+			google: payload.credentials.find((item) => item.provider === "google"),
+			xai: payload.credentials.find((item) => item.provider === "xai"),
+			anthropic: payload.credentials.find((item) => item.provider === "anthropic"),
+		});
+	}
+
 	useEffect(() => {
-		void (async () => {
-			const response = await fetch("/api/me/preferences", { credentials: "same-origin" });
-			if (!response.ok) {
-				return;
-			}
-			const payload = (await response.json()) as PreferencesPayload;
-			setPreferences(payload.preferences);
-			setCredentials((current) => {
-				const next = { ...current };
-				for (const item of payload.credentials) {
-					next[item.provider] = item;
-				}
-				return next;
-			});
-		})().catch(() => {});
+		void loadPreferences().catch((error) => {
+			setErrorMessage(error instanceof Error ? error.message : "Unable to load account settings.");
+		});
 	}, []);
 
 	const modelSuggestions = useMemo(
@@ -61,22 +66,26 @@ export function AccountSettingsPanel() {
 		event.preventDefault();
 		setMessage(null);
 		setErrorMessage(null);
-		const response = await fetch("/api/me/preferences", {
-			method: "POST",
-			headers: { "content-type": "application/json" },
-			body: JSON.stringify({
-				defaultProvider: preferences.defaultProvider,
-				defaultModel: preferences.defaultModel,
-				learningMinutes: preferences.learningMinutes,
-			}),
-		});
-		const payload = (await response.json()) as { preferences?: UserPreferencesResult; error?: { message?: string } };
-		if (!response.ok || !payload.preferences) {
-			setErrorMessage(payload.error?.message ?? "Unable to save preferences.");
-			return;
+		try {
+			const response = await fetch("/api/me/preferences", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({
+					defaultProvider: preferences.defaultProvider,
+					defaultModel: preferences.defaultModel,
+					learningMinutes: preferences.learningMinutes,
+				}),
+			});
+			const payload = (await response.json()) as { preferences?: UserPreferencesResult; error?: { message?: string } };
+			if (!response.ok || !payload.preferences) {
+				setErrorMessage(payload.error?.message ?? "Unable to save preferences.");
+				return;
+			}
+			await loadPreferences();
+			setMessage("Preferences saved.");
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : "Unable to save preferences.");
 		}
-		setPreferences(payload.preferences);
-		setMessage("Preferences saved.");
 	}
 
 	async function saveProviderKey(provider: ProviderId, apiKey: string) {
@@ -98,12 +107,12 @@ export function AccountSettingsPanel() {
 				setErrorMessage(payload.error?.message ?? `Unable to save ${provider} credentials.`);
 				return false;
 			}
-			setCredentials((current) => ({
-				...current,
-				[provider]: payload.credential,
-			}));
+			await loadPreferences();
 			setMessage(`${getProviderCatalogEntry(provider).label} key saved.`);
 			return true;
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : `Unable to save ${provider} credentials.`);
+			return false;
 		} finally {
 			setPendingProvider(null);
 		}
@@ -123,11 +132,10 @@ export function AccountSettingsPanel() {
 				setErrorMessage(payload.error?.message ?? `Unable to remove ${provider} credentials.`);
 				return;
 			}
-			setCredentials((current) => ({
-				...current,
-				[provider]: undefined,
-			}));
+			await loadPreferences();
 			setMessage(`${getProviderCatalogEntry(provider).label} key removed.`);
+		} catch (error) {
+			setErrorMessage(error instanceof Error ? error.message : `Unable to remove ${provider} credentials.`);
 		} finally {
 			setPendingProvider(null);
 		}

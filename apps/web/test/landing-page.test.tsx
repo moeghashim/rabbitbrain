@@ -27,6 +27,14 @@ test("landing page ctas route to auth pages", async () => {
 	assert.match(html, /Login with Twitter<\/a>/);
 });
 
+test("landing page analyzer keeps the tweet input but hides provider and model selectors", async () => {
+	const page = await LandingPage({});
+	const html = renderToStaticMarkup(page);
+	assert.match(html, /id=\"hero-tweet-url\"/);
+	assert.doesNotMatch(html, /id=\"hero-provider\"/);
+	assert.doesNotMatch(html, /id=\"hero-model\"/);
+});
+
 test("landing page keeps responsive class markers for desktop and mobile", async () => {
 	const page = await LandingPage({});
 	const html = renderToStaticMarkup(page);
