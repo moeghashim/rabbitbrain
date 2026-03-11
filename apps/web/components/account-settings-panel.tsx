@@ -86,6 +86,7 @@ export function AccountSettingsPanel() {
 		try {
 			const response = await fetch(`/api/me/provider-credentials/${provider}`, {
 				method: "POST",
+				credentials: "same-origin",
 				headers: { "content-type": "application/json" },
 				body: JSON.stringify({ apiKey }),
 			});
@@ -95,13 +96,14 @@ export function AccountSettingsPanel() {
 			};
 			if (!response.ok || !payload.credential) {
 				setErrorMessage(payload.error?.message ?? `Unable to save ${provider} credentials.`);
-				return;
+				return false;
 			}
 			setCredentials((current) => ({
 				...current,
 				[provider]: payload.credential,
 			}));
 			setMessage(`${getProviderCatalogEntry(provider).label} key saved.`);
+			return true;
 		} finally {
 			setPendingProvider(null);
 		}
@@ -114,6 +116,7 @@ export function AccountSettingsPanel() {
 		try {
 			const response = await fetch(`/api/me/provider-credentials/${provider}`, {
 				method: "DELETE",
+				credentials: "same-origin",
 			});
 			if (!response.ok) {
 				const payload = (await response.json()) as { error?: { message?: string } };
@@ -238,8 +241,12 @@ export function AccountSettingsPanel() {
 								event.preventDefault();
 								const formData = new FormData(event.currentTarget);
 								const apiKey = String(formData.get("apiKey") ?? "");
-								void saveProviderKey(provider.id, apiKey);
-								event.currentTarget.reset();
+								void (async () => {
+									const didSave = await saveProviderKey(provider.id, apiKey);
+									if (didSave) {
+										event.currentTarget.reset();
+									}
+								})();
 							}}
 							className="rounded-4xl border border-white/10 bg-ink/70 p-5"
 						>
