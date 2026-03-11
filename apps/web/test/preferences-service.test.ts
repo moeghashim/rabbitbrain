@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import { normalizeStoredModel, normalizeStoredProvider } from "../convex/preferences.js";
 import {
 	createPreferencesStore,
 	getOrCreatePreferences,
@@ -82,4 +83,11 @@ test("updatePreferences rejects invalid payload", () => {
 			),
 		/minimum/i,
 	);
+});
+
+test("legacy preference normalization falls back to openai defaults", () => {
+	const provider = normalizeStoredProvider("");
+	const model = normalizeStoredModel("", provider);
+	assert.equal(provider, "openai");
+	assert.equal(model, "gpt-4.1");
 });

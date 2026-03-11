@@ -1,4 +1,4 @@
-import { UserPreferencesInputSchema, UserPreferencesResultSchema } from "@pi-starter/contracts";
+import { ProviderIdSchema, UserPreferencesInputSchema, UserPreferencesResultSchema } from "@pi-starter/contracts";
 import {
 	mutationGeneric,
 	queryGeneric,
@@ -6,6 +6,32 @@ import {
 import { v } from "convex/values";
 
 import { requireUserBySession } from "./auth_helpers.js";
+
+export function normalizeStoredProvider(provider: string | undefined): "openai" | "google" | "xai" | "anthropic" {
+	const parsed = ProviderIdSchema.safeParse(provider);
+	return parsed.success ? parsed.data : "openai";
+}
+
+export function normalizeStoredModel(
+	model: string | undefined,
+	provider: "openai" | "google" | "xai" | "anthropic",
+): string {
+	const trimmed = model?.trim();
+	if (trimmed) {
+		return trimmed;
+	}
+	switch (provider) {
+		case "google":
+			return "gemini-2.0-flash";
+		case "xai":
+			return "grok-3-mini";
+		case "anthropic":
+			return "claude-3-5-sonnet-latest";
+		case "openai":
+		default:
+			return "gpt-4.1";
+	}
+}
 
 export const getPreferences = queryGeneric({
 	args: {},
@@ -16,10 +42,11 @@ export const getPreferences = queryGeneric({
 			.withIndex("by_user_id", (query) => query.eq("userId", user._id))
 			.unique();
 		if (existing) {
+			const defaultProvider = normalizeStoredProvider(existing.defaultProvider);
 			return UserPreferencesResultSchema.parse({
 				userId: String(existing.userId),
-				defaultProvider: existing.defaultProvider,
-				defaultModel: existing.defaultModel,
+				defaultProvider,
+				defaultModel: normalizeStoredModel(existing.defaultModel, defaultProvider),
 				learningMinutes: existing.learningMinutes,
 				updatedAt: existing.updatedAt,
 			});
