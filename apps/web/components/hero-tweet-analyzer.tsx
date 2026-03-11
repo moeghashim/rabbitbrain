@@ -48,6 +48,8 @@ interface SaveBookmarkResponseError {
 	};
 }
 
+const CUSTOM_MODEL_VALUE = "__custom__";
+
 export interface HeroTweetAnalyzerProps {
 	initialTweetUrlOrId?: string;
 	autoAnalyze?: boolean;
@@ -314,7 +316,12 @@ export function HeroTweetAnalyzer({
 	const authPopupCleanupRef = useRef<(() => void) | null>(null);
 	const hasLoadedPreferencesRef = useRef(false);
 
-	const canSubmit = useMemo(() => tweetUrlOrId.trim().length > 0 && !isLoading, [isLoading, tweetUrlOrId]);
+	const modelOptions = useMemo(() => getProviderCatalogEntry(provider).models, [provider]);
+	const selectedModelOption = modelOptions.includes(model) ? model : CUSTOM_MODEL_VALUE;
+	const canSubmit = useMemo(
+		() => tweetUrlOrId.trim().length > 0 && model.trim().length > 0 && !isLoading,
+		[isLoading, model, tweetUrlOrId],
+	);
 	const canSaveBookmark = useMemo(
 		() => Boolean(tweet && analysis) && !isSavingBookmark,
 		[analysis, isSavingBookmark, tweet],
@@ -578,19 +585,32 @@ export function HeroTweetAnalyzer({
 				<label htmlFor="hero-model" className="sr-only">
 					Model
 				</label>
-				<input
+				<input type="hidden" name="model" value={model} />
+				<select
 					id="hero-model"
-					name="model"
-					list="hero-model-options"
-					value={model}
-					onChange={(event) => setModel(event.target.value)}
+					value={selectedModelOption}
+					onChange={(event) => {
+						const nextValue = event.target.value;
+						setModel(nextValue === CUSTOM_MODEL_VALUE ? "" : nextValue);
+					}}
 					className="w-full rounded-[20px] border border-white/20 bg-ink/70 px-5 py-4 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base"
-				/>
-				<datalist id="hero-model-options">
-					{getProviderCatalogEntry(provider).models.map((candidate) => (
-						<option key={candidate} value={candidate} />
+				>
+					{modelOptions.map((candidate) => (
+						<option key={candidate} value={candidate}>
+							{candidate}
+						</option>
 					))}
-				</datalist>
+					<option value={CUSTOM_MODEL_VALUE}>Custom model</option>
+				</select>
+				{selectedModelOption === CUSTOM_MODEL_VALUE ? (
+					<input
+						id="hero-model-custom"
+						value={model}
+						onChange={(event) => setModel(event.target.value)}
+						placeholder="Enter a model ID"
+						className="w-full rounded-[20px] border border-white/20 bg-ink/70 px-5 py-4 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base"
+					/>
+				) : null}
 				<button
 					id="hero-analyze-button"
 					type="submit"

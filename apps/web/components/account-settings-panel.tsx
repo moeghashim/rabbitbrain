@@ -9,6 +9,8 @@ interface PreferencesPayload {
 	credentials: ProviderCredentialSummary[];
 }
 
+const CUSTOM_MODEL_VALUE = "__custom__";
+
 const DEFAULT_PREFERENCES: UserPreferencesResult = {
 	userId: "pending",
 	defaultProvider: "openai",
@@ -51,6 +53,9 @@ export function AccountSettingsPanel() {
 		() => getProviderCatalogEntry(preferences.defaultProvider).models,
 		[preferences.defaultProvider],
 	);
+	const selectedModelOption = modelSuggestions.includes(preferences.defaultModel)
+		? preferences.defaultModel
+		: CUSTOM_MODEL_VALUE;
 
 	async function savePreferences(event: React.FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -157,24 +162,40 @@ export function AccountSettingsPanel() {
 					<label htmlFor="defaultModel" className="text-sm font-semibold uppercase tracking-widest text-peach/70">
 						Default model
 					</label>
-					<input
+					<input type="hidden" name="defaultModel" value={preferences.defaultModel} />
+					<select
 						id="defaultModel"
-						name="defaultModel"
-						list="default-model-options"
-						value={preferences.defaultModel}
+						value={selectedModelOption}
 						onChange={(event) => {
+							const nextValue = event.target.value;
 							setPreferences((current) => ({
 								...current,
-								defaultModel: event.target.value,
+								defaultModel: nextValue === CUSTOM_MODEL_VALUE ? "" : nextValue,
 							}));
 						}}
 						className="mt-2 w-full rounded-4xl border border-white/20 bg-ink/70 px-5 py-4 text-white"
-					/>
-					<datalist id="default-model-options">
+					>
 						{modelSuggestions.map((model) => (
-							<option key={model} value={model} />
+							<option key={model} value={model}>
+								{model}
+							</option>
 						))}
-					</datalist>
+						<option value={CUSTOM_MODEL_VALUE}>Custom model</option>
+					</select>
+					{selectedModelOption === CUSTOM_MODEL_VALUE ? (
+						<input
+							id="defaultModelCustom"
+							value={preferences.defaultModel}
+							onChange={(event) => {
+								setPreferences((current) => ({
+									...current,
+									defaultModel: event.target.value,
+								}));
+							}}
+							placeholder="Enter a model ID"
+							className="mt-3 w-full rounded-4xl border border-white/20 bg-ink/70 px-5 py-4 text-white placeholder:text-peach/40"
+						/>
+					) : null}
 				</div>
 				<div>
 					<label htmlFor="learningMinutes" className="text-sm font-semibold uppercase tracking-widest text-peach/70">
