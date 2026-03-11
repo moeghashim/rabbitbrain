@@ -9,6 +9,12 @@ interface PreferencesPayload {
 	credentials: ProviderCredentialSummary[];
 }
 
+interface PreferencesErrorPayload {
+	error?: {
+		message?: string;
+	};
+}
+
 const CUSTOM_MODEL_VALUE = "__custom__";
 
 const DEFAULT_PREFERENCES: UserPreferencesResult = {
@@ -33,11 +39,10 @@ export function AccountSettingsPanel() {
 
 	async function loadPreferences() {
 		const response = await fetch("/api/me/preferences", { credentials: "same-origin" });
-		const payload = (await response.json()) as
-			| PreferencesPayload
-			| { error?: { message?: string } };
+		const payload = (await response.json()) as PreferencesPayload | PreferencesErrorPayload;
 		if (!response.ok || !("preferences" in payload) || !("credentials" in payload)) {
-			throw new Error(payload.error?.message ?? "Unable to load account settings.");
+			const errorPayload = payload as PreferencesErrorPayload;
+			throw new Error(errorPayload.error?.message ?? "Unable to load account settings.");
 		}
 		setPreferences(payload.preferences);
 		setCredentials({
