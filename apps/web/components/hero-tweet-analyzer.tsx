@@ -8,6 +8,7 @@ import type {
 	SavedBookmark,
 } from "@pi-starter/contracts";
 import type { TweetMedia, TweetPublicMetrics } from "@pi-starter/x-client";
+import { ChevronDown } from "lucide-react";
 import Link from "next/link";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
@@ -555,23 +556,29 @@ export function HeroTweetAnalyzer({
 						<label htmlFor="hero-provider" className="sr-only">
 							Model provider
 						</label>
-						<select
-							id="hero-provider"
-							name="provider"
-							value={provider}
-							onChange={(event) => {
-								const nextProvider = event.target.value as ProviderId;
-								setProvider(nextProvider);
-								setModel(getProviderCatalogEntry(nextProvider).defaultModel);
-							}}
-							className="rounded-[20px] border border-white/20 bg-ink/70 px-4 py-4 text-sm text-white focus:border-coral focus:outline-none md:text-base"
-						>
-							{PROVIDER_OPTIONS.map((option) => (
-								<option key={option.id} value={option.id}>
-									{option.label}
-								</option>
-							))}
-						</select>
+						<div className="relative">
+							<select
+								id="hero-provider"
+								name="provider"
+								value={provider}
+								onChange={(event) => {
+									const nextProvider = event.target.value as ProviderId;
+									setProvider(nextProvider);
+									setModel(getProviderCatalogEntry(nextProvider).defaultModel);
+								}}
+								className="appearance-none rounded-[20px] border border-white/20 bg-ink/70 px-4 py-4 pr-12 text-sm text-white focus:border-coral focus:outline-none md:text-base"
+							>
+								{PROVIDER_OPTIONS.map((option) => (
+									<option key={option.id} value={option.id}>
+										{option.label}
+									</option>
+								))}
+							</select>
+							<ChevronDown
+								aria-hidden="true"
+								className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-peach/70"
+							/>
+						</div>
 					</>
 				) : null}
 				<label htmlFor="hero-tweet-url" className="sr-only">
@@ -593,20 +600,26 @@ export function HeroTweetAnalyzer({
 						<label htmlFor="hero-model" className="sr-only">
 							Model
 						</label>
-						<select
-							id="hero-model"
-							value={resolveProviderCatalogModel(provider, model)}
-							onChange={(event) => {
-								setModel(event.target.value);
-							}}
-							className="w-full rounded-[20px] border border-white/20 bg-ink/70 px-5 py-4 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base"
-						>
-							{modelOptions.map((candidate) => (
-								<option key={candidate} value={candidate}>
-									{candidate}
-								</option>
-							))}
-						</select>
+						<div className="relative w-full">
+							<select
+								id="hero-model"
+								value={resolveProviderCatalogModel(provider, model)}
+								onChange={(event) => {
+									setModel(event.target.value);
+								}}
+								className="w-full appearance-none rounded-[20px] border border-white/20 bg-ink/70 px-5 py-4 pr-14 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base"
+							>
+								{modelOptions.map((candidate) => (
+									<option key={candidate} value={candidate}>
+										{candidate}
+									</option>
+								))}
+							</select>
+							<ChevronDown
+								aria-hidden="true"
+								className="pointer-events-none absolute right-5 top-1/2 h-5 w-5 -translate-y-1/2 text-peach/70"
+							/>
+						</div>
 					</>
 				) : null}
 				<button

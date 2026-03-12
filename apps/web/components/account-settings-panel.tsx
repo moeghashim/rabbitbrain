@@ -2,6 +2,7 @@
 
 import { PROVIDER_OPTIONS, getProviderCatalogEntry, resolveProviderCatalogModel } from "@pi-starter/ai";
 import type { ProviderCredentialSummary, ProviderId, UserPreferencesResult } from "@pi-starter/contracts";
+import { ChevronDown } from "lucide-react";
 import React, { useEffect, useMemo, useState } from "react";
 
 interface PreferencesPayload {
@@ -151,49 +152,61 @@ export function AccountSettingsPanel() {
 					<label htmlFor="defaultProvider" className="text-sm font-semibold uppercase tracking-widest text-peach/70">
 						Default provider
 					</label>
-					<select
-						id="defaultProvider"
-						name="defaultProvider"
-						value={preferences.defaultProvider}
-						onChange={(event) => {
-							const provider = event.target.value as ProviderId;
-							setPreferences((current) => ({
-								...current,
-								defaultProvider: provider,
-								defaultModel: getProviderCatalogEntry(provider).defaultModel,
-							}));
-						}}
-						className="mt-2 w-full rounded-4xl border border-white/20 bg-ink/70 px-5 py-4 text-white"
-					>
-						{PROVIDER_OPTIONS.map((provider) => (
-							<option key={provider.id} value={provider.id}>
-								{provider.label}
-							</option>
-						))}
-					</select>
+					<div className="relative mt-2">
+						<select
+							id="defaultProvider"
+							name="defaultProvider"
+							value={preferences.defaultProvider}
+							onChange={(event) => {
+								const provider = event.target.value as ProviderId;
+								setPreferences((current) => ({
+									...current,
+									defaultProvider: provider,
+									defaultModel: getProviderCatalogEntry(provider).defaultModel,
+								}));
+							}}
+							className="w-full appearance-none rounded-4xl border border-white/20 bg-ink/70 px-5 py-4 pr-14 text-white"
+						>
+							{PROVIDER_OPTIONS.map((provider) => (
+								<option key={provider.id} value={provider.id}>
+									{provider.label}
+								</option>
+							))}
+						</select>
+						<ChevronDown
+							aria-hidden="true"
+							className="pointer-events-none absolute right-5 top-1/2 h-5 w-5 -translate-y-1/2 text-peach/70"
+						/>
+					</div>
 				</div>
 				<div>
 					<label htmlFor="defaultModel" className="text-sm font-semibold uppercase tracking-widest text-peach/70">
 						Default model
 					</label>
 					<input type="hidden" name="defaultModel" value={preferences.defaultModel} />
-					<select
-						id="defaultModel"
-						value={resolveProviderCatalogModel(preferences.defaultProvider, preferences.defaultModel)}
-						onChange={(event) => {
-							setPreferences((current) => ({
-								...current,
-								defaultModel: event.target.value,
-							}));
-						}}
-						className="mt-2 w-full rounded-4xl border border-white/20 bg-ink/70 px-5 py-4 text-white"
-					>
-						{modelSuggestions.map((model) => (
-							<option key={model} value={model}>
-								{model}
-							</option>
-						))}
-					</select>
+					<div className="relative mt-2">
+						<select
+							id="defaultModel"
+							value={resolveProviderCatalogModel(preferences.defaultProvider, preferences.defaultModel)}
+							onChange={(event) => {
+								setPreferences((current) => ({
+									...current,
+									defaultModel: event.target.value,
+								}));
+							}}
+							className="w-full appearance-none rounded-4xl border border-white/20 bg-ink/70 px-5 py-4 pr-14 text-white"
+						>
+							{modelSuggestions.map((model) => (
+								<option key={model} value={model}>
+									{model}
+								</option>
+							))}
+						</select>
+						<ChevronDown
+							aria-hidden="true"
+							className="pointer-events-none absolute right-5 top-1/2 h-5 w-5 -translate-y-1/2 text-peach/70"
+						/>
+					</div>
 				</div>
 				<div>
 					<label htmlFor="learningMinutes" className="text-sm font-semibold uppercase tracking-widest text-peach/70">
