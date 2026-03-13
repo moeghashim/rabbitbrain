@@ -13,6 +13,7 @@ import Link from "next/link";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { buildTwitterAuthStartPath, startTwitterPopupAuth } from "../src/auth/popup-client.js";
+import { BOOKMARK_ALREADY_EXISTS_ERROR_CODE } from "../src/bookmarks/errors.js";
 
 export { parseBookmarkTags, validateBookmarkTags };
 
@@ -476,6 +477,12 @@ export function HeroTweetAnalyzer({
 			if (!response.ok) {
 				const fallbackMessage = "Unable to save this bookmark right now.";
 				const message = "error" in payload && payload.error?.message ? payload.error.message : fallbackMessage;
+				const code = "error" in payload ? payload.error?.code : undefined;
+				if (code === BOOKMARK_ALREADY_EXISTS_ERROR_CODE) {
+					setBookmarkSuccessMessage(message);
+					setBookmarkTagsInput(tags.join(", "));
+					return;
+				}
 				setBookmarkErrorMessage(message);
 				return;
 			}

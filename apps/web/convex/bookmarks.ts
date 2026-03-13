@@ -9,10 +9,11 @@ import {
 	mutationGeneric,
 	queryGeneric,
 } from "convex/server";
+import { ConvexError } from "convex/values";
 import { v } from "convex/values";
 
 import { requireUserBySession } from "./auth_helpers.js";
-import { BOOKMARK_ALREADY_EXISTS_ERROR_CODE } from "../src/bookmarks/errors.js";
+import { createBookmarkAlreadyExistsErrorData } from "../src/bookmarks/errors.js";
 
 interface BookmarkRecord {
 	_id: string;
@@ -110,7 +111,7 @@ export const save = mutationGeneric({
 					await ctx.db.delete(duplicateId);
 				}
 			}
-			throw new Error(BOOKMARK_ALREADY_EXISTS_ERROR_CODE);
+			throw new ConvexError(createBookmarkAlreadyExistsErrorData());
 		}
 
 		const now = Date.now();

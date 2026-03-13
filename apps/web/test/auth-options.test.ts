@@ -25,7 +25,7 @@ test("buildAuthOptions returns X-only provider config", () => {
 		AUTH_X_SECRET: "x_client_secret",
 	});
 	const provider = options.providers[0];
-	const authorization = provider?.authorization as AuthorizationConfig | undefined;
+	const authorization = provider && "authorization" in provider ? (provider.authorization as AuthorizationConfig | undefined) : undefined;
 
 	assert.equal(options.pages?.signIn, "/sign-in");
 	assert.equal(options.session?.strategy, "jwt");

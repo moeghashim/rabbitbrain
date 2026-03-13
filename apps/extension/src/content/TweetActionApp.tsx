@@ -11,6 +11,8 @@ import { TweetActionPanel } from "./TweetActionPanel.js";
 import type { PendingAuthAction } from "../shared/messages.js";
 import { parseBookmarkTags, validateBookmarkTags } from "../shared/tag-utils.js";
 
+const BOOKMARK_ALREADY_EXISTS_ERROR_CODE = "BOOKMARK_ALREADY_EXISTS";
+
 function buildDefaultTags(analysisResult: AnalyzeTweetResponse): string {
 	return analysisResult.analysis.novelConcepts.map((concept) => concept.name).join(", ");
 }
@@ -101,6 +103,13 @@ export function TweetActionApp({ tweetUrl }: Readonly<TweetActionAppProps>) {
 			if (response.code === "AUTH_REQUIRED") {
 				setStatus("auth-pending");
 				setAuthMessage(response.message);
+				setIsSaving(false);
+				return;
+			}
+			if (response.code === BOOKMARK_ALREADY_EXISTS_ERROR_CODE) {
+				setTagsInput(parsedTags.join(", "));
+				setSaveMessage(response.message);
+				setStatus("success");
 				setIsSaving(false);
 				return;
 			}

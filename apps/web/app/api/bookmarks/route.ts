@@ -8,8 +8,8 @@ import { ZodError } from "zod";
 
 import { getServerAuthSession } from "../../../src/auth/auth.js";
 import {
-	BOOKMARK_ALREADY_EXISTS_ERROR_CODE,
-	BOOKMARK_ALREADY_EXISTS_MESSAGE,
+	createBookmarkAlreadyExistsErrorData,
+	isBookmarkAlreadyExistsError,
 } from "../../../src/bookmarks/errors.js";
 import { validateStartupEnvIfNeeded } from "../../../src/config/startup-env.js";
 import {
@@ -128,13 +128,10 @@ export async function handleBookmarksPost(
 			);
 		}
 
-		if (error instanceof Error && error.message === BOOKMARK_ALREADY_EXISTS_ERROR_CODE) {
+		if (isBookmarkAlreadyExistsError(error)) {
 			return NextResponse.json(
 				{
-					error: {
-						code: BOOKMARK_ALREADY_EXISTS_ERROR_CODE,
-						message: BOOKMARK_ALREADY_EXISTS_MESSAGE,
-					},
+					error: createBookmarkAlreadyExistsErrorData(),
 				},
 				{ status: 409 },
 			);

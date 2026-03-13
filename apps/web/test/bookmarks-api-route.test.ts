@@ -6,6 +6,7 @@ import type {
 	SavedBookmark,
 	UpdateBookmarkTagsInput,
 } from "@pi-starter/contracts";
+import { ConvexError } from "convex/values";
 
 import {
 	handleBookmarksDelete,
@@ -13,6 +14,27 @@ import {
 	handleBookmarksPatch,
 	handleBookmarksPost,
 } from "../app/api/bookmarks/route.js";
+import {
+	BOOKMARK_ALREADY_EXISTS_ERROR_CODE,
+	BOOKMARK_ALREADY_EXISTS_MESSAGE,
+	createBookmarkAlreadyExistsErrorData,
+} from "../src/bookmarks/errors.js";
+
+interface TestSession {
+	user: {
+		id: string;
+		email: string;
+		name: string;
+	};
+}
+
+interface TestDependenciesOverrides {
+	session?: TestSession | null;
+	saveBookmarkForSession?: ({ input }: { input: SaveBookmarkInput }) => Promise<SavedBookmark>;
+	listBookmarksForSession?: () => Promise<SavedBookmark[]>;
+	updateBookmarkTagsForSession?: ({ input }: { input: UpdateBookmarkTagsInput }) => Promise<SavedBookmark>;
+	deleteBookmarkForSession?: ({ bookmarkId }: { bookmarkId: string }) => Promise<DeleteBookmarkResult>;
+}
 
 function createInput(tags: string[]): SaveBookmarkInput {
 	return {
@@ -50,7 +72,7 @@ function createDependencies({
 		({
 			bookmarkId: "bookmark_1",
 		}) as DeleteBookmarkResult,
-} = {}) {
+}: TestDependenciesOverrides = {}) {
 	return {
 		validateStartupEnvIfNeeded: () => {},
 		getServerAuthSession: async () => session,
@@ -92,7 +114,7 @@ test("POST /api/bookmarks rejects duplicate saves for the same tweet", async () 
 		saveBookmarkForSession: async ({ input }: { input: SaveBookmarkInput }) => {
 			const existing = store.get(input.tweetId);
 			if (existing) {
-				throw new Error("BOOKMARK_ALREADY_EXISTS");
+				throw new ConvexError(createBookmarkAlreadyExistsErrorData());
 			}
 
 			const created = createSavedBookmark(input, 200);
@@ -148,8 +170,8 @@ test("POST /api/bookmarks rejects duplicate saves for the same tweet", async () 
 	assert.equal(duplicateResponse.status, 409);
 	assert.deepEqual(await duplicateResponse.json(), {
 		error: {
-			code: "BOOKMARK_ALREADY_EXISTS",
-			message: "This tweet is already in your bookmarks.",
+			code: BOOKMARK_ALREADY_EXISTS_ERROR_CODE,
+			message: BOOKMARK_ALREADY_EXISTS_MESSAGE,
 		},
 	});
 
