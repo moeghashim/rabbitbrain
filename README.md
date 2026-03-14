@@ -64,9 +64,20 @@ npm run check
 npm test
 ```
 
+## Releases
+
+Rabbitbrain uses Changesets and GitHub Releases.
+
+```bash
+npm run changeset
+```
+
+Maintainers merge the generated release PR, tag the merge commit as `vX.Y.Z`, and let GitHub Actions publish packages, deploy the web app, and attach the extension zip to the GitHub Release.
+
 ## Documentation
 
 - xurl setup and safety notes: `docs/xurl.md`
+- Release runbook: `docs/releases.md`
 - Agent instructions: `AGENTS.md`
 
 ## License

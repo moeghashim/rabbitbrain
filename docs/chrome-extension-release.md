@@ -9,18 +9,19 @@
 
 ## Production Packaging
 
-1. Build the production extension with `npm run extension:package`.
-2. Confirm the artifact exists at `apps/extension/dist/rabbitbrain-for-x-<version>.zip`.
-3. Confirm the production manifest contains:
+1. Prefer the zip attached to the matching GitHub Release tag (`vX.Y.Z`).
+2. If needed, rebuild locally with `npm run extension:package`.
+3. Confirm the artifact exists at `apps/extension/dist/rabbitbrain-for-x-<version>.zip`.
+4. Confirm the production manifest contains:
    - `storage`
    - `https://x.com/*`
    - `https://www.rabbitbrain.app/*`
-4. Confirm `http://localhost:3000/*` is absent from the packaged manifest.
+5. Confirm `http://localhost:3000/*` is absent from the packaged manifest.
 
 ## Chrome Web Store Checklist
 
 1. Create or log into the Chrome Web Store publisher account.
-2. Upload the packaged zip to create the listing.
+2. Upload the zip from the GitHub Release (or the local fallback zip) to create the listing.
 3. Set visibility to `Public` and enable deferred publishing.
 4. Fill the listing with the prepared title, description, screenshots, promo image, privacy answers, support URL, and privacy policy URL.
 5. Add reviewer instructions covering:

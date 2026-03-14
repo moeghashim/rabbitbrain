@@ -1,0 +1,22 @@
+{
+	"$schema": "https://unpkg.com/@changesets/config@3.1.3/schema.json",
+	"changelog": "@changesets/cli/changelog",
+	"commit": false,
+	"fixed": [
+		[
+			"@pi-starter/ai",
+			"@pi-starter/contracts",
+			"@pi-starter/core",
+			"@pi-starter/x-client"
+		]
+	],
+	"linked": [],
+	"access": "public",
+	"baseBranch": "main",
+	"updateInternalDependencies": "patch",
+	"ignore": [],
+	"privatePackages": {
+		"version": true,
+		"tag": false
+	}
+}

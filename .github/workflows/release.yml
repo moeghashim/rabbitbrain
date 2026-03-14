@@ -1,0 +1,79 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish-and-deploy:
+    runs-on: ubuntu-latest
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci --include=optional
+
+      - name: Check formatting and types
+        run: npm run check
+
+      - name: Run tests
+        run: npm test
+
+      - name: Typecheck web app
+        run: npm run -w @pi-starter/web typecheck
+
+      - name: Build web app
+        run: npm run -w @pi-starter/web build
+
+      - name: Build extension release zip
+        run: npm run extension:package
+
+      - name: Resolve extension asset path
+        id: extension-asset
+        run: echo "path=$(ls apps/extension/dist/rabbitbrain-for-x-*.zip)" >> "$GITHUB_OUTPUT"
+
+      - name: Publish npm packages
+        run: npm run release:publish
+
+      - name: Pull Vercel project settings
+        run: npx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Deploy to Vercel production
+        id: deploy
+        run: |
+          deployment_url="$(npx vercel@latest deploy --yes --prod --token="$VERCEL_TOKEN" | tail -n 1)"
+          echo "url=$deployment_url" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" "${{ steps.extension-asset.outputs.path }}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            --notes "Production deploy: ${{ steps.deploy.outputs.url }}
+
+Site alias: https://www.rabbitbrain.app"
