@@ -59,6 +59,21 @@ jobs:
         if: steps.changesets.outputs.pending != 'true'
         run: echo "No pending changesets on main. Skipping version, publish, deploy, and GitHub Release steps."
 
+      - name: Validate release secrets
+        if: steps.changesets.outputs.pending == 'true'
+        run: |
+          missing=0
+          for secret_name in NODE_AUTH_TOKEN VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            secret_value="${!secret_name}"
+            if [ -z "$secret_value" ]; then
+              echo "Missing required release secret: $secret_name" >&2
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
       - name: Version release from changesets
         if: steps.changesets.outputs.pending == 'true'
         run: npm run release:version
@@ -70,7 +85,7 @@ jobs:
       - name: Resolve release version
         if: steps.changesets.outputs.pending == 'true'
         id: version
-        run: echo "value=$(node -p \"JSON.parse(require('fs').readFileSync('packages/core/package.json','utf8')).version\")" >> "$GITHUB_OUTPUT"
+        run: echo "value=$(node -e 'console.log(JSON.parse(require(\"node:fs\").readFileSync(\"packages/core/package.json\", \"utf8\")).version)')" >> "$GITHUB_OUTPUT"
 
       - name: Commit release changes back to main
         if: steps.changesets.outputs.pending == 'true'
