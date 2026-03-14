@@ -126,4 +126,4 @@ jobs:
             --generate-notes \
             --notes "Production deploy: ${{ steps.deploy.outputs.url }}
 
-Site alias: https://www.rabbitbrain.app"
+            Site alias: https://www.rabbitbrain.app"
