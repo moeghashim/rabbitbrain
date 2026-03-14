@@ -5,8 +5,11 @@
 	"fixed": [
 		[
 			"@pi-starter/ai",
+			"@pi-starter/cli",
 			"@pi-starter/contracts",
 			"@pi-starter/core",
+			"@pi-starter/extension",
+			"@pi-starter/web",
 			"@pi-starter/x-client"
 		]
 	],

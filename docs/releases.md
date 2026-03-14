@@ -1,6 +1,6 @@
 # Rabbitbrain Releases
 
-Rabbitbrain uses Changesets and GitHub Releases for release automation.
+Rabbitbrain uses Changesets and GitHub Releases for release automation directly from `main` pushes.
 
 ## What gets released
 
@@ -21,26 +21,16 @@ Private apps are not published to npm.
 ## Maintainer flow
 
 1. Merge changesets into `main`.
-2. Wait for the `Release PR` workflow to open or update the `Version packages` PR.
-3. Review the generated version bumps and changelog edits.
-4. Merge the version PR.
-5. Tag the merge commit as `vX.Y.Z` and push the tag:
-
-```bash
-git checkout main
-git pull
-git tag vX.Y.Z
-git push origin vX.Y.Z
-```
-
-6. Let the `Release` workflow:
-   - run `npm run check`
-   - run `npm test`
-   - run `npm run -w @pi-starter/web typecheck`
+2. Let the `Release` workflow run on the resulting `main` push.
+3. The workflow will:
+   - detect pending `.changeset/*.md` files
+   - run `npm run release:version`
+   - update `package-lock.json`
+   - commit the version/changelog changes back to `main`
+   - run `npm run release:publish`
    - run `npm run -w @pi-starter/web build`
    - run `npm run extension:package`
-   - run `npm run release:publish`
-   - deploy the tagged commit to Vercel production
+   - deploy the release commit to Vercel production
    - create the GitHub Release and attach the extension zip
 
 ## Required GitHub Secrets

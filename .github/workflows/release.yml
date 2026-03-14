@@ -2,8 +2,7 @@ name: Release
 
 on:
   push:
-    tags:
-      - "v*"
+    branches: [main]
 
 permissions:
   contents: write
@@ -36,6 +35,17 @@ jobs:
       - name: Install dependencies
         run: npm ci --include=optional
 
+      - name: Detect pending changesets
+        id: changesets
+        run: |
+          count="$(find .changeset -maxdepth 1 -name '*.md' ! -name 'README.md' | wc -l | tr -d ' ')"
+          echo "count=$count" >> "$GITHUB_OUTPUT"
+          if [ "$count" -gt 0 ]; then
+            echo "pending=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "pending=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Check formatting and types
         run: npm run check
 
@@ -45,34 +55,74 @@ jobs:
       - name: Typecheck web app
         run: npm run -w @pi-starter/web typecheck
 
+      - name: Stop when no release work is pending
+        if: steps.changesets.outputs.pending != 'true'
+        run: echo "No pending changesets on main. Skipping version, publish, deploy, and GitHub Release steps."
+
+      - name: Version release from changesets
+        if: steps.changesets.outputs.pending == 'true'
+        run: npm run release:version
+
+      - name: Refresh lockfile after versioning
+        if: steps.changesets.outputs.pending == 'true'
+        run: npm install --package-lock-only --ignore-scripts
+
+      - name: Resolve release version
+        if: steps.changesets.outputs.pending == 'true'
+        id: version
+        run: echo "value=$(node -p \"JSON.parse(require('fs').readFileSync('packages/core/package.json','utf8')).version\")" >> "$GITHUB_OUTPUT"
+
+      - name: Commit release changes back to main
+        if: steps.changesets.outputs.pending == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .changeset package-lock.json package.json packages apps
+          git commit -m "Release v${{ steps.version.outputs.value }}"
+          git push origin HEAD:main
+
       - name: Build web app
+        if: steps.changesets.outputs.pending == 'true'
         run: npm run -w @pi-starter/web build
 
       - name: Build extension release zip
+        if: steps.changesets.outputs.pending == 'true'
         run: npm run extension:package
 
       - name: Resolve extension asset path
+        if: steps.changesets.outputs.pending == 'true'
         id: extension-asset
         run: echo "path=$(ls apps/extension/dist/rabbitbrain-for-x-*.zip)" >> "$GITHUB_OUTPUT"
 
       - name: Publish npm packages
+        if: steps.changesets.outputs.pending == 'true'
         run: npm run release:publish
 
       - name: Pull Vercel project settings
+        if: steps.changesets.outputs.pending == 'true'
         run: npx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
 
       - name: Deploy to Vercel production
+        if: steps.changesets.outputs.pending == 'true'
         id: deploy
         run: |
           deployment_url="$(npx vercel@latest deploy --yes --prod --token="$VERCEL_TOKEN" | tail -n 1)"
           echo "url=$deployment_url" >> "$GITHUB_OUTPUT"
 
       - name: Create GitHub Release
+        if: steps.changesets.outputs.pending == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" "${{ steps.extension-asset.outputs.path }}" \
-            --title "${GITHUB_REF_NAME}" \
+          release_tag="v${{ steps.version.outputs.value }}"
+          release_target="$(git rev-parse HEAD)"
+          if gh release view "$release_tag" >/dev/null 2>&1; then
+            echo "GitHub release $release_tag already exists; skipping."
+            exit 0
+          fi
+          gh release create "$release_tag" "${{ steps.extension-asset.outputs.path }}" \
+            --title "$release_tag" \
+            --target "$release_target" \
             --generate-notes \
             --notes "Production deploy: ${{ steps.deploy.outputs.url }}
 

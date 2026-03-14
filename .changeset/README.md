@@ -12,9 +12,7 @@ Rabbitbrain uses Changesets to prepare release PRs for the repo.
 ## Maintainer flow
 
 1. Merge changesets into `main`.
-2. Let the `Release PR` workflow open or update the version PR.
-3. Merge the version PR.
-4. Tag the merge commit as `vX.Y.Z` and push the tag.
-5. Let the `Release` workflow publish packages, deploy the web app, and attach the extension zip to the GitHub Release.
+2. Let the `Release` workflow detect the pending changesets on the next `main` push.
+3. The workflow versions packages, commits the release back to `main`, publishes public packages, deploys the web app, and creates the GitHub Release automatically.
 
 See `docs/releases.md` for the full release runbook.

@@ -72,7 +72,7 @@ Rabbitbrain uses Changesets and GitHub Releases.
 npm run changeset
 ```
 
-Maintainers merge the generated release PR, tag the merge commit as `vX.Y.Z`, and let GitHub Actions publish packages, deploy the web app, and attach the extension zip to the GitHub Release.
+Maintainers merge changesets into `main`, and GitHub Actions versions the repo, publishes packages, deploys the web app, and attaches the extension zip to the GitHub Release from the resulting `main` push.
 
 ## Documentation
 
