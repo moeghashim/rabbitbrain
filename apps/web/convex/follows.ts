@@ -168,16 +168,21 @@ export const upsertCreatorFollow = mutationGeneric({
 		const subjectTag = validated.scope === "subject" ? validated.subjectTag?.trim() : undefined;
 		const subjectKey = validated.scope === "all_feed" ? ALL_FEED_SUBJECT_KEY : normalizeSubjectTag(subjectTag ?? "");
 		const now = Date.now();
-		const existing = await ctx.db
-			.query("creatorFollows")
-			.withIndex("by_user_id_creator_scope_subject", (query) =>
-				query
-					.eq("userId", user._id)
-					.eq("creatorUsernameLower", creatorUsernameLower)
-					.eq("scope", validated.scope)
-					.eq("subjectKey", subjectKey),
-			)
-			.unique();
+		const existing = (
+			await ctx.db
+				.query("creatorFollows")
+				.withIndex("by_user_id_creator_scope_subject", (query) =>
+					query.eq("userId", user._id),
+				)
+				.filter((query) =>
+					query.and(
+						query.eq(query.field("creatorUsernameLower"), creatorUsernameLower),
+						query.eq(query.field("scope"), validated.scope),
+						query.eq(query.field("subjectKey"), subjectKey),
+					),
+				)
+				.collect()
+		)[0];
 
 		if (existing) {
 			await ctx.db.patch(existing._id, {
@@ -260,12 +265,17 @@ export const upsertSubjectFollow = mutationGeneric({
 		const subjectTag = validated.subjectTag.trim();
 		const subjectTagLower = normalizeSubjectTag(validated.subjectTag);
 		const now = Date.now();
-		const existing = await ctx.db
-			.query("subjectFollows")
-			.withIndex("by_user_id_subject_tag", (query) =>
-				query.eq("userId", user._id).eq("subjectTagLower", subjectTagLower),
-			)
-			.unique();
+		const existing = (
+			await ctx.db
+				.query("subjectFollows")
+				.withIndex("by_user_id_subject_tag", (query) =>
+					query.eq("userId", user._id),
+				)
+				.filter((query) =>
+					query.eq(query.field("subjectTagLower"), subjectTagLower),
+				)
+				.collect()
+		)[0];
 
 		if (existing) {
 			await ctx.db.patch(existing._id, {

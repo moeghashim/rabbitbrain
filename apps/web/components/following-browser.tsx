@@ -61,6 +61,16 @@ interface ApiErrorPayload {
 	};
 }
 
+function readApiErrorMessage(
+	payload: FollowSummary | FollowingFeedResponse | FollowSuggestionsResponse | ApiErrorPayload,
+	fallbackMessage: string,
+): string {
+	if ("error" in payload && payload.error?.message) {
+		return payload.error.message;
+	}
+	return fallbackMessage;
+}
+
 export function FollowingBrowser() {
 	const [creatorFollows, setCreatorFollows] = useState<CreatorFollow[]>([]);
 	const [subjectFollows, setSubjectFollows] = useState<SubjectFollow[]>([]);
@@ -87,10 +97,10 @@ export function FollowingBrowser() {
 			const feedPayload = (await feedResponse.json()) as FollowingFeedResponse | ApiErrorPayload;
 
 			if (!followsResponse.ok) {
-				throw new Error(followsPayload.error?.message ?? "Unable to load follows.");
+				throw new Error(readApiErrorMessage(followsPayload, "Unable to load follows."));
 			}
 			if (!feedResponse.ok) {
-				throw new Error(feedPayload.error?.message ?? "Unable to load following feed.");
+				throw new Error(readApiErrorMessage(feedPayload, "Unable to load following feed."));
 			}
 			if (!("creatorFollows" in followsPayload) || !("bookmarks" in feedPayload)) {
 				throw new Error("Unexpected follow response.");
@@ -188,7 +198,7 @@ export function FollowingBrowser() {
 				});
 				const payload = (await response.json()) as FollowSuggestionsResponse | ApiErrorPayload;
 				if (!response.ok) {
-					throw new Error(payload.error?.message ?? "Unable to load creator suggestions.");
+					throw new Error(readApiErrorMessage(payload, "Unable to load creator suggestions."));
 				}
 				if (!("suggestions" in payload)) {
 					throw new Error("Unexpected suggestions response.");
