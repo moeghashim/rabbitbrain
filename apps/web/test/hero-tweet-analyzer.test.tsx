@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { AnalyzeTweetResult } from "@pi-starter/contracts";
+import type { AnalyzeTweetResult, FollowSummary } from "@pi-starter/contracts";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import {
+	AnalyzerFollowControls,
 	HeroTweetAnalyzer,
 	parseBookmarkTags,
 	selectLeadTweetMedia,
@@ -23,6 +24,11 @@ const analysisFixture: AnalyzeTweetResult = {
 		{ name: "Four", whyItMattersInTweet: "D" },
 		{ name: "Five", whyItMattersInTweet: "E" },
 	],
+};
+
+const emptyFollowSummary: FollowSummary = {
+	creatorFollows: [],
+	subjectFollows: [],
 };
 
 test("TweetPreviewCard renders image media for photo posts", () => {
@@ -158,4 +164,81 @@ test("HeroTweetAnalyzer can hide provider and model selectors", () => {
 	assert.doesNotMatch(html, /id=\"hero-provider\"/);
 	assert.doesNotMatch(html, /id=\"hero-model\"/);
 	assert.match(html, /id=\"hero-tweet-url\"/);
+});
+
+test("AnalyzerFollowControls renders creator and topic follow actions from active tags", () => {
+	const html = renderToStaticMarkup(
+		<AnalyzerFollowControls
+			tweet={{
+				id: "1",
+				text: "test",
+				authorUsername: "rhys",
+				authorName: "Rhys",
+			}}
+			activeTags={["Strategy", "Writing"]}
+			followSummary={emptyFollowSummary}
+		/>,
+	);
+
+	assert.match(html, /id="analyzer-follow-controls"/);
+	assert.match(html, /Follow account/);
+	assert.match(html, /Follow @rhys for Strategy/);
+	assert.match(html, /Follow topic Writing/);
+});
+
+test("AnalyzerFollowControls shows follow status when creator or topic is already followed", () => {
+	const html = renderToStaticMarkup(
+		<AnalyzerFollowControls
+			tweet={{
+				id: "1",
+				text: "test",
+				authorUsername: "@Rhys",
+				authorName: "Rhys",
+			}}
+			activeTags={["Strategy", "Writing"]}
+			followSummary={{
+				creatorFollows: [
+					{
+						id: "creator_1",
+						userId: "user_1",
+						creatorUsername: "rhys",
+						scope: "all_feed",
+						createdAt: 100,
+						updatedAt: 100,
+					},
+				],
+				subjectFollows: [
+					{
+						id: "subject_1",
+						userId: "user_1",
+						subjectTag: "Writing",
+						createdAt: 100,
+						updatedAt: 100,
+					},
+				],
+			}}
+		/>,
+	);
+
+	assert.match(html, /Following @Rhys/);
+	assert.match(html, /Following @Rhys for Strategy/);
+	assert.match(html, /Following Topic Writing/);
+	assert.doesNotMatch(html, /Follow account/);
+});
+
+test("AnalyzerFollowControls prompts for tags when none are selected", () => {
+	const html = renderToStaticMarkup(
+		<AnalyzerFollowControls
+			tweet={{
+				id: "1",
+				text: "test",
+				authorUsername: "rhys",
+			}}
+			activeTags={[]}
+			followSummary={emptyFollowSummary}
+		/>,
+	);
+
+	assert.match(html, /Select concept tags or type topics above to unlock topic follow actions/);
+	assert.doesNotMatch(html, /Follow topic/);
 });

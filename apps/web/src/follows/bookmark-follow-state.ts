@@ -16,8 +16,13 @@ export interface BookmarkFollowState {
 	followedSubjects: string[];
 }
 
-export function buildBookmarkFollowState(
-	bookmark: SavedBookmark,
+export interface FollowableBookmarkLike {
+	authorUsername: string;
+	tags: string[];
+}
+
+export function buildBookmarkFollowStateForItem(
+	bookmark: FollowableBookmarkLike,
 	summary: FollowSummary,
 ): BookmarkFollowState {
 	const normalizedCreatorUsername = normalizeCreatorUsername(
@@ -45,6 +50,13 @@ export function buildBookmarkFollowState(
 			normalizeSubjectTag(follow.subjectTag),
 		),
 	};
+}
+
+export function buildBookmarkFollowState(
+	bookmark: SavedBookmark,
+	summary: FollowSummary,
+): BookmarkFollowState {
+	return buildBookmarkFollowStateForItem(bookmark, summary);
 }
 
 export function isCreatorSubjectCovered(

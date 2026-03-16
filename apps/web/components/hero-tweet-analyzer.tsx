@@ -4,6 +4,8 @@ import { PROVIDER_OPTIONS, getProviderCatalogEntry, resolveProviderCatalogModel 
 import { parseBookmarkTags, validateBookmarkTags } from "@pi-starter/contracts/bookmark-tags";
 import type {
 	AnalyzeTweetResult,
+	CreateFollowInput,
+	FollowSummary,
 	ProviderId,
 	SavedBookmark,
 } from "@pi-starter/contracts";
@@ -14,6 +16,12 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { buildTwitterAuthStartPath, startTwitterPopupAuth } from "../src/auth/popup-client.js";
 import { BOOKMARK_ALREADY_EXISTS_ERROR_CODE } from "../src/bookmarks/errors.js";
+import {
+	buildBookmarkFollowStateForItem,
+	EMPTY_FOLLOW_SUMMARY,
+	isCreatorSubjectCovered,
+	isSubjectFollowed,
+} from "../src/follows/bookmark-follow-state.js";
 
 export { parseBookmarkTags, validateBookmarkTags };
 
@@ -49,6 +57,8 @@ interface SaveBookmarkResponseError {
 		message?: string;
 	};
 }
+
+interface FollowsResponseSuccess extends FollowSummary {}
 
 export interface HeroTweetAnalyzerProps {
 	initialTweetUrlOrId?: string;
@@ -120,6 +130,10 @@ export function buildTweetCanonicalUrl(tweet: TweetPreview): string {
 
 export function selectLeadTweetMedia(tweet: TweetPreview): TweetMedia | undefined {
 	return tweet.media?.[0];
+}
+
+function normalizeFollowTags(bookmarkTagsInput: string): string[] {
+	return parseBookmarkTags(bookmarkTagsInput);
 }
 
 function renderLeadTweetMedia(tweet: TweetPreview): React.ReactNode {
@@ -297,6 +311,141 @@ export function TweetPreviewCard({
 	);
 }
 
+export interface AnalyzerFollowControlsProps {
+	tweet: TweetPreview;
+	activeTags: string[];
+	followSummary: FollowSummary;
+	isCreatingFollow?: boolean;
+	onCreateFollow?: (input: CreateFollowInput, successMessage: string) => void;
+}
+
+export function AnalyzerFollowControls({
+	tweet,
+	activeTags,
+	followSummary,
+	isCreatingFollow = false,
+	onCreateFollow,
+}: Readonly<AnalyzerFollowControlsProps>) {
+	const normalizedUsername = normalizeUsername(tweet.authorUsername);
+	if (!normalizedUsername) {
+		return null;
+	}
+
+	const followState = buildBookmarkFollowStateForItem(
+		{
+			authorUsername: normalizedUsername,
+			tags: activeTags,
+		},
+		followSummary,
+	);
+
+	return (
+		<section id="analyzer-follow-controls" className="rounded-4xl border border-white/10 bg-ink/70 p-5">
+			<div className="flex flex-col gap-4">
+				<div>
+					<p className="text-xs font-semibold uppercase tracking-[0.2em] text-coral">Follow</p>
+					<p className="mt-2 text-sm text-peach/70">
+						Follow @{normalizedUsername} or follow the current topics selected on this analysis card.
+					</p>
+				</div>
+				<div className="flex flex-wrap gap-2">
+					{followState.isCreatorFeedFollowed ? (
+						<span className="rounded-full border border-coral/30 bg-coral/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-coral">
+							Following @{normalizedUsername}
+						</span>
+					) : (
+						<button
+							id="analyzer-follow-creator-button"
+							type="button"
+							disabled={isCreatingFollow || !onCreateFollow}
+							onClick={() => {
+								onCreateFollow?.(
+									{
+										kind: "creator",
+										creatorUsername: normalizedUsername,
+										creatorName: tweet.authorName?.trim() ? tweet.authorName.trim() : undefined,
+										creatorAvatarUrl: tweet.authorAvatarUrl?.trim() ? tweet.authorAvatarUrl.trim() : undefined,
+										scope: "all_feed",
+									},
+									`Now following @${normalizedUsername}'s saved feed.`,
+								);
+							}}
+							className="inline-flex items-center justify-center rounded-[16px] bg-coral px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-coral-hover disabled:cursor-not-allowed disabled:opacity-60"
+						>
+							{isCreatingFollow ? "Saving..." : "Follow account"}
+						</button>
+					)}
+					{activeTags.map((tag) =>
+						isCreatorSubjectCovered(followState, tag) ? (
+							<span
+								key={`analyzer-follow-creator-${tag}`}
+								className="rounded-full border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-peach/70"
+							>
+								Following @{normalizedUsername} for {tag}
+							</span>
+						) : (
+							<button
+								key={`analyzer-follow-creator-${tag}`}
+								type="button"
+								disabled={isCreatingFollow || !onCreateFollow}
+								onClick={() => {
+									onCreateFollow?.(
+										{
+											kind: "creator",
+											creatorUsername: normalizedUsername,
+											creatorName: tweet.authorName?.trim() ? tweet.authorName.trim() : undefined,
+											creatorAvatarUrl: tweet.authorAvatarUrl?.trim() ? tweet.authorAvatarUrl.trim() : undefined,
+											scope: "subject",
+											subjectTag: tag,
+										},
+										`Now following @${normalizedUsername} for ${tag}.`,
+									);
+								}}
+								className="inline-flex items-center justify-center rounded-[16px] border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+							>
+								Follow @{normalizedUsername} for {tag}
+							</button>
+						),
+					)}
+					{activeTags.map((tag) =>
+						isSubjectFollowed(followSummary, tag) ? (
+							<span
+								key={`analyzer-follow-subject-${tag}`}
+								className="rounded-full border border-coral/30 bg-coral/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-coral"
+							>
+								Following Topic {tag}
+							</span>
+						) : (
+							<button
+								key={`analyzer-follow-subject-${tag}`}
+								type="button"
+								disabled={isCreatingFollow || !onCreateFollow}
+								onClick={() => {
+									onCreateFollow?.(
+										{
+											kind: "subject",
+											subjectTag: tag,
+										},
+										`Now following ${tag}.`,
+									);
+								}}
+								className="inline-flex items-center justify-center rounded-[16px] border border-coral/30 bg-coral/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-coral transition-colors hover:bg-coral/20 disabled:cursor-not-allowed disabled:opacity-60"
+							>
+								Follow topic {tag}
+							</button>
+						),
+					)}
+				</div>
+				{activeTags.length === 0 ? (
+					<p className="text-xs text-peach/60">
+						Select concept tags or type topics above to unlock topic follow actions.
+					</p>
+				) : null}
+			</div>
+		</section>
+	);
+}
+
 export function HeroTweetAnalyzer({
 	initialTweetUrlOrId = "",
 	autoAnalyze = false,
@@ -314,8 +463,14 @@ export function HeroTweetAnalyzer({
 	const [analysis, setAnalysis] = useState<AnalyzeTweetResult | null>(null);
 	const [bookmarkTagsInput, setBookmarkTagsInput] = useState("");
 	const [isSavingBookmark, setIsSavingBookmark] = useState(false);
+	const [isCreatingFollow, setIsCreatingFollow] = useState(false);
 	const [bookmarkErrorMessage, setBookmarkErrorMessage] = useState<string | null>(null);
 	const [bookmarkSuccessMessage, setBookmarkSuccessMessage] = useState<string | null>(null);
+	const [followErrorMessage, setFollowErrorMessage] = useState<string | null>(null);
+	const [followSuccessMessage, setFollowSuccessMessage] = useState<string | null>(null);
+	const [followSummary, setFollowSummary] = useState<FollowSummary>(
+		EMPTY_FOLLOW_SUMMARY,
+	);
 	const hasAutoRunRef = useRef(false);
 	const authPopupCleanupRef = useRef<(() => void) | null>(null);
 	const hasLoadedPreferencesRef = useRef(false);
@@ -330,9 +485,37 @@ export function HeroTweetAnalyzer({
 		[analysis, isSavingBookmark, tweet],
 	);
 	const selectedBookmarkTagKeys = useMemo(
-		() => new Set(parseBookmarkTags(bookmarkTagsInput).map((tag) => tag.toLowerCase())),
+		() => new Set(normalizeFollowTags(bookmarkTagsInput).map((tag) => tag.toLowerCase())),
 		[bookmarkTagsInput],
 	);
+	const activeFollowTags = useMemo(
+		() => normalizeFollowTags(bookmarkTagsInput),
+		[bookmarkTagsInput],
+	);
+
+	async function readFollowSummary(): Promise<FollowSummary> {
+		try {
+			const response = await fetch("/api/me/follows", {
+				method: "GET",
+				headers: {
+					"content-type": "application/json",
+				},
+			});
+			const payload = (await response.json()) as
+				| FollowsResponseSuccess
+				| SaveBookmarkResponseError;
+			if (
+				!response.ok ||
+				!("creatorFollows" in payload) ||
+				!("subjectFollows" in payload)
+			) {
+				return EMPTY_FOLLOW_SUMMARY;
+			}
+			return payload;
+		} catch {
+			return EMPTY_FOLLOW_SUMMARY;
+		}
+	}
 
 	function toggleConceptTag(tag: string): void {
 		setBookmarkTagsInput((current) => {
@@ -364,6 +547,8 @@ export function HeroTweetAnalyzer({
 		setBookmarkTagsInput("");
 		setBookmarkErrorMessage(null);
 		setBookmarkSuccessMessage(null);
+		setFollowErrorMessage(null);
+		setFollowSuccessMessage(null);
 
 		try {
 			const response = await fetch("/api/analyze", {
@@ -500,6 +685,50 @@ export function HeroTweetAnalyzer({
 			setIsSavingBookmark(false);
 		}
 	}
+
+	async function createFollow(
+		input: CreateFollowInput,
+		successMessage: string,
+	): Promise<void> {
+		setIsCreatingFollow(true);
+		setFollowErrorMessage(null);
+		setFollowSuccessMessage(null);
+		try {
+			const response = await fetch("/api/me/follows", {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+				},
+				body: JSON.stringify(input),
+			});
+			const payload = (await response.json()) as SaveBookmarkResponseError;
+			if (!response.ok) {
+				throw new Error(payload.error?.message ?? "Unable to save follow right now.");
+			}
+			setFollowSummary(await readFollowSummary());
+			setFollowSuccessMessage(successMessage);
+		} catch (error) {
+			setFollowErrorMessage(error instanceof Error ? error.message : "Unexpected network failure while saving follow.");
+		} finally {
+			setIsCreatingFollow(false);
+		}
+	}
+
+	useEffect(() => {
+		let isCancelled = false;
+
+		async function loadFollowSummary(): Promise<void> {
+			const summary = await readFollowSummary();
+			if (!isCancelled) {
+				setFollowSummary(summary);
+			}
+		}
+
+		void loadFollowSummary();
+		return () => {
+			isCancelled = true;
+		};
+	}, []);
 
 	useEffect(() => {
 		if (hasLoadedPreferencesRef.current) {
@@ -708,6 +937,25 @@ export function HeroTweetAnalyzer({
 							) : null}
 						</div>
 					</section>
+					<AnalyzerFollowControls
+						tweet={tweet}
+						activeTags={activeFollowTags}
+						followSummary={followSummary}
+						isCreatingFollow={isCreatingFollow}
+						onCreateFollow={(input, successMessage) => {
+							void createFollow(input, successMessage);
+						}}
+					/>
+					{followErrorMessage ? (
+						<p
+							id="analyzer-follow-error"
+							role="alert"
+							className="rounded-3xl border border-coral/40 bg-coral/10 px-4 py-3 text-sm text-peach"
+						>
+							{followErrorMessage}
+						</p>
+					) : null}
+					{followSuccessMessage ? <p id="analyzer-follow-success" className="text-sm text-peach/80">{followSuccessMessage}</p> : null}
 				</>
 			) : null}
 		</div>
