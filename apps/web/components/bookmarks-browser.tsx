@@ -1,8 +1,18 @@
 "use client";
 
 import { parseBookmarkTags, validateBookmarkTags } from "@pi-starter/contracts/bookmark-tags";
-import type { SavedBookmark } from "@pi-starter/contracts";
+import type {
+	CreateFollowInput,
+	FollowSummary,
+	SavedBookmark,
+} from "@pi-starter/contracts";
 import { buildBookmarkCanonicalUrl, buildBookmarksArchiveFileName, buildBookmarksMarkdownArchive } from "../src/bookmarks/export-markdown.js";
+import {
+	buildBookmarkFollowState,
+	EMPTY_FOLLOW_SUMMARY,
+	isCreatorSubjectCovered,
+	isSubjectFollowed,
+} from "../src/follows/bookmark-follow-state.js";
 import React, { useEffect, useMemo, useState } from "react";
 
 type BookmarkViewMode = "tile" | "row";
@@ -10,6 +20,8 @@ type BookmarkViewMode = "tile" | "row";
 interface BookmarksResponseSuccess {
 	bookmarks: SavedBookmark[];
 }
+
+interface FollowsResponseSuccess extends FollowSummary {}
 
 interface BookmarksResponseError {
 	error?: {
@@ -148,8 +160,37 @@ export function BookmarksBrowser() {
 	const [panelSuccessMessage, setPanelSuccessMessage] = useState<string | null>(null);
 	const [isUpdatingTags, setIsUpdatingTags] = useState(false);
 	const [isDeletingBookmark, setIsDeletingBookmark] = useState(false);
+	const [isCreatingFollow, setIsCreatingFollow] = useState(false);
 	const [isExporting, setIsExporting] = useState(false);
 	const [exportMessage, setExportMessage] = useState<string | null>(null);
+	const [followMessage, setFollowMessage] = useState<string | null>(null);
+	const [followSummary, setFollowSummary] = useState<FollowSummary>(
+		EMPTY_FOLLOW_SUMMARY,
+	);
+
+	async function readFollowSummary(): Promise<FollowSummary> {
+		try {
+			const response = await fetch("/api/me/follows", {
+				method: "GET",
+				headers: {
+					"content-type": "application/json",
+				},
+			});
+			const payload = (await response.json()) as
+				| FollowsResponseSuccess
+				| BookmarksResponseError;
+			if (
+				!response.ok ||
+				!("creatorFollows" in payload) ||
+				!("subjectFollows" in payload)
+			) {
+				return EMPTY_FOLLOW_SUMMARY;
+			}
+			return payload;
+		} catch {
+			return EMPTY_FOLLOW_SUMMARY;
+		}
+	}
 
 	useEffect(() => {
 		let isCancelled = false;
@@ -198,6 +239,22 @@ export function BookmarksBrowser() {
 		}
 
 		void loadBookmarks();
+		return () => {
+			isCancelled = true;
+		};
+	}, []);
+
+	useEffect(() => {
+		let isCancelled = false;
+
+		async function loadFollowSummary(): Promise<void> {
+			const summary = await readFollowSummary();
+			if (!isCancelled) {
+				setFollowSummary(summary);
+			}
+		}
+
+		void loadFollowSummary();
 		return () => {
 			isCancelled = true;
 		};
@@ -410,6 +467,33 @@ export function BookmarksBrowser() {
 		}
 	}
 
+	async function createFollow(input: CreateFollowInput, successMessage: string): Promise<void> {
+		setIsCreatingFollow(true);
+		setFollowMessage(null);
+		setPanelErrorMessage(null);
+		setPanelSuccessMessage(null);
+		try {
+			const response = await fetch("/api/me/follows", {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+				},
+				body: JSON.stringify(input),
+			});
+			const payload = (await response.json()) as BookmarksResponseError;
+			if (!response.ok) {
+				throw new Error(payload.error?.message ?? "Unable to save follow right now.");
+			}
+			setFollowSummary(await readFollowSummary());
+			setFollowMessage(successMessage);
+			setPanelSuccessMessage(successMessage);
+		} catch (error) {
+			setPanelErrorMessage(error instanceof Error ? error.message : "Unexpected network failure while saving follow.");
+		} finally {
+			setIsCreatingFollow(false);
+		}
+	}
+
 		return (
 			<div className="flex flex-col gap-5">
 				<div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -466,6 +550,7 @@ export function BookmarksBrowser() {
 					</div>
 				</div>
 				{exportMessage ? <p className="text-xs text-peach/70">{exportMessage}</p> : null}
+				{followMessage ? <p className="text-xs text-peach/80">{followMessage}</p> : null}
 				{tagFilterOptions.length > 0 ? (
 					<div className="flex flex-wrap items-center gap-2">
 						<button
@@ -498,6 +583,42 @@ export function BookmarksBrowser() {
 									}`}
 								>
 									{option.label} ({option.count})
+								</button>
+							);
+						})}
+						{tagFilterOptions.map((option) => {
+							const followed = isSubjectFollowed(
+								followSummary,
+								option.label,
+							);
+							if (followed) {
+								return (
+									<span
+										key={`follow-${option.key}`}
+										className="rounded-full border border-coral/30 bg-coral/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-coral"
+									>
+										Following {option.label}
+									</span>
+								);
+							}
+
+							return (
+								<button
+									key={`follow-${option.key}`}
+									type="button"
+									disabled={isCreatingFollow}
+									onClick={() => {
+										void createFollow(
+											{
+												kind: "subject",
+												subjectTag: option.label,
+											},
+											`Now following ${option.label}.`,
+										);
+									}}
+									className="rounded-full border border-coral/30 bg-coral/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-coral transition-colors hover:bg-coral/20 disabled:cursor-not-allowed disabled:opacity-60"
+								>
+									Follow {option.label}
 								</button>
 							);
 						})}
@@ -534,42 +655,120 @@ export function BookmarksBrowser() {
 						</div>
 					) : (
 					<div id="bookmarks-list" className={listContainerClass}>
-						{filteredBookmarks.map((bookmark) => (
-						<button
-							key={bookmark.id}
-							type="button"
-							onClick={() => setSelectedBookmark(bookmark)}
-							className={`rounded-4xl border border-white/10 bg-ink/65 p-5 text-left transition-all hover:border-coral/40 hover:bg-ink/80 ${
-								viewMode === "row" ? "w-full" : ""
-							}`}
-						>
-							<div className="flex items-start justify-between gap-3">
-								<div className="flex flex-wrap gap-2">
-									{bookmark.tags.map((tag) => (
-										<span key={tag} className="rounded-full border border-coral/40 bg-coral/10 px-2.5 py-1 text-[11px] uppercase tracking-wider text-coral">
-											{tag}
-										</span>
-									))}
-								</div>
-								<span className="text-xs text-peach/50">{formatBookmarkDate(bookmark.updatedAt)}</span>
-							</div>
-							<div className="mt-4 flex items-center gap-3">
-								{bookmark.authorAvatarUrl ? (
-									<img
-										src={bookmark.authorAvatarUrl}
-										alt={`${bookmark.authorUsername} avatar`}
-										className="h-9 w-9 rounded-full border border-white/20 object-cover"
-									/>
-								) : (
-									<div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-charcoal text-sm font-semibold text-white">
-										{bookmarkAvatarLabel(bookmark)}
+						{filteredBookmarks.map((bookmark) => {
+							const followState = buildBookmarkFollowState(
+								bookmark,
+								followSummary,
+							);
+
+							return (
+								<article
+									key={bookmark.id}
+									className={`rounded-4xl border border-white/10 bg-ink/65 p-5 text-left transition-all hover:border-coral/40 hover:bg-ink/80 ${
+										viewMode === "row" ? "w-full" : ""
+									}`}
+								>
+									<button
+										type="button"
+										onClick={() => setSelectedBookmark(bookmark)}
+										className="w-full text-left"
+									>
+								<div className="flex items-start justify-between gap-3">
+									<div className="flex flex-wrap gap-2">
+										{bookmark.tags.map((tag) => (
+											<span key={tag} className="rounded-full border border-coral/40 bg-coral/10 px-2.5 py-1 text-[11px] uppercase tracking-wider text-coral">
+												{tag}
+											</span>
+										))}
 									</div>
-								)}
-								<p className="text-sm font-semibold text-white">@{bookmark.authorUsername}</p>
-							</div>
-							<p className="mt-3 text-sm leading-relaxed text-peach/90">{truncateForPreview(bookmark.tweetText)}</p>
-						</button>
-					))}
+									<span className="text-xs text-peach/50">{formatBookmarkDate(bookmark.updatedAt)}</span>
+								</div>
+								<div className="mt-4 flex items-center gap-3">
+									{bookmark.authorAvatarUrl ? (
+										<img
+											src={bookmark.authorAvatarUrl}
+											alt={`${bookmark.authorUsername} avatar`}
+											className="h-9 w-9 rounded-full border border-white/20 object-cover"
+										/>
+									) : (
+										<div className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-charcoal text-sm font-semibold text-white">
+											{bookmarkAvatarLabel(bookmark)}
+										</div>
+									)}
+									<p className="text-sm font-semibold text-white">@{bookmark.authorUsername}</p>
+								</div>
+								<p className="mt-3 text-sm leading-relaxed text-peach/90">{truncateForPreview(bookmark.tweetText)}</p>
+									</button>
+									<div className="mt-4 flex flex-wrap gap-2 border-t border-white/10 pt-4">
+										{followState.isCreatorFeedFollowed ? (
+											<span className="rounded-full border border-coral/30 bg-coral/10 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-coral">
+												Following creator
+											</span>
+										) : (
+											<button
+												type="button"
+												disabled={isCreatingFollow}
+												onClick={() => {
+													void createFollow(
+														{
+															kind: "creator",
+															creatorUsername: bookmark.authorUsername,
+															creatorName: bookmark.authorName,
+															creatorAvatarUrl: bookmark.authorAvatarUrl,
+															scope: "all_feed",
+														},
+														`Now following @${bookmark.authorUsername}'s saved feed.`,
+													);
+												}}
+												className="rounded-full bg-coral px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-white transition-colors hover:bg-coral-hover disabled:cursor-not-allowed disabled:opacity-60"
+											>
+												Follow creator
+											</button>
+										)}
+										{bookmark.tags.slice(0, 2).map((tag) =>
+											isCreatorSubjectCovered(
+												followState,
+												tag,
+											) ? (
+												<span
+													key={`${bookmark.id}-${tag}`}
+													className="rounded-full border border-white/20 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-peach/70"
+												>
+													Following {tag}
+												</span>
+											) : (
+												<button
+													key={`${bookmark.id}-${tag}`}
+													type="button"
+													disabled={isCreatingFollow}
+													onClick={() => {
+														void createFollow(
+															{
+																kind: "creator",
+																creatorUsername: bookmark.authorUsername,
+																creatorName: bookmark.authorName,
+																creatorAvatarUrl: bookmark.authorAvatarUrl,
+																scope: "subject",
+																subjectTag: tag,
+															},
+															`Now following @${bookmark.authorUsername} for ${tag}.`,
+														);
+													}}
+													className="rounded-full border border-white/20 px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+												>
+													Follow {tag}
+												</button>
+											),
+										)}
+										{bookmark.tags.length > 2 ? (
+											<span className="self-center text-[11px] uppercase tracking-wider text-peach/50">
+												+{bookmark.tags.length - 2} more tags in details
+											</span>
+										) : null}
+									</div>
+								</article>
+							);
+						})}
 				</div>
 			)}
 
@@ -632,6 +831,108 @@ export function BookmarksBrowser() {
 								</span>
 							))}
 						</div>
+						{(() => {
+							const selectedBookmarkFollowState = buildBookmarkFollowState(
+								selectedBookmark,
+								followSummary,
+							);
+							return (
+						<div className="mt-6 rounded-3xl border border-white/10 bg-ink/45 p-4">
+							<p className="text-xs font-semibold uppercase tracking-[0.2em] text-coral">Follow from this bookmark</p>
+							<div className="mt-3 flex flex-wrap gap-2">
+								{selectedBookmarkFollowState.isCreatorFeedFollowed ? (
+									<span
+										id="bookmark-follow-creator-button"
+										className="inline-flex items-center justify-center rounded-[16px] border border-coral/30 bg-coral/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-coral"
+									>
+										Following creator feed
+									</span>
+								) : (
+									<button
+										id="bookmark-follow-creator-button"
+										type="button"
+										disabled={isCreatingFollow || isUpdatingTags || isDeletingBookmark}
+										onClick={() => {
+											void createFollow(
+												{
+													kind: "creator",
+													creatorUsername: selectedBookmark.authorUsername,
+													creatorName: selectedBookmark.authorName,
+													creatorAvatarUrl: selectedBookmark.authorAvatarUrl,
+													scope: "all_feed",
+												},
+												`Now following @${selectedBookmark.authorUsername}'s saved feed.`,
+											);
+										}}
+										className="inline-flex items-center justify-center rounded-[16px] bg-coral px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-coral-hover disabled:cursor-not-allowed disabled:opacity-60"
+									>
+										{isCreatingFollow ? "Saving..." : "Follow Creator Feed"}
+									</button>
+								)}
+								{selectedBookmark.tags.map((tag) => (
+									isCreatorSubjectCovered(selectedBookmarkFollowState, tag) ? (
+										<span
+											key={`bookmark-follow-creator-${tag}`}
+											className="inline-flex items-center justify-center rounded-[16px] border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-peach/70"
+										>
+											Following @{selectedBookmark.authorUsername} for {tag}
+										</span>
+									) : (
+										<button
+											key={`bookmark-follow-creator-${tag}`}
+											type="button"
+											disabled={isCreatingFollow || isUpdatingTags || isDeletingBookmark}
+											onClick={() => {
+												void createFollow(
+													{
+														kind: "creator",
+														creatorUsername: selectedBookmark.authorUsername,
+														creatorName: selectedBookmark.authorName,
+														creatorAvatarUrl: selectedBookmark.authorAvatarUrl,
+														scope: "subject",
+														subjectTag: tag,
+													},
+													`Now following @${selectedBookmark.authorUsername} for ${tag}.`,
+												);
+											}}
+											className="inline-flex items-center justify-center rounded-[16px] border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+										>
+											Follow @{selectedBookmark.authorUsername} for {tag}
+										</button>
+									)
+								))}
+								{selectedBookmark.tags.map((tag) => (
+									isSubjectFollowed(followSummary, tag) ? (
+										<span
+											key={`bookmark-follow-subject-${tag}`}
+											className="inline-flex items-center justify-center rounded-[16px] border border-coral/30 bg-coral/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-coral"
+										>
+											Following Subject {tag}
+										</span>
+									) : (
+										<button
+											key={`bookmark-follow-subject-${tag}`}
+											type="button"
+											disabled={isCreatingFollow || isUpdatingTags || isDeletingBookmark}
+											onClick={() => {
+												void createFollow(
+													{
+														kind: "subject",
+														subjectTag: tag,
+													},
+													`Now following ${tag}.`,
+												);
+											}}
+											className="inline-flex items-center justify-center rounded-[16px] border border-coral/30 bg-coral/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-coral transition-colors hover:bg-coral/20 disabled:cursor-not-allowed disabled:opacity-60"
+										>
+											Follow Subject {tag}
+										</button>
+									)
+								))}
+							</div>
+						</div>
+							);
+						})()}
 						<div id="bookmark-tags-editor" className="mt-6 rounded-3xl border border-white/10 bg-ink/45 p-4">
 							<label htmlFor="bookmark-tags-edit-input" className="text-xs font-semibold uppercase tracking-[0.2em] text-coral">
 								Edit Tags
@@ -654,7 +955,7 @@ export function BookmarksBrowser() {
 									onClick={() => {
 										void updateSelectedBookmarkTags();
 									}}
-									disabled={isUpdatingTags || isDeletingBookmark}
+									disabled={isUpdatingTags || isDeletingBookmark || isCreatingFollow}
 									className="inline-flex items-center justify-center rounded-[16px] bg-coral px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-coral-hover disabled:cursor-not-allowed disabled:opacity-60"
 								>
 									{isUpdatingTags ? "Saving..." : "Save Tags"}
@@ -665,7 +966,7 @@ export function BookmarksBrowser() {
 									onClick={() => {
 										void deleteSelectedBookmark();
 									}}
-									disabled={isDeletingBookmark || isUpdatingTags}
+									disabled={isDeletingBookmark || isUpdatingTags || isCreatingFollow}
 									className="inline-flex items-center justify-center rounded-[16px] border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
 								>
 									{isDeletingBookmark ? "Deleting..." : "Delete Tweet"}

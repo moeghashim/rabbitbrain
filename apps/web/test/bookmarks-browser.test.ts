@@ -1,9 +1,14 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { SavedBookmark } from "@pi-starter/contracts";
+import type { FollowSummary, SavedBookmark } from "@pi-starter/contracts";
 
 import { dedupeBookmarks, filterBookmarksBySearch, filterBookmarksByTags } from "../components/bookmarks-browser.js";
+import {
+	buildBookmarkFollowState,
+	isCreatorSubjectCovered,
+	isSubjectFollowed,
+} from "../src/follows/bookmark-follow-state.js";
 
 function createBookmark(
 	id: string,
@@ -131,4 +136,56 @@ test("bookmark search and tag filters combine as an intersection", () => {
 		filtered.map((bookmark) => bookmark.id),
 		["1"],
 	);
+});
+
+test("buildBookmarkFollowState detects creator feed and creator subject follows case-insensitively", () => {
+	const bookmark = createBookmark("1", ["Strategy", "Ops"], {
+		authorUsername: "@OpsLead",
+	});
+	const summary: FollowSummary = {
+		creatorFollows: [
+			{
+				id: "follow_1",
+				userId: "user_1",
+				creatorUsername: "opslead",
+				scope: "all_feed",
+				createdAt: 100,
+				updatedAt: 100,
+			},
+			{
+				id: "follow_2",
+				userId: "user_1",
+				creatorUsername: "opslead",
+				scope: "subject",
+				subjectTag: "strategy",
+				createdAt: 100,
+				updatedAt: 100,
+			},
+		],
+		subjectFollows: [],
+	};
+
+	const state = buildBookmarkFollowState(bookmark, summary);
+	assert.equal(state.isCreatorFeedFollowed, true);
+	assert.equal(isCreatorSubjectCovered(state, "Strategy"), true);
+	assert.equal(isCreatorSubjectCovered(state, "ops"), true);
+});
+
+test("isSubjectFollowed matches subject follows case-insensitively", () => {
+	const summary: FollowSummary = {
+		creatorFollows: [],
+		subjectFollows: [
+			{
+				id: "subject_1",
+				userId: "user_1",
+				subjectTag: "Growth",
+				createdAt: 100,
+				updatedAt: 100,
+			},
+		],
+	};
+
+	assert.equal(isSubjectFollowed(summary, "growth"), true);
+	assert.equal(isSubjectFollowed(summary, "GROWTH"), true);
+	assert.equal(isSubjectFollowed(summary, "strategy"), false);
 });

@@ -162,6 +162,116 @@ export const SavedBookmarkSchema = SaveBookmarkInputSchema.extend({
 	updatedAt: z.number().int().nonnegative(),
 });
 
+export const FollowScopeSchema = z.enum(["subject", "all_feed"]);
+
+export const CreateCreatorFollowInputSchema = z
+	.object({
+		kind: z.literal("creator"),
+		creatorUsername: z.string().min(1),
+		creatorName: z.string().min(1).optional(),
+		creatorAvatarUrl: z.string().url().optional(),
+		scope: FollowScopeSchema,
+		subjectTag: BookmarkTagSchema.optional(),
+	})
+	.superRefine((input, context) => {
+		if (input.scope === "subject" && !input.subjectTag) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "subjectTag is required when scope is subject.",
+				path: ["subjectTag"],
+			});
+		}
+		if (input.scope === "all_feed" && input.subjectTag) {
+			context.addIssue({
+				code: z.ZodIssueCode.custom,
+				message: "subjectTag must be omitted when scope is all_feed.",
+				path: ["subjectTag"],
+			});
+		}
+	});
+
+export const CreateSubjectFollowInputSchema = z.object({
+	kind: z.literal("subject"),
+	subjectTag: BookmarkTagSchema,
+});
+
+export const CreateFollowInputSchema = z.discriminatedUnion("kind", [
+	CreateCreatorFollowInputSchema,
+	CreateSubjectFollowInputSchema,
+]);
+
+export const DeleteCreatorFollowInputSchema = z.object({
+	kind: z.literal("creator"),
+	followId: z.string().min(1),
+});
+
+export const DeleteSubjectFollowInputSchema = z.object({
+	kind: z.literal("subject"),
+	followId: z.string().min(1),
+});
+
+export const DeleteFollowInputSchema = z.discriminatedUnion("kind", [
+	DeleteCreatorFollowInputSchema,
+	DeleteSubjectFollowInputSchema,
+]);
+
+export const DeleteFollowResultSchema = z.object({
+	followId: z.string().min(1),
+});
+
+export const CreatorFollowSchema = z.object({
+	id: z.string().min(1),
+	userId: z.string().min(1),
+	creatorUsername: z.string().min(1),
+	creatorName: z.string().min(1).optional(),
+	creatorAvatarUrl: z.string().url().optional(),
+	scope: FollowScopeSchema,
+	subjectTag: BookmarkTagSchema.optional(),
+	createdAt: z.number().int().nonnegative(),
+	updatedAt: z.number().int().nonnegative(),
+});
+
+export const SubjectFollowSchema = z.object({
+	id: z.string().min(1),
+	userId: z.string().min(1),
+	subjectTag: BookmarkTagSchema,
+	createdAt: z.number().int().nonnegative(),
+	updatedAt: z.number().int().nonnegative(),
+});
+
+export const FollowSummarySchema = z.object({
+	creatorFollows: z.array(CreatorFollowSchema),
+	subjectFollows: z.array(SubjectFollowSchema),
+});
+
+export const SuggestedCreatorSchema = z.object({
+	creatorUsername: z.string().min(1),
+	creatorName: z.string().min(1).optional(),
+	creatorAvatarUrl: z.string().url().optional(),
+	subjectTag: BookmarkTagSchema,
+	bookmarkCount: z.number().int().positive(),
+	latestBookmarkAt: z.number().int().nonnegative(),
+});
+
+export const FollowSuggestionsResponseSchema = z.object({
+	subjectTag: BookmarkTagSchema,
+	suggestions: z.array(SuggestedCreatorSchema),
+});
+
+export const FollowMatchSchema = z.object({
+	type: z.enum(["creator_all_feed", "creator_subject", "subject"]),
+	creatorUsername: z.string().min(1).optional(),
+	subjectTag: BookmarkTagSchema.optional(),
+});
+
+export const FollowingFeedItemSchema = SavedBookmarkSchema.extend({
+	matches: z.array(FollowMatchSchema).min(1),
+});
+
+export const FollowingFeedResponseSchema = z.object({
+	bookmarks: z.array(FollowingFeedItemSchema),
+});
+
 export type AnalyzeTweetInput = z.infer<typeof AnalyzeTweetInputSchema>;
 export type AnalyzeTweetResult = z.infer<typeof AnalyzeTweetResultSchema>;
 export type TweetMedia = z.infer<typeof TweetMediaSchema>;
@@ -175,6 +285,22 @@ export type ProviderCredentialSummary = z.infer<typeof ProviderCredentialSummary
 export type ProviderCredentialInput = z.infer<typeof ProviderCredentialInputSchema>;
 export type SaveBookmarkInput = z.infer<typeof SaveBookmarkInputSchema>;
 export type SavedBookmark = z.infer<typeof SavedBookmarkSchema>;
+export type FollowScope = z.infer<typeof FollowScopeSchema>;
+export type CreateCreatorFollowInput = z.infer<typeof CreateCreatorFollowInputSchema>;
+export type CreateSubjectFollowInput = z.infer<typeof CreateSubjectFollowInputSchema>;
+export type CreateFollowInput = z.infer<typeof CreateFollowInputSchema>;
+export type DeleteCreatorFollowInput = z.infer<typeof DeleteCreatorFollowInputSchema>;
+export type DeleteSubjectFollowInput = z.infer<typeof DeleteSubjectFollowInputSchema>;
+export type DeleteFollowInput = z.infer<typeof DeleteFollowInputSchema>;
+export type DeleteFollowResult = z.infer<typeof DeleteFollowResultSchema>;
+export type CreatorFollow = z.infer<typeof CreatorFollowSchema>;
+export type SubjectFollow = z.infer<typeof SubjectFollowSchema>;
+export type FollowSummary = z.infer<typeof FollowSummarySchema>;
+export type SuggestedCreator = z.infer<typeof SuggestedCreatorSchema>;
+export type FollowSuggestionsResponse = z.infer<typeof FollowSuggestionsResponseSchema>;
+export type FollowMatch = z.infer<typeof FollowMatchSchema>;
+export type FollowingFeedItem = z.infer<typeof FollowingFeedItemSchema>;
+export type FollowingFeedResponse = z.infer<typeof FollowingFeedResponseSchema>;
 export type UpdateBookmarkTagsInput = z.infer<typeof UpdateBookmarkTagsInputSchema>;
 export type DeleteBookmarkInput = z.infer<typeof DeleteBookmarkInputSchema>;
 export type DeleteBookmarkResult = z.infer<typeof DeleteBookmarkResultSchema>;

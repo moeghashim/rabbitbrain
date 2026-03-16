@@ -1,8 +1,19 @@
 import {
 	type AnalyzeTweetInput,
 	type AnalyzeTweetResult,
+	type CreatorFollow,
+	type CreateCreatorFollowInput,
+	type CreateSubjectFollowInput,
+	DeleteFollowResultSchema,
+	type DeleteFollowResult,
 	DeleteBookmarkResultSchema,
 	type DeleteBookmarkResult,
+	FollowSuggestionsResponseSchema,
+	type FollowSuggestionsResponse,
+	FollowSummarySchema,
+	type FollowSummary,
+	FollowingFeedResponseSchema,
+	type FollowingFeedResponse,
 	ProviderCredentialSummaryListSchema,
 	ProviderIdSchema,
 	type SaveBookmarkInput,
@@ -10,6 +21,9 @@ import {
 	type SavedAnalysis,
 	SavedBookmarkSchema,
 	type SavedBookmark,
+	CreatorFollowSchema,
+	type SubjectFollow,
+	SubjectFollowSchema,
 	type ProviderCredentialSummary,
 	type ProviderId,
 	type UpdateBookmarkTagsInput,
@@ -99,6 +113,29 @@ const deleteBookmarkRef = makeFunctionReference<"mutation", { bookmarkId: string
 
 const listBookmarksByUserRef = makeFunctionReference<"query", Record<string, never>, SavedBookmark[]>(
 	"bookmarks:listByUser",
+);
+const listFollowsRef = makeFunctionReference<"query", Record<string, never>, FollowSummary>("follows:listSummary");
+const upsertCreatorFollowRef = makeFunctionReference<
+	"mutation",
+	Omit<CreateCreatorFollowInput, "kind">,
+	CreatorFollow
+>("follows:upsertCreatorFollow");
+const removeCreatorFollowRef = makeFunctionReference<"mutation", { followId: string }, DeleteFollowResult>(
+	"follows:removeCreatorFollow",
+);
+const upsertSubjectFollowRef = makeFunctionReference<
+	"mutation",
+	Omit<CreateSubjectFollowInput, "kind">,
+	SubjectFollow
+>("follows:upsertSubjectFollow");
+const removeSubjectFollowRef = makeFunctionReference<"mutation", { followId: string }, DeleteFollowResult>(
+	"follows:removeSubjectFollow",
+);
+const listFollowSuggestionsRef = makeFunctionReference<"query", { subjectTag: string }, FollowSuggestionsResponse>(
+	"follows:listSuggestionsForSubject",
+);
+const listFollowingFeedRef = makeFunctionReference<"query", Record<string, never>, FollowingFeedResponse>(
+	"follows:listFollowingFeed",
 );
 
 function readRequiredEnv(name: keyof ConvexEnv, env: ConvexEnv): string {
@@ -334,4 +371,92 @@ export async function deleteBookmarkForSession({
 		bookmarkId,
 	});
 	return DeleteBookmarkResultSchema.parse(deleted);
+}
+
+export async function listFollowsForSession({
+	sessionUser,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	env?: ConvexEnv;
+}): Promise<FollowSummary> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+
+	return FollowSummarySchema.parse(await client.query(listFollowsRef, {}));
+}
+
+export async function createCreatorFollowForSession({
+	sessionUser,
+	input,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	input: Omit<CreateCreatorFollowInput, "kind">;
+	env?: ConvexEnv;
+}) {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return CreatorFollowSchema.parse(await client.mutation(upsertCreatorFollowRef, input));
+}
+
+export async function deleteCreatorFollowForSession({
+	sessionUser,
+	followId,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	followId: string;
+	env?: ConvexEnv;
+}): Promise<DeleteFollowResult> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return DeleteFollowResultSchema.parse(await client.mutation(removeCreatorFollowRef, { followId }));
+}
+
+export async function createSubjectFollowForSession({
+	sessionUser,
+	input,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	input: Omit<CreateSubjectFollowInput, "kind">;
+	env?: ConvexEnv;
+}) {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return SubjectFollowSchema.parse(await client.mutation(upsertSubjectFollowRef, input));
+}
+
+export async function deleteSubjectFollowForSession({
+	sessionUser,
+	followId,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	followId: string;
+	env?: ConvexEnv;
+}): Promise<DeleteFollowResult> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return DeleteFollowResultSchema.parse(await client.mutation(removeSubjectFollowRef, { followId }));
+}
+
+export async function listFollowSuggestionsForSession({
+	sessionUser,
+	subjectTag,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	subjectTag: string;
+	env?: ConvexEnv;
+}): Promise<FollowSuggestionsResponse> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return FollowSuggestionsResponseSchema.parse(await client.query(listFollowSuggestionsRef, { subjectTag }));
+}
+
+export async function listFollowingFeedForSession({
+	sessionUser,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	env?: ConvexEnv;
+}): Promise<FollowingFeedResponse> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return FollowingFeedResponseSchema.parse(await client.query(listFollowingFeedRef, {}));
 }

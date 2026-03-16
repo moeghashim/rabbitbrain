@@ -10,6 +10,7 @@ test("dashboard page includes analyze action controls", () => {
 	const html = renderToStaticMarkup(<AppHomePage />);
 	assert.match(html, /id=\"hero-analyze-button\"/);
 	assert.match(html, /id=\"nav-cta\"[^>]*>Account Settings<\/a>/);
+	assert.match(html, /href=\"\/app\/following\"[^>]*>Following<\/a>/);
 	assert.match(html, /href=\"\/app\/bookmarks\"[^>]*>Bookmarks<\/a>/);
 	assert.match(html, /name=\"tweetUrlOrId\"/);
 	assert.match(html, /Analyze Tweet/);

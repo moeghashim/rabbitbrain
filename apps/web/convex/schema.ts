@@ -73,4 +73,27 @@ export default defineSchema({
 	})
 		.index("by_user_id_updated_at", ["userId", "updatedAt"])
 		.index("by_user_id_tweet_id", ["userId", "tweetId"]),
+	creatorFollows: defineTable({
+		userId: v.id("users"),
+		creatorUsername: v.string(),
+		creatorUsernameLower: v.string(),
+		creatorName: v.optional(v.string()),
+		creatorAvatarUrl: v.optional(v.string()),
+		scope: v.union(v.literal("subject"), v.literal("all_feed")),
+		subjectTag: v.optional(v.string()),
+		subjectKey: v.string(),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_user_id_updated_at", ["userId", "updatedAt"])
+		.index("by_user_id_creator_scope_subject", ["userId", "creatorUsernameLower", "scope", "subjectKey"]),
+	subjectFollows: defineTable({
+		userId: v.id("users"),
+		subjectTag: v.string(),
+		subjectTagLower: v.string(),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_user_id_updated_at", ["userId", "updatedAt"])
+		.index("by_user_id_subject_tag", ["userId", "subjectTagLower"]),
 });
