@@ -23,7 +23,12 @@ function walk(dir, out = []) {
 		}
 
 		const extension = name.slice(name.lastIndexOf("."));
-		if (INCLUDE_EXTENSIONS.has(extension)) {
+		if (
+			INCLUDE_EXTENSIONS.has(extension) &&
+			!name.endsWith(".d.ts") &&
+			!name.endsWith(".d.mts") &&
+			!name.endsWith(".d.cts")
+		) {
 			out.push(path);
 		}
 	}
