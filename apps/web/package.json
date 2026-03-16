@@ -1,6 +1,6 @@
 {
   "name": "@pi-starter/web",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -15,10 +15,10 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@pi-starter/ai": "0.0.1",
-    "@pi-starter/contracts": "0.0.1",
-    "@pi-starter/core": "0.0.1",
-    "@pi-starter/x-client": "0.0.1",
+    "@pi-starter/ai": "0.1.1",
+    "@pi-starter/contracts": "0.1.1",
+    "@pi-starter/core": "0.1.1",
+    "@pi-starter/x-client": "0.1.1",
     "convex": "^1.32.0",
     "fflate": "^0.8.2",
     "lucide-react": "^0.576.0",

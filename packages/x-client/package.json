@@ -1,6 +1,6 @@
 {
   "name": "@pi-starter/x-client",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "description": "X API client abstractions",
   "license": "MIT",
   "type": "module",
