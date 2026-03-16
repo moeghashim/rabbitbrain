@@ -59,24 +59,19 @@ jobs:
         if: steps.changesets.outputs.pending != 'true'
         run: echo "No pending changesets on main. Skipping version, publish, deploy, and GitHub Release steps."
 
-      - name: Validate npm release secret
+      - name: Validate release secrets
         if: steps.changesets.outputs.pending == 'true'
         run: |
-          if [ -z "$NODE_AUTH_TOKEN" ]; then
-            echo "Missing required release secret: NODE_AUTH_TOKEN" >&2
+          missing=0
+          for secret_name in NODE_AUTH_TOKEN VERCEL_TOKEN VERCEL_ORG_ID VERCEL_PROJECT_ID; do
+            secret_value="${!secret_name}"
+            if [ -z "$secret_value" ]; then
+              echo "Missing required release secret: $secret_name" >&2
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
             exit 1
-          fi
-
-      - name: Detect Vercel deploy secrets
-        if: steps.changesets.outputs.pending == 'true'
-        id: vercel-secrets
-        run: |
-          if [ -n "$VERCEL_TOKEN" ] && [ -n "$VERCEL_ORG_ID" ] && [ -n "$VERCEL_PROJECT_ID" ]; then
-            echo "configured=true" >> "$GITHUB_OUTPUT"
-            echo "Vercel deploy secrets detected."
-          else
-            echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "Vercel deploy secrets are incomplete; deploy steps will be skipped."
           fi
 
       - name: Version release from changesets
@@ -119,11 +114,11 @@ jobs:
         run: npm run release:publish
 
       - name: Pull Vercel project settings
-        if: steps.changesets.outputs.pending == 'true' && steps.vercel-secrets.outputs.configured == 'true'
+        if: steps.changesets.outputs.pending == 'true'
         run: npx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
 
       - name: Deploy to Vercel production
-        if: steps.changesets.outputs.pending == 'true' && steps.vercel-secrets.outputs.configured == 'true'
+        if: steps.changesets.outputs.pending == 'true'
         id: deploy
         run: |
           deployment_url="$(npx vercel@latest deploy --yes --prod --token="$VERCEL_TOKEN" | tail -n 1)"
@@ -136,12 +131,6 @@ jobs:
         run: |
           release_tag="v${{ steps.version.outputs.value }}"
           release_target="$(git rev-parse HEAD)"
-          release_notes="Site alias: https://www.rabbitbrain.app"
-          if [ "${{ steps.vercel-secrets.outputs.configured }}" = "true" ] && [ -n "${{ steps.deploy.outputs.url }}" ]; then
-            release_notes="Production deploy: ${{ steps.deploy.outputs.url }}
-
-            $release_notes"
-          fi
           if gh release view "$release_tag" >/dev/null 2>&1; then
             echo "GitHub release $release_tag already exists; skipping."
             exit 0
@@ -150,4 +139,6 @@ jobs:
             --title "$release_tag" \
             --target "$release_target" \
             --generate-notes \
-            --notes "$release_notes"
+            --notes "Production deploy: ${{ steps.deploy.outputs.url }}
+
+            Site alias: https://www.rabbitbrain.app"
