@@ -11,6 +11,11 @@ import type {
 	SuggestedCreator,
 } from "@pi-starter/contracts";
 import React, { useEffect, useState } from "react";
+import {
+	type ApiErrorPayload,
+	readJsonResponse,
+	readResponseErrorMessage,
+} from "../src/http/read-json-response.js";
 
 function formatDate(timestamp: number): string {
 	return new Date(timestamp).toLocaleString();
@@ -55,22 +60,6 @@ function bookmarkUrl(item: FollowingFeedItem): string {
 	return item.tweetUrlOrId.startsWith("http") ? item.tweetUrlOrId : `https://x.com/i/web/status/${item.tweetId}`;
 }
 
-interface ApiErrorPayload {
-	error?: {
-		message?: string;
-	};
-}
-
-function readApiErrorMessage(
-	payload: FollowSummary | FollowingFeedResponse | FollowSuggestionsResponse | ApiErrorPayload,
-	fallbackMessage: string,
-): string {
-	if ("error" in payload && payload.error?.message) {
-		return payload.error.message;
-	}
-	return fallbackMessage;
-}
-
 export function FollowingBrowser() {
 	const [creatorFollows, setCreatorFollows] = useState<CreatorFollow[]>([]);
 	const [subjectFollows, setSubjectFollows] = useState<SubjectFollow[]>([]);
@@ -93,16 +82,23 @@ export function FollowingBrowser() {
 				fetch("/api/me/follows", { method: "GET", headers: { "content-type": "application/json" } }),
 				fetch("/api/me/following-feed", { method: "GET", headers: { "content-type": "application/json" } }),
 			]);
-			const followsPayload = (await followsResponse.json()) as FollowSummary | ApiErrorPayload;
-			const feedPayload = (await feedResponse.json()) as FollowingFeedResponse | ApiErrorPayload;
+			const [followsPayload, feedPayload] = await Promise.all([
+				readJsonResponse<FollowSummary | ApiErrorPayload>(followsResponse),
+				readJsonResponse<FollowingFeedResponse | ApiErrorPayload>(feedResponse),
+			]);
 
 			if (!followsResponse.ok) {
-				throw new Error(readApiErrorMessage(followsPayload, "Unable to load follows."));
+				throw new Error(readResponseErrorMessage(followsPayload, "Unable to load follows."));
 			}
 			if (!feedResponse.ok) {
-				throw new Error(readApiErrorMessage(feedPayload, "Unable to load following feed."));
+				throw new Error(readResponseErrorMessage(feedPayload, "Unable to load following feed."));
 			}
-			if (!("creatorFollows" in followsPayload) || !("bookmarks" in feedPayload)) {
+			if (
+				!followsPayload ||
+				!("creatorFollows" in followsPayload) ||
+				!feedPayload ||
+				!("bookmarks" in feedPayload)
+			) {
 				throw new Error("Unexpected follow response.");
 			}
 
@@ -129,9 +125,9 @@ export function FollowingBrowser() {
 				headers: { "content-type": "application/json" },
 				body: JSON.stringify(input),
 			});
-			const payload = (await response.json()) as ApiErrorPayload;
+			const payload = await readJsonResponse<ApiErrorPayload>(response);
 			if (!response.ok) {
-				throw new Error(payload.error?.message ?? "Unable to save follow.");
+				throw new Error(readResponseErrorMessage(payload, "Unable to save follow."));
 			}
 			setStatusMessage(successMessage);
 			await loadWorkspace();
@@ -156,9 +152,9 @@ export function FollowingBrowser() {
 				headers: { "content-type": "application/json" },
 				body: JSON.stringify(input),
 			});
-			const payload = (await response.json()) as ApiErrorPayload;
+			const payload = await readJsonResponse<ApiErrorPayload>(response);
 			if (!response.ok) {
-				throw new Error(payload.error?.message ?? "Unable to delete follow.");
+				throw new Error(readResponseErrorMessage(payload, "Unable to delete follow."));
 			}
 			setStatusMessage(successMessage);
 			await loadWorkspace();
@@ -196,11 +192,11 @@ export function FollowingBrowser() {
 					method: "GET",
 					headers: { "content-type": "application/json" },
 				});
-				const payload = (await response.json()) as FollowSuggestionsResponse | ApiErrorPayload;
+				const payload = await readJsonResponse<FollowSuggestionsResponse | ApiErrorPayload>(response);
 				if (!response.ok) {
-					throw new Error(readApiErrorMessage(payload, "Unable to load creator suggestions."));
+					throw new Error(readResponseErrorMessage(payload, "Unable to load creator suggestions."));
 				}
-				if (!("suggestions" in payload)) {
+				if (!payload || !("suggestions" in payload)) {
 					throw new Error("Unexpected suggestions response.");
 				}
 				if (!isCancelled) {

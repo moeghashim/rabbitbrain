@@ -22,6 +22,10 @@ import {
 	isCreatorSubjectCovered,
 	isSubjectFollowed,
 } from "../src/follows/bookmark-follow-state.js";
+import {
+	readJsonResponse,
+	readResponseErrorMessage,
+} from "../src/http/read-json-response.js";
 
 export { parseBookmarkTags, validateBookmarkTags };
 
@@ -501,11 +505,10 @@ export function HeroTweetAnalyzer({
 					"content-type": "application/json",
 				},
 			});
-			const payload = (await response.json()) as
-				| FollowsResponseSuccess
-				| SaveBookmarkResponseError;
+			const payload = await readJsonResponse<FollowsResponseSuccess | SaveBookmarkResponseError>(response);
 			if (
 				!response.ok ||
+				!payload ||
 				!("creatorFollows" in payload) ||
 				!("subjectFollows" in payload)
 			) {
@@ -701,9 +704,9 @@ export function HeroTweetAnalyzer({
 				},
 				body: JSON.stringify(input),
 			});
-			const payload = (await response.json()) as SaveBookmarkResponseError;
+			const payload = await readJsonResponse<SaveBookmarkResponseError>(response);
 			if (!response.ok) {
-				throw new Error(payload.error?.message ?? "Unable to save follow right now.");
+				throw new Error(readResponseErrorMessage(payload, "Unable to save follow right now."));
 			}
 			setFollowSummary(await readFollowSummary());
 			setFollowSuccessMessage(successMessage);

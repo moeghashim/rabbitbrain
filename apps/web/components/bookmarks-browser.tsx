@@ -13,6 +13,10 @@ import {
 	isCreatorSubjectCovered,
 	isSubjectFollowed,
 } from "../src/follows/bookmark-follow-state.js";
+import {
+	readJsonResponse,
+	readResponseErrorMessage,
+} from "../src/http/read-json-response.js";
 import React, { useEffect, useMemo, useState } from "react";
 
 type BookmarkViewMode = "tile" | "row";
@@ -176,11 +180,10 @@ export function BookmarksBrowser() {
 					"content-type": "application/json",
 				},
 			});
-			const payload = (await response.json()) as
-				| FollowsResponseSuccess
-				| BookmarksResponseError;
+			const payload = await readJsonResponse<FollowsResponseSuccess | BookmarksResponseError>(response);
 			if (
 				!response.ok ||
+				!payload ||
 				!("creatorFollows" in payload) ||
 				!("subjectFollows" in payload)
 			) {
@@ -480,9 +483,9 @@ export function BookmarksBrowser() {
 				},
 				body: JSON.stringify(input),
 			});
-			const payload = (await response.json()) as BookmarksResponseError;
+			const payload = await readJsonResponse<BookmarksResponseError>(response);
 			if (!response.ok) {
-				throw new Error(payload.error?.message ?? "Unable to save follow right now.");
+				throw new Error(readResponseErrorMessage(payload, "Unable to save follow right now."));
 			}
 			setFollowSummary(await readFollowSummary());
 			setFollowMessage(successMessage);
