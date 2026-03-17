@@ -47,3 +47,10 @@ test("readResponseErrorMessage returns the API error message when present", () =
 		"Unauthorized",
 	);
 });
+
+test("readResponseErrorMessage ignores non-error payload shapes", () => {
+	assert.equal(
+		readResponseErrorMessage({ creatorFollows: [], subjectFollows: [] }, "Fallback message"),
+		"Fallback message",
+	);
+});
