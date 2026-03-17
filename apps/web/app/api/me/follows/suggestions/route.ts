@@ -3,7 +3,9 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
 import { getServerAuthSession } from "../../../../../src/auth/auth.js";
+import { validateStartupEnvIfNeeded } from "../../../../../src/config/startup-env.js";
 import { listFollowSuggestionsForSession } from "../../../../../src/server/convex-admin.js";
+import { reportServerError } from "../../../../../src/telemetry/report-error.js";
 
 interface SessionUserLike {
 	id?: string | null;
@@ -22,13 +24,17 @@ interface AuthenticatedSessionUser {
 }
 
 interface FollowSuggestionsRouteDependencies {
+	validateStartupEnvIfNeeded: () => void;
 	getServerAuthSession: () => Promise<SessionLike | null>;
 	listFollowSuggestionsForSession: typeof listFollowSuggestionsForSession;
+	reportServerError: typeof reportServerError;
 }
 
 const defaultDependencies: FollowSuggestionsRouteDependencies = {
+	validateStartupEnvIfNeeded,
 	getServerAuthSession,
 	listFollowSuggestionsForSession,
+	reportServerError,
 };
 
 function readSessionUser(session: SessionLike | null): AuthenticatedSessionUser | null {
@@ -48,12 +54,13 @@ export async function handleFollowSuggestionsGet(
 	req: Request,
 	dependencies: FollowSuggestionsRouteDependencies = defaultDependencies,
 ) {
-	const sessionUser = readSessionUser(await dependencies.getServerAuthSession());
-	if (!sessionUser) {
-		return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });
-	}
-
 	try {
+		dependencies.validateStartupEnvIfNeeded();
+		const sessionUser = readSessionUser(await dependencies.getServerAuthSession());
+		if (!sessionUser) {
+			return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });
+		}
+
 		const url = new URL(req.url);
 		const subjectTag = BookmarkTagSchema.parse(url.searchParams.get("subjectTag") ?? "");
 		const response = await dependencies.listFollowSuggestionsForSession({
@@ -63,11 +70,19 @@ export async function handleFollowSuggestionsGet(
 		return NextResponse.json(response);
 	} catch (error) {
 		if (error instanceof ZodError) {
+			dependencies.reportServerError({
+				scope: "api.follows_suggestions.invalid_input",
+				error,
+			});
 			return NextResponse.json(
 				{ error: { message: error.issues[0]?.message ?? "Invalid subjectTag." } },
 				{ status: 400 },
 			);
 		}
+		dependencies.reportServerError({
+			scope: "api.follows_suggestions.get_failure",
+			error,
+		});
 		return NextResponse.json(
 			{ error: { message: error instanceof Error ? error.message : "Unable to load suggestions." } },
 			{ status: 500 },

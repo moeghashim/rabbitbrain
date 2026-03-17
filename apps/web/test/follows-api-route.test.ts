@@ -46,6 +46,7 @@ function createSubjectFollow(): SubjectFollow {
 
 function createDependencies() {
 	return {
+		validateStartupEnvIfNeeded: () => {},
 		getServerAuthSession: async () => ({
 			user: {
 				id: "user_1",
@@ -98,6 +99,7 @@ function createDependencies() {
 					},
 				],
 			}) as FollowingFeedResponse,
+		reportServerError: () => {},
 	};
 }
 
@@ -150,8 +152,10 @@ test("GET /api/me/follows/suggestions returns subject suggestions", async () => 
 	const response = await handleFollowSuggestionsGet(
 		new Request("http://localhost/api/me/follows/suggestions?subjectTag=Shipping"),
 		{
+			validateStartupEnvIfNeeded: createDependencies().validateStartupEnvIfNeeded,
 			getServerAuthSession: createDependencies().getServerAuthSession,
 			listFollowSuggestionsForSession: createDependencies().listFollowSuggestionsForSession,
+			reportServerError: createDependencies().reportServerError,
 		},
 	);
 
@@ -162,12 +166,46 @@ test("GET /api/me/follows/suggestions returns subject suggestions", async () => 
 
 test("GET /api/me/following-feed returns matched bookmarks", async () => {
 	const response = await handleFollowingFeedGet({
+		validateStartupEnvIfNeeded: createDependencies().validateStartupEnvIfNeeded,
 		getServerAuthSession: createDependencies().getServerAuthSession,
 		listFollowingFeedForSession: createDependencies().listFollowingFeedForSession,
+		reportServerError: createDependencies().reportServerError,
 	});
 
 	assert.equal(response.status, 200);
 	const payload = (await response.json()) as FollowingFeedResponse;
 	assert.equal(payload.bookmarks.length, 1);
 	assert.equal(payload.bookmarks[0]?.matches[0]?.type, "creator_all_feed");
+});
+
+test("GET /api/me/follows returns a JSON error when follow loading fails", async () => {
+	const response = await handleFollowsGet({
+		...createDependencies(),
+		listFollowsForSession: async () => {
+			throw new Error("Could not find public function for 'follows:listSummary'");
+		},
+	});
+
+	assert.equal(response.status, 500);
+	assert.deepEqual(await response.json(), {
+		error: {
+			message: "Could not find public function for 'follows:listSummary'",
+		},
+	});
+});
+
+test("GET /api/me/following-feed returns a JSON error when feed loading fails", async () => {
+	const response = await handleFollowingFeedGet({
+		...createDependencies(),
+		listFollowingFeedForSession: async () => {
+			throw new Error("Could not find public function for 'follows:listFollowingFeed'");
+		},
+	});
+
+	assert.equal(response.status, 500);
+	assert.deepEqual(await response.json(), {
+		error: {
+			message: "Could not find public function for 'follows:listFollowingFeed'",
+		},
+	});
 });

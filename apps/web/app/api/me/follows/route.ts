@@ -6,6 +6,7 @@ import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
 import { getServerAuthSession } from "../../../../src/auth/auth.js";
+import { validateStartupEnvIfNeeded } from "../../../../src/config/startup-env.js";
 import {
 	createCreatorFollowForSession,
 	createSubjectFollowForSession,
@@ -13,6 +14,7 @@ import {
 	deleteSubjectFollowForSession,
 	listFollowsForSession,
 } from "../../../../src/server/convex-admin.js";
+import { reportServerError } from "../../../../src/telemetry/report-error.js";
 
 interface SessionUserLike {
 	id?: string | null;
@@ -31,21 +33,25 @@ interface AuthenticatedSessionUser {
 }
 
 interface FollowsRouteDependencies {
+	validateStartupEnvIfNeeded: () => void;
 	getServerAuthSession: () => Promise<SessionLike | null>;
 	listFollowsForSession: typeof listFollowsForSession;
 	createCreatorFollowForSession: typeof createCreatorFollowForSession;
 	createSubjectFollowForSession: typeof createSubjectFollowForSession;
 	deleteCreatorFollowForSession: typeof deleteCreatorFollowForSession;
 	deleteSubjectFollowForSession: typeof deleteSubjectFollowForSession;
+	reportServerError: typeof reportServerError;
 }
 
 const defaultDependencies: FollowsRouteDependencies = {
+	validateStartupEnvIfNeeded,
 	getServerAuthSession,
 	listFollowsForSession,
 	createCreatorFollowForSession,
 	createSubjectFollowForSession,
 	deleteCreatorFollowForSession,
 	deleteSubjectFollowForSession,
+	reportServerError,
 };
 
 function readSessionUser(session: SessionLike | null): AuthenticatedSessionUser | null {
@@ -72,27 +78,40 @@ function notFoundResponse(message: string) {
 export async function handleFollowsGet(
 	dependencies: FollowsRouteDependencies = defaultDependencies,
 ) {
-	const sessionUser = readSessionUser(await dependencies.getServerAuthSession());
-	if (!sessionUser) {
-		return unauthorizedResponse();
-	}
+	try {
+		dependencies.validateStartupEnvIfNeeded();
+		const sessionUser = readSessionUser(await dependencies.getServerAuthSession());
+		if (!sessionUser) {
+			return unauthorizedResponse();
+		}
 
-	const summary = await dependencies.listFollowsForSession({
-		sessionUser,
-	});
-	return NextResponse.json(summary);
+		const summary = await dependencies.listFollowsForSession({
+			sessionUser,
+		});
+		return NextResponse.json(summary);
+	} catch (error) {
+		dependencies.reportServerError({
+			scope: "api.follows.get_failure",
+			error,
+		});
+		return NextResponse.json(
+			{ error: { message: error instanceof Error ? error.message : "Unable to load follows." } },
+			{ status: 500 },
+		);
+	}
 }
 
 export async function handleFollowsPost(
 	req: Request,
 	dependencies: FollowsRouteDependencies = defaultDependencies,
 ) {
-	const sessionUser = readSessionUser(await dependencies.getServerAuthSession());
-	if (!sessionUser) {
-		return unauthorizedResponse();
-	}
-
 	try {
+		dependencies.validateStartupEnvIfNeeded();
+		const sessionUser = readSessionUser(await dependencies.getServerAuthSession());
+		if (!sessionUser) {
+			return unauthorizedResponse();
+		}
+
 		const input = CreateFollowInputSchema.parse(await req.json());
 		if (input.kind === "creator") {
 			const created = await dependencies.createCreatorFollowForSession({
@@ -117,11 +136,19 @@ export async function handleFollowsPost(
 		return NextResponse.json(created);
 	} catch (error) {
 		if (error instanceof ZodError) {
+			dependencies.reportServerError({
+				scope: "api.follows.invalid_input",
+				error,
+			});
 			return NextResponse.json(
 				{ error: { message: error.issues[0]?.message ?? "Invalid follow input." } },
 				{ status: 400 },
 			);
 		}
+		dependencies.reportServerError({
+			scope: "api.follows.post_failure",
+			error,
+		});
 		return NextResponse.json(
 			{ error: { message: error instanceof Error ? error.message : "Unable to save follow." } },
 			{ status: 500 },
@@ -133,12 +160,13 @@ export async function handleFollowsDelete(
 	req: Request,
 	dependencies: FollowsRouteDependencies = defaultDependencies,
 ) {
-	const sessionUser = readSessionUser(await dependencies.getServerAuthSession());
-	if (!sessionUser) {
-		return unauthorizedResponse();
-	}
-
 	try {
+		dependencies.validateStartupEnvIfNeeded();
+		const sessionUser = readSessionUser(await dependencies.getServerAuthSession());
+		if (!sessionUser) {
+			return unauthorizedResponse();
+		}
+
 		const input = DeleteFollowInputSchema.parse(await req.json());
 		if (input.kind === "creator") {
 			const deleted = await dependencies.deleteCreatorFollowForSession({
@@ -155,6 +183,10 @@ export async function handleFollowsDelete(
 		return NextResponse.json(deleted);
 	} catch (error) {
 		if (error instanceof ZodError) {
+			dependencies.reportServerError({
+				scope: "api.follows.invalid_delete_input",
+				error,
+			});
 			return NextResponse.json(
 				{ error: { message: error.issues[0]?.message ?? "Invalid follow delete input." } },
 				{ status: 400 },
@@ -163,6 +195,10 @@ export async function handleFollowsDelete(
 		if (error instanceof Error && error.message === "Follow not found") {
 			return notFoundResponse(error.message);
 		}
+		dependencies.reportServerError({
+			scope: "api.follows.delete_failure",
+			error,
+		});
 		return NextResponse.json(
 			{ error: { message: error instanceof Error ? error.message : "Unable to delete follow." } },
 			{ status: 500 },
