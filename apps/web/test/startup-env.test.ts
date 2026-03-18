@@ -22,6 +22,26 @@ test("validateStartupEnv accepts required web and x env vars", () => {
 	assert.equal(result.convexDeployKey, "convex_deploy_key");
 });
 
+test("validateStartupEnv rejects dev Convex deployments in Vercel production", () => {
+	assert.throws(
+		() =>
+			validateStartupEnv({
+				AUTH_SECRET: "auth_secret",
+				AUTH_X_ID: "x_client_id",
+				AUTH_X_SECRET: "x_client_secret",
+				NEXT_PUBLIC_CONVEX_URL: "https://bright-bobcat-146.eu-west-1.convex.cloud",
+				CONVEX_DEPLOYMENT: "dev:bright-bobcat-146",
+				CONVEX_DEPLOY_KEY: "convex_deploy_key",
+				USER_SECRETS_ENCRYPTION_KEY: "encryption_key",
+				VERCEL_ENV: "production",
+				X_API_KEY: "x_api_key",
+				X_API_SECRET: "x_api_secret",
+				X_BEARER_TOKEN: "x_bearer_token",
+			}),
+		/Production must not use a dev deployment/,
+	);
+});
+
 test("validateStartupEnv throws on missing required env vars", () => {
 	assert.throws(
 		() =>

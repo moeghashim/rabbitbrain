@@ -33,13 +33,19 @@ Optional runtime control:
 ## Convex Configuration
 
 1. Set `CONVEX_DEPLOYMENT` for the target environment.
-2. Set `NEXT_PUBLIC_CONVEX_URL` matching the deployment.
-3. Set `CONVEX_DEPLOY_KEY` for trusted server-side mutation access.
-4. Sync environment variables in Convex dashboard for server functions using X API.
-5. Deploy the latest schema before sending traffic to the new web build. The app now expects:
+2. In Vercel production, `CONVEX_DEPLOYMENT` must point at a Convex production deployment, never a `dev:*` deployment.
+3. Set `NEXT_PUBLIC_CONVEX_URL` matching the same deployment.
+4. Set `CONVEX_DEPLOY_KEY` for trusted server-side mutation access and keep GitHub Actions pointed at the same deployment.
+5. Sync environment variables in Convex dashboard for server functions using X API.
+6. Deploy the latest schema before sending traffic to the new web build. The app now expects:
    - `userPreferences.defaultProvider`
    - `analyses.provider`
    - `userProviderCredentials`
+
+Local development note:
+
+- The tracked `.env.local` files are for Convex development and may use a `dev:*` deployment.
+- Do not copy local `.env.local` Convex values into Vercel production.
 
 ## X Production Keys (App-Only Ingestion)
 
@@ -70,6 +76,7 @@ Optional runtime control:
 
 `apps/web/src/config/startup-env.ts` validates all required env keys.
 Missing keys fail fast at runtime startup/middleware execution.
+Vercel production also fails fast if `CONVEX_DEPLOYMENT` starts with `dev:`.
 
 ## Pre-Deploy Validation
 

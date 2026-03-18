@@ -27,14 +27,27 @@ function readRequiredEnv(name: string, env: EnvMap): string {
 	return value.trim();
 }
 
+function validateProductionConvexTarget(convexDeployment: string, env: EnvMap): void {
+	if (env.VERCEL_ENV !== "production") {
+		return;
+	}
+	if (convexDeployment.startsWith("dev:")) {
+		throw new Error(
+			`Invalid production Convex deployment target: ${convexDeployment}. Production must not use a dev deployment.`,
+		);
+	}
+}
+
 export function validateStartupEnv(env: EnvMap = process.env): StartupEnv {
 	readXApiConfigFromEnv(env as NodeJS.ProcessEnv);
+	const convexDeployment = readRequiredEnv("CONVEX_DEPLOYMENT", env);
+	validateProductionConvexTarget(convexDeployment, env);
 	return {
 		authSecret: readRequiredEnv("AUTH_SECRET", env),
 		authXId: readRequiredEnv("AUTH_X_ID", env),
 		authXSecret: readRequiredEnv("AUTH_X_SECRET", env),
 		convexUrl: readRequiredEnv("NEXT_PUBLIC_CONVEX_URL", env),
-		convexDeployment: readRequiredEnv("CONVEX_DEPLOYMENT", env),
+		convexDeployment,
 		convexDeployKey: readRequiredEnv("CONVEX_DEPLOY_KEY", env),
 		userSecretsEncryptionKey: readRequiredEnv("USER_SECRETS_ENCRYPTION_KEY", env),
 	};

@@ -82,6 +82,12 @@ jobs:
             exit 1
           fi
 
+      - name: Pull Vercel project settings
+        run: npx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Validate production Convex target
+        run: node scripts/validate-production-convex-env.mjs
+
       - name: Version release from changesets
         if: steps.changesets.outputs.pending == 'true'
         run: npm run release:version
@@ -123,9 +129,6 @@ jobs:
       - name: Publish npm packages
         if: steps.changesets.outputs.pending == 'true'
         run: npm run release:publish
-
-      - name: Pull Vercel project settings
-        run: npx vercel@latest pull --yes --environment=production --token="$VERCEL_TOKEN"
 
       - name: Deploy to Vercel production
         id: deploy
