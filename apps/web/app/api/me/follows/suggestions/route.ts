@@ -52,6 +52,7 @@ function readSessionUser(session: SessionLike | null): AuthenticatedSessionUser 
 
 export async function handleFollowSuggestionsGet(
 	req: Request,
+	_context?: unknown,
 	dependencies: FollowSuggestionsRouteDependencies = defaultDependencies,
 ) {
 	try {

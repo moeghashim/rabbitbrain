@@ -11,6 +11,7 @@
 import type * as analysis from "../analysis.js";
 import type * as auth_helpers from "../auth_helpers.js";
 import type * as bookmarks from "../bookmarks.js";
+import type * as follows from "../follows.js";
 import type * as preferences from "../preferences.js";
 import type * as provider_credentials from "../provider_credentials.js";
 import type * as tracks from "../tracks.js";
@@ -26,6 +27,7 @@ declare const fullApi: ApiFromModules<{
   analysis: typeof analysis;
   auth_helpers: typeof auth_helpers;
   bookmarks: typeof bookmarks;
+  follows: typeof follows;
   preferences: typeof preferences;
   provider_credentials: typeof provider_credentials;
   tracks: typeof tracks;

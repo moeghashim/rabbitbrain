@@ -76,6 +76,8 @@ function notFoundResponse(message: string) {
 }
 
 export async function handleFollowsGet(
+	_request: Request,
+	_context?: unknown,
 	dependencies: FollowsRouteDependencies = defaultDependencies,
 ) {
 	try {
@@ -103,6 +105,7 @@ export async function handleFollowsGet(
 
 export async function handleFollowsPost(
 	req: Request,
+	_context?: unknown,
 	dependencies: FollowsRouteDependencies = defaultDependencies,
 ) {
 	try {
@@ -158,6 +161,7 @@ export async function handleFollowsPost(
 
 export async function handleFollowsDelete(
 	req: Request,
+	_context?: unknown,
 	dependencies: FollowsRouteDependencies = defaultDependencies,
 ) {
 	try {

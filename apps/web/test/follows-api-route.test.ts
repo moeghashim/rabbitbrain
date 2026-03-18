@@ -104,7 +104,11 @@ function createDependencies() {
 }
 
 test("GET /api/me/follows returns follows summary", async () => {
-	const response = await handleFollowsGet(createDependencies());
+	const response = await handleFollowsGet(
+		new Request("http://localhost/api/me/follows"),
+		undefined,
+		createDependencies(),
+	);
 	assert.equal(response.status, 200);
 	const payload = (await response.json()) as FollowSummary;
 	assert.equal(payload.creatorFollows.length, 1);
@@ -122,6 +126,7 @@ test("POST /api/me/follows creates creator follow", async () => {
 				scope: "all_feed",
 			}),
 		}),
+		undefined,
 		createDependencies(),
 	);
 
@@ -140,6 +145,7 @@ test("DELETE /api/me/follows deletes subject follow", async () => {
 				followId: "subject_follow_1",
 			}),
 		}),
+		undefined,
 		createDependencies(),
 	);
 
@@ -151,6 +157,7 @@ test("DELETE /api/me/follows deletes subject follow", async () => {
 test("GET /api/me/follows/suggestions returns subject suggestions", async () => {
 	const response = await handleFollowSuggestionsGet(
 		new Request("http://localhost/api/me/follows/suggestions?subjectTag=Shipping"),
+		undefined,
 		{
 			validateStartupEnvIfNeeded: createDependencies().validateStartupEnvIfNeeded,
 			getServerAuthSession: createDependencies().getServerAuthSession,
@@ -165,12 +172,16 @@ test("GET /api/me/follows/suggestions returns subject suggestions", async () => 
 });
 
 test("GET /api/me/following-feed returns matched bookmarks", async () => {
-	const response = await handleFollowingFeedGet({
-		validateStartupEnvIfNeeded: createDependencies().validateStartupEnvIfNeeded,
-		getServerAuthSession: createDependencies().getServerAuthSession,
-		listFollowingFeedForSession: createDependencies().listFollowingFeedForSession,
-		reportServerError: createDependencies().reportServerError,
-	});
+	const response = await handleFollowingFeedGet(
+		new Request("http://localhost/api/me/following-feed"),
+		undefined,
+		{
+			validateStartupEnvIfNeeded: createDependencies().validateStartupEnvIfNeeded,
+			getServerAuthSession: createDependencies().getServerAuthSession,
+			listFollowingFeedForSession: createDependencies().listFollowingFeedForSession,
+			reportServerError: createDependencies().reportServerError,
+		},
+	);
 
 	assert.equal(response.status, 200);
 	const payload = (await response.json()) as FollowingFeedResponse;
@@ -179,12 +190,16 @@ test("GET /api/me/following-feed returns matched bookmarks", async () => {
 });
 
 test("GET /api/me/follows returns a JSON error when follow loading fails", async () => {
-	const response = await handleFollowsGet({
-		...createDependencies(),
-		listFollowsForSession: async () => {
-			throw new Error("Could not find public function for 'follows:listSummary'");
+	const response = await handleFollowsGet(
+		new Request("http://localhost/api/me/follows"),
+		undefined,
+		{
+			...createDependencies(),
+			listFollowsForSession: async () => {
+				throw new Error("Could not find public function for 'follows:listSummary'");
+			},
 		},
-	});
+	);
 
 	assert.equal(response.status, 500);
 	assert.deepEqual(await response.json(), {
@@ -195,12 +210,16 @@ test("GET /api/me/follows returns a JSON error when follow loading fails", async
 });
 
 test("GET /api/me/following-feed returns a JSON error when feed loading fails", async () => {
-	const response = await handleFollowingFeedGet({
-		...createDependencies(),
-		listFollowingFeedForSession: async () => {
-			throw new Error("Could not find public function for 'follows:listFollowingFeed'");
+	const response = await handleFollowingFeedGet(
+		new Request("http://localhost/api/me/following-feed"),
+		undefined,
+		{
+			...createDependencies(),
+			listFollowingFeedForSession: async () => {
+				throw new Error("Could not find public function for 'follows:listFollowingFeed'");
+			},
 		},
-	});
+	);
 
 	assert.equal(response.status, 500);
 	assert.deepEqual(await response.json(), {

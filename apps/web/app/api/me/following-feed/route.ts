@@ -49,6 +49,8 @@ function readSessionUser(session: SessionLike | null): AuthenticatedSessionUser 
 }
 
 export async function handleFollowingFeedGet(
+	_request: Request,
+	_context?: unknown,
 	dependencies: FollowingFeedRouteDependencies = defaultDependencies,
 ) {
 	try {
