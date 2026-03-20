@@ -39,6 +39,7 @@ const config: Config = {
 				headline: ["var(--font-headline)", "serif"],
 				body: ["var(--font-body)", "sans-serif"],
 				label: ["var(--font-label)", "sans-serif"],
+				mono: ["var(--font-mono)", "monospace"],
 				serif: ["var(--font-headline)", "serif"],
 				sans: ["var(--font-body)", "sans-serif"],
 			},

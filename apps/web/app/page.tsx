@@ -96,19 +96,19 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 					<div className="hidden items-center gap-12 md:flex">
 						<Link
 							href="/app"
-							className="border-b border-primary pb-1 font-headline text-sm uppercase tracking-[0.35em] text-primary"
+							className="border-b border-primary pb-1 font-mono text-sm uppercase tracking-[0.35em] text-primary"
 						>
 							Terminal
 						</Link>
 						<Link
 							href="/app/bookmarks"
-							className="font-headline text-sm uppercase tracking-[0.35em] text-secondary transition-colors hover:text-primary"
+							className="font-mono text-sm uppercase tracking-[0.35em] text-secondary transition-colors hover:text-primary"
 						>
 							Bookmarks
 						</Link>
 						<Link
 							href="/support"
-							className="font-headline text-sm uppercase tracking-[0.35em] text-secondary transition-colors hover:text-primary"
+							className="font-mono text-sm uppercase tracking-[0.35em] text-secondary transition-colors hover:text-primary"
 						>
 							Support
 						</Link>
@@ -116,7 +116,7 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 					<Link
 						href={navCtaHref}
 						id="nav-cta"
-						className="bg-primary-container px-6 py-3 font-label text-[11px] font-semibold uppercase tracking-[0.32em] text-on-primary-container transition-transform hover:scale-[1.02]"
+						className="bg-primary-container px-6 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.32em] text-on-primary-container transition-transform hover:scale-[1.02]"
 					>
 						{navCtaLabel}
 					</Link>
@@ -228,11 +228,11 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 								const Icon = card.icon;
 								return (
 									<Reveal key={card.title} className="group bg-surface p-10 transition-colors hover:bg-surface-container-low">
-								<div className="flex h-14 w-14 items-center justify-center border border-outline-variant/20 bg-surface-container-lowest">
-									<Icon className={`h-8 w-8 transition-colors group-hover:text-primary ${card.iconClassName}`} />
-								</div>
+										<div className="flex h-14 w-14 items-center justify-center border border-outline-variant/20 bg-surface-container-lowest">
+											<Icon className={`h-8 w-8 transition-colors group-hover:text-primary ${card.iconClassName}`} />
+										</div>
 										<div className="mt-8">
-											<h3 className="mb-4 font-label text-sm uppercase tracking-[0.28em] text-secondary">{card.title}</h3>
+											<h3 className="mb-4 font-mono text-sm uppercase tracking-[0.28em] text-secondary">{card.title}</h3>
 											<p className="font-label text-xs uppercase leading-7 tracking-[0.2em] text-secondary/50">
 												{card.description}
 											</p>
@@ -258,7 +258,7 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 							<Link
 								href={footerCtaHref}
 								id="final-cta"
-								className="mt-10 inline-flex items-center gap-3 bg-primary-container px-10 py-5 font-label text-xs font-bold uppercase tracking-[0.38em] text-on-primary-container transition-shadow hover:shadow-[0_0_30px_rgba(110,229,145,0.3)]"
+								className="mt-10 inline-flex items-center gap-3 bg-primary-container px-10 py-5 font-mono text-xs font-bold uppercase tracking-[0.38em] text-on-primary-container transition-shadow hover:shadow-[0_0_30px_rgba(110,229,145,0.3)]"
 							>
 								{footerCtaLabel}
 								<ArrowUpRight className="h-4 w-4 text-on-primary-container/80" />
@@ -281,25 +281,25 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 					<div className="flex flex-wrap gap-8">
 						<Link
 							href="/app"
-							className="font-label text-[10px] uppercase tracking-[0.24em] text-secondary/60 transition-colors hover:text-primary"
+							className="font-mono text-[10px] uppercase tracking-[0.24em] text-secondary/60 transition-colors hover:text-primary"
 						>
 							Terminal
 						</Link>
 						<Link
 							href="/app/bookmarks"
-							className="font-label text-[10px] uppercase tracking-[0.24em] text-secondary/60 transition-colors hover:text-primary"
+							className="font-mono text-[10px] uppercase tracking-[0.24em] text-secondary/60 transition-colors hover:text-primary"
 						>
 							Bookmarks
 						</Link>
 						<Link
 							href="/privacy"
-							className="font-label text-[10px] uppercase tracking-[0.24em] text-secondary/60 transition-colors hover:text-primary"
+							className="font-mono text-[10px] uppercase tracking-[0.24em] text-secondary/60 transition-colors hover:text-primary"
 						>
 							Privacy
 						</Link>
 						<Link
 							href="/support"
-							className="font-label text-[10px] uppercase tracking-[0.24em] text-secondary/60 transition-colors hover:text-primary"
+							className="font-mono text-[10px] uppercase tracking-[0.24em] text-secondary/60 transition-colors hover:text-primary"
 						>
 							Support
 						</Link>

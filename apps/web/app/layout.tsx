@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter, Noto_Serif, Space_Grotesk } from "next/font/google";
+import { Inter, Noto_Serif, Space_Grotesk, Space_Mono } from "next/font/google";
 import type { ReactNode } from "react";
 import React from "react";
 
@@ -24,6 +24,12 @@ const spaceGrotesk = Space_Grotesk({
 	variable: "--font-label",
 });
 
+const spaceMono = Space_Mono({
+	subsets: ["latin"],
+	weight: ["400", "700"],
+	variable: "--font-mono",
+});
+
 export const metadata: Metadata = {
 	title: "Rabbit Brain | Obsidian Signal Studio",
 	description: "Transform X signals into structured intelligence with a brutalist editorial interface.",
@@ -31,7 +37,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
 	return (
-		<html lang="en" className={`${notoSerif.variable} ${inter.variable} ${spaceGrotesk.variable} scroll-smooth`}>
+		<html lang="en" className={`${notoSerif.variable} ${inter.variable} ${spaceGrotesk.variable} ${spaceMono.variable} scroll-smooth`}>
 			<body className="font-body antialiased">
 				{children}
 				<AgentationDevtools />
