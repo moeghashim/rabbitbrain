@@ -4,17 +4,33 @@
 
 :root {
 	color-scheme: dark;
+	--obsidian: #131313;
+	--surface-low: #1c1b1b;
+	--surface-high: #2a2a2a;
+	--surface-glass: rgba(42, 42, 42, 0.4);
+	--silver: #c6c6c6;
+	--mint: #6ee591;
+	--on-surface: #e5e2e1;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html {
+	background-color: var(--obsidian);
 }
 
 body {
-	background-color: #2d3b42;
-	color: #fdf1ee;
+	background-color: var(--obsidian);
+	color: var(--on-surface);
 	overflow-x: hidden;
+	font-family: var(--font-body), sans-serif;
 }
 
 ::selection {
-	background-color: #ef4623;
-	color: #ffffff;
+	background-color: var(--mint);
+	color: #00210c;
 }
 
 ::-webkit-scrollbar {
@@ -22,22 +38,24 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-	background: #1c262b;
+	background: #1c1b1b;
 }
 
 ::-webkit-scrollbar-thumb {
-	background: #3e4d55;
-	border-radius: 5px;
+	background: #353534;
+	border-radius: 0;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-	background: #ef4623;
+	background: #6ee591;
 }
 
 .reveal {
 	opacity: 0;
-	transform: translateY(40px);
-	transition: all 1.2s cubic-bezier(0.16, 1, 0.3, 1);
+	transform: translateY(32px);
+	transition:
+		opacity 700ms cubic-bezier(0.19, 1, 0.22, 1),
+		transform 700ms cubic-bezier(0.19, 1, 0.22, 1);
 }
 
 .reveal.active {
@@ -46,5 +64,30 @@ body {
 }
 
 .text-glow {
-	text-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+	text-shadow: 0 0 8px rgba(110, 229, 145, 0.4);
+}
+
+.emerald-glow {
+	box-shadow: 0 0 20px 2px rgba(110, 229, 145, 0.15);
+}
+
+.glass-panel {
+	backdrop-filter: blur(20px);
+	background: var(--surface-glass);
+}
+
+.obsidian-radial {
+	background-image: radial-gradient(circle at center, rgba(110, 229, 145, 0.08) 0%, transparent 68%);
+}
+
+.obsidian-grid {
+	background-image: linear-gradient(rgba(198, 198, 198, 0.08) 1px, transparent 1px),
+		linear-gradient(90deg, rgba(198, 198, 198, 0.08) 1px, transparent 1px);
+	background-size: 40px 40px;
+	background-position: center center;
+}
+
+.obsidian-noise {
+	background-image: radial-gradient(rgba(110, 229, 145, 0.12) 1px, transparent 1px);
+	background-size: 40px 40px;
 }

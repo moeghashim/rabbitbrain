@@ -1,189 +1,111 @@
 import type { SVGProps } from "react";
+import { useId } from "react";
 import React from "react";
 
 export interface RabbitBrandMarkProps extends Omit<SVGProps<SVGSVGElement>, "children" | "viewBox"> {}
 
 export function RabbitBrandMark(props: Readonly<RabbitBrandMarkProps>) {
+	const id = useId();
+	const paint0 = `${id}-paint0`;
+	const paint1 = `${id}-paint1`;
+	const paint2 = `${id}-paint2`;
+	const paint3 = `${id}-paint3`;
+	const paint4 = `${id}-paint4`;
+	const paint5 = `${id}-paint5`;
+	const paint6 = `${id}-paint6`;
+	const paint7 = `${id}-paint7`;
+	const paint8 = `${id}-paint8`;
+	const paint9 = `${id}-paint9`;
+
 	return (
 		<svg
 			aria-hidden="true"
 			focusable="false"
-			viewBox="0 0 200 200"
+			viewBox="0 0 256 256"
 			fill="none"
 			xmlns="http://www.w3.org/2000/svg"
 			{...props}
 		>
 			<path
-				d="m91.67 7.58c12.44 3.79 25.94 11.1 34.34 24.73 5.18 8.26 10.4 18.51 13.9 24.62l-9.8-0.18-16.13-15.83c-6-5.85-11.87-9.85-20.07-13.31-3.5-7.33-3.92-14.42-2.24-20.03z"
-				fill="url(#rabbit-brand-mark-paint0)"
-				stroke="#1A2A32"
-				strokeMiterlimit="10"
-				strokeWidth="4.707"
+				d="m142.7 8.39c-2.64 13.45-0.94 27.6 5.14 37.8l46.61 29.72c5.8-23.85-7.07-51.98-30.57-63.1-7-3.32-13.87-4.53-21.18-4.42z"
+				fill={`url(#${paint0})`}
 			/>
 			<path
-				d="m57.85 25.04c13.64-1.8 30.96-1.36 47.26 11.73 8.01 6.48 17.01 16.36 24.48 20.49l10.32 0.14c10.15 0 19.23 3.55 25.46 10.88l8.78 11.54c2.13 3.09 4.34 7.26 4.34 8.7-0.57 8.96-7.76 17.22-18.44 17.22h-20.14c-13.5 0-23.93-11.26-23.93-22.03 0-4.53 0.41-8.59 3.2-13.47l-17.92-4.16c-19.48-3.9-34.22-15.97-43.41-41.04z"
-				fill="#FCE4D6"
-				stroke="#1A2A32"
-				strokeMiterlimit="10"
-				strokeWidth="4.707"
+				d="m109.7 16.65c-6.75 23.03 5.43 50.12 29.05 62.09 12.18 5.87 24.93 6.47 33.38 4.32l22.37-7.15-84.8-59.26z"
+				fill={`url(#${paint1})`}
 			/>
 			<path
-				d="m164.9 70.72c-6.95-8.79-15.56-11.64-27.86-11.64h-7.19l-0.71 0.14c-3.89-2.13-17.53-16.44-26.33-22.28-10.01-6.85-19.67-10.31-29.99-11.43 13.11 3.46 25.21 9.6 34.01 19.61l16.13 18.46 6.89 10.33 0.98 1.25 33.71 11.45 3.8 1.8 8.54 0.42c-0.7-3.9-6.84-12.02-11.98-18.11z"
-				fill="url(#rabbit-brand-mark-paint1)"
+				d="m127.4 109.6c-42.34 0-77.21 34.35-79.45 73.34-3.19-3.13-6.35-4.73-10.13-4.32-11.37 0-19.57 10.29-19.57 19.91 0 10.76 8.2 20 19.95 20 6.25 0 9.75-1.76 12.56-4.62 7.45 18.07 23.19 33.73 45.89 33.73h4.17c36.14 0 69.2-14.47 89.14-47.48 6.19-10.32 4.56-39.42 4.56-39.42l-2.67-47.8c-14.1-2-33.09-3.34-64.45-3.34z"
+				fill={`url(#${paint2})`}
 			/>
 			<path
-				d="m163.8 87.99c-5.61 0-9.63 4.72-9.63 8.18 0 4.49 2.92 7.95 7.72 9.07 7.16-1.33 13.2-7.01 14.71-14.72l-0.51-2.32-8-0.14-4.29-0.07z"
-				fill="#FCE4D6"
+				d="m130.7 109.6h-4.46c-0.38 2.94-0.54 4.67-0.54 7.7 0 32.64 25.01 62.92 61.07 65.14 8-12.3 7.69-21.7 7.69-21.7l-1.63-47.8c-12.66-2.22-31.65-3.34-62.13-3.34z"
+				fill={`url(#${paint3})`}
 			/>
 			<path
-				d="m130.2 74.91c-1.99 3.02-1.34 8.52 0.97 12.52 3.06 5.28 7.97 7.22 14.89 7.22h11.82l-0.82 10.77-17.2-0.31c-12.79 0-23.65-11.13-23.65-21.4 0-4.88 0.96-8.66 2.95-12.12l11.04 3.32z"
-				fill="url(#rabbit-brand-mark-paint2)"
+				d="m194.5 75.91c-22.73 0-42.39 20.07-42.39 43.25 0 21.85 17.78 41.3 42.39 41.3 22.73 0 43.31-18.75 43.31-42.25 0-22.11-17.78-42.3-43.31-42.3zm5.94 44.59c-6.94 0-10.43-5.79-10.43-10.19 0-6.03 4.62-9.99 9.92-9.99 6.72 0 10.47 5.73 10.47 10.34 0 5.88-4.66 9.84-9.96 9.84z"
+				fill={`url(#${paint4})`}
 			/>
 			<path
-				d="m59.67 25.46c7.23 0.85 27.44 5.51 42.15 19.38 6.99 6.62 12.39 13.68 19.14 22.78-8.65-1.4-18.65-2.66-26.52-5.58-14.32-5.29-24.33-13.94-33.37-34.71l-1.4-1.87z"
-				fill="url(#rabbit-brand-mark-paint3)"
-				stroke="#1A2A32"
-				strokeMiterlimit="10"
-				strokeWidth="4.707"
+				d="m176.2 105c-8.35 0-15.44 2.15-23.21 6.2-3.27 18.75 10.13 48.58 40.98 49.25 13.91 0.33 25.96-6.95 32.16-14.34-2.17-12.05-9.3-22.41-17.93-28.42-2.37 2.37-4.98 2.86-7.74 2.86-6.61 0-10.68-5.48-10.68-12.08-4.07-2.55-8.53-3.47-13.58-3.47z"
+				fill={`url(#${paint5})`}
 			/>
 			<path
-				d="m67.11 28.45c4.6 9.23 11.9 19.27 25.01 25.99 6.81 3.28 12.6 4.47 21.61 5.52l-2.82-3.9c-10.01-11.85-25.3-22.62-43.8-27.61z"
-				fill="url(#rabbit-brand-mark-paint4)"
+				d="m152.1 222.9h-12.11c-9.1 14.81-22.59 23.93-39.2 24.7h75.07v-0.57c0-13.27-10.64-24.13-23.76-24.13z"
+				fill={`url(#${paint6})`}
 			/>
 			<path
-				d="m147.8 82.91c3.89 0 5.01-3.15 5.01-5.09 0-3.53-2.75-5.47-5.01-5.47-3.69 0-5.23 2.81-5.23 4.95 0 3.09 2.13 5.61 5.23 5.61z"
-				fill="#1A2A32"
+				d="m97.53 147.7c-27.3 0-49.62 22.51-49.62 49.99 0 26.51 21.08 49.91 49.62 49.91v-99.9z"
+				fill={`url(#${paint7})`}
 			/>
 			<path
-				d="m105.2 98.23h-12.5c-29.79 0-56.4 24.52-56.68 58.89v2.13c-8.58 0.99-14.41 8.9-14.41 16.3 0 9.46 7.8 17.31 17.19 17.31 5.61 0 10.11-2.35 12.68-4.63l5.15 4.19h64.67v-0.28c0-8.12-5.76-13.8-13.82-13.8h-11.04l19.32-11.88 15.32 20.85c2.82 3.82 5.93 5.11 9.17 5.11h28.35v-0.28c0-7.4-5.33-13.08-12.8-13.5l-6.57-33.22c6.43-8.47 8.42-15.16 8.42-25.41v-13.85h-17.75c-11.89 0-22.76-9.53-24-19.93l-10.7 12z"
-				fill="url(#rabbit-brand-mark-paint5)"
-				stroke="#1A2A32"
-				strokeMiterlimit="10"
-				strokeWidth="4.707"
+				d="m97.53 147.7v99.9c27.23 0 49.77-22.95 49.77-50.43 0-26.39-21.08-49.47-49.77-49.47z"
+				fill={`url(#${paint8})`}
 			/>
 			<path
-				d="m119.2 98.23c7.61 9.02 20.4 22.9 36.39 25.56 0.76-8.85 0-17.77 0-17.77l-16.55-0.21c-8.94 0-15.3-4.3-19.84-7.58z"
-				fill="url(#rabbit-brand-mark-paint6)"
-			/>
-			<path
-				d="m116.8 92.5 14.14 28.49 7.47 33.47c9.33-6.65 17.81-16.73 18.23-34.03l-16.89-14.83c-11 0-17.82-5.15-22.95-13.1z"
-				fill="url(#rabbit-brand-mark-paint7)"
-				stroke="#1A2A32"
-				strokeMiterlimit="10"
-				strokeWidth="4.707"
-			/>
-			<path
-				d="m147.2 150.1-7.13 7 4.6 20.6 8.71 3.52-6.18-31.12z"
-				fill="url(#rabbit-brand-mark-paint8)"
-				stroke="#1A2A32"
-				strokeMiterlimit="10"
-				strokeWidth="4.707"
-			/>
-			<path
-				d="m131.5 134.2c-3.63 10.63-9.32 17.63-21.49 20.95l19.81 30.81c2.96 4.24 5.58 5.5 9.01 5.5l16.13-0.28c0.14-7.39-5.01-12.62-12.74-12.62l-10.72-44.36z"
-				fill="url(#rabbit-brand-mark-paint9)"
-				stroke="#1A2A32"
-				strokeMiterlimit="10"
-				strokeWidth="4.707"
-			/>
-			<path
-				d="m35.96 161.3c-6.64 0.86-11.11 6.54-11.84 11.76-0.98 7.19 4.92 6.64 7.05 6.99 6.24 1.02 9.06-1.19 11.95-3.89-3.63-4.46-6-8.88-7.16-14.86z"
-				fill="url(#rabbit-brand-mark-paint10)"
-			/>
-			<path
-				d="m68.34 126c-17.27 0-31.22 12.94-31.22 32.67 0 13.09 8.03 23.99 19.85 32.41l44.07-0.07v-0.35c0-8-6.71-12.3-13.07-12.3l5.09-7.26c2.68-4.53 4.08-8.42 4.08-14.52 0-16.82-13.29-30.58-28.8-30.58z"
-				fill="url(#rabbit-brand-mark-paint11)"
-				stroke="#1A2A32"
-				strokeMiterlimit="10"
-				strokeWidth="4.707"
-			/>
-			<path
-				d="m53.14 135.2c13.11-2.46 25.97 8.04 25.97 23.72 0 8.19-3.4 12.73-9.3 19.41l17.4-0.14c5.71-6.47 6.2-15.39 5.71-22.08-1.68-13.36-14.3-24.13-28.21-22.19l-11.57 1.28z"
-				fill="url(#rabbit-brand-mark-paint12)"
-			/>
-			<path
-				d="m65.84 180.8 41.3-0.75c7.33 0 12.17 5.4 12.17 11.4h-44.2l-9.27-10.65z"
-				fill="url(#rabbit-brand-mark-paint13)"
-				stroke="#1A2A32"
-				strokeMiterlimit="10"
-				strokeWidth="4.707"
-			/>
-			<path
-				d="m98.12 123.6c0.86-11.61 3.89-20.39 13.54-31.15l3.76-4.79c2.47 9.35 10.67 16.55 16.74 18.31l-0.35 31.89c-3.2 8.54-9.7 14.15-14.48 16.61l-14.12-18.67c-3.1-4.72-5.09-8.99-5.09-12.2z"
-				fill="url(#rabbit-brand-mark-paint14)"
-				stroke="#1A2A32"
-				strokeMiterlimit="10"
-				strokeWidth="4.707"
-			/>
-			<path
-				d="m98.98 123.4c2.75-2.17 6.41-3.01 10.76-3.01 9.72 0 18.52 7.13 20.93 15.7l-0.84 3.18c-3.36 7-8.8 12.4-12.61 14.53l-13.94-17.64c-2.75-4.14-3.99-8.29-4.3-12.76z"
-				fill="url(#rabbit-brand-mark-paint15)"
+				d="m38.16 178.2c-11.12 0.91-19.95 10.23-19.95 20.32 0 10.48 8.4 20 19.95 20 6.03 0 9.75-2.02 12.56-4.69-1.91-5.19-2.81-9.7-2.81-15.89 0-5.41 0.85-10.21 2.18-16.94-3.31-2.2-6.38-2.8-11.93-2.8z"
+				fill={`url(#${paint9})`}
 			/>
 			<defs>
-				<linearGradient id="rabbit-brand-mark-paint0" x1="114.1" x2="114.1" y1="10.42" y2="56.75" gradientUnits="userSpaceOnUse">
-					<stop stopColor="#FF7152" offset="0" />
-					<stop stopColor="#B3281E" offset="1" />
+				<linearGradient id={paint0} x1="146.8" x2="184.6" y1="12.9" y2="71.98" gradientUnits="userSpaceOnUse">
+					<stop stopColor="#26D192" offset="0" />
+					<stop stopColor="#0B789C" offset="1" />
 				</linearGradient>
-				<linearGradient id="rabbit-brand-mark-paint1" x1="124.8" x2="124.8" y1="25.51" y2="94.65" gradientUnits="userSpaceOnUse">
-					<stop stopColor="#FCE4D6" offset="0" />
-					<stop stopColor="#F8BBA6" offset="1" />
+				<linearGradient id={paint1} x1="117.4" x2="154.7" y1="24.53" y2="74.14" gradientUnits="userSpaceOnUse">
+					<stop stopColor="#9BF78E" offset="0" />
+					<stop stopColor="#00CED9" offset=".998" />
 				</linearGradient>
-				<linearGradient id="rabbit-brand-mark-paint2" x1="146.4" x2="146.4" y1="71.59" y2="105.4" gradientUnits="userSpaceOnUse">
-					<stop stopColor="#FF7152" offset="0" />
-					<stop stopColor="#CC442A" offset="1" />
+				<linearGradient id={paint2} x1="60.41" x2="104.2" y1="123.4" y2="209.3" gradientUnits="userSpaceOnUse">
+					<stop stopColor="#1ABC9C" offset="0" />
+					<stop stopColor="#0785A0" offset="1" />
 				</linearGradient>
-				<linearGradient id="rabbit-brand-mark-paint3" x1="90.29" x2="90.29" y1="25.28" y2="67.62" gradientUnits="userSpaceOnUse">
-					<stop stopColor="#FF7152" offset="0" />
-					<stop stopColor="#B3281E" offset="1" />
+				<linearGradient id={paint3} x1="136.5" x2="175.9" y1="112" y2="179.3" gradientUnits="userSpaceOnUse">
+					<stop stopColor="#85EEA0" offset="0" />
+					<stop stopColor="#00D6D6" offset=".998" />
 				</linearGradient>
-				<linearGradient id="rabbit-brand-mark-paint4" x1="90.42" x2="90.42" y1="28.45" y2="59.96" gradientUnits="userSpaceOnUse">
-					<stop stopColor="#FF7152" offset="0" />
-					<stop stopColor="#CC442A" offset="1" />
+				<linearGradient id={paint4} x1="164.1" x2="221.3" y1="83.96" y2="149.5" gradientUnits="userSpaceOnUse">
+					<stop stopColor="#20D6DE" offset="0" />
+					<stop stopColor="#85EEA0" offset="1" />
 				</linearGradient>
-				<linearGradient id="rabbit-brand-mark-paint5" x1="95.12" x2="95.12" y1="86.23" y2="192.9" gradientUnits="userSpaceOnUse">
-					<stop stopColor="#FF7152" offset="0" />
-					<stop stopColor="#F39A75" offset=".5052" />
-					<stop stopColor="#F8BBA6" offset="1" />
+				<linearGradient id={paint5} x1="165.7" x2="201.7" y1="108.6" y2="160.2" gradientUnits="userSpaceOnUse">
+					<stop stopColor="#078F8A" offset="0" />
+					<stop stopColor="#23BD91" offset="1" />
 				</linearGradient>
-				<linearGradient id="rabbit-brand-mark-paint6" x1="137.4" x2="137.4" y1="98.23" y2="123.8" gradientUnits="userSpaceOnUse">
-					<stop stopColor="#F8BBA6" offset="0" />
-					<stop stopColor="#FCE4D6" offset="1" />
+				<linearGradient id={paint6} x1="100.8" x2="175.8" y1="235.3" y2="235.3" gradientUnits="userSpaceOnUse">
+					<stop stopColor="#076199" offset="0" />
+					<stop stopColor="#28D69A" offset="1" />
 				</linearGradient>
-				<linearGradient id="rabbit-brand-mark-paint7" x1="136.7" x2="136.7" y1="92.5" y2="154.5" gradientUnits="userSpaceOnUse">
-					<stop stopColor="#F8BBA6" offset="0" />
-					<stop stopColor="#FCE4D6" offset="1" />
+				<linearGradient id={paint7} x1="64.62" x2="97.53" y1="154.3" y2="247.6" gradientUnits="userSpaceOnUse">
+					<stop stopColor="#18D29B" offset="0" />
+					<stop stopColor="#0B789C" offset="1" />
 				</linearGradient>
-				<linearGradient id="rabbit-brand-mark-paint8" x1="146.8" x2="146.8" y1="150.1" y2="181.2" gradientUnits="userSpaceOnUse">
-					<stop stopColor="#962C1B" offset="0" />
-					<stop stopColor="#B3281E" offset="1" />
+				<linearGradient id={paint8} x1="106" x2="127.9" y1="152" y2="235.2" gradientUnits="userSpaceOnUse">
+					<stop stopColor="#A1FBB1" offset="0" />
+					<stop stopColor="#00D6D6" offset="1" />
 				</linearGradient>
-				<linearGradient id="rabbit-brand-mark-paint9" x1="133.2" x2="133.2" y1="134.1" y2="191.4" gradientUnits="userSpaceOnUse">
-					<stop stopColor="#FF7152" offset="0" />
-					<stop stopColor="#F8BBA6" offset="1" />
-				</linearGradient>
-				<linearGradient id="rabbit-brand-mark-paint10" x1="33.62" x2="33.62" y1="161.3" y2="180.4" gradientUnits="userSpaceOnUse">
-					<stop stopColor="#FCE4D6" offset="0" />
-					<stop stopColor="#F8BBA6" offset="1" />
-				</linearGradient>
-				<linearGradient id="rabbit-brand-mark-paint11" x1="69.08" x2="69.08" y1="126.1" y2="191.1" gradientUnits="userSpaceOnUse">
-					<stop stopColor="#FCE4D6" offset="0" />
-					<stop stopColor="#CC442A" offset="1" />
-				</linearGradient>
-				<linearGradient id="rabbit-brand-mark-paint12" x1="73.04" x2="73.04" y1="133.6" y2="178.3" gradientUnits="userSpaceOnUse">
-					<stop stopColor="#FFB382" offset="0" />
-					<stop stopColor="#F18B6A" offset="1" />
-				</linearGradient>
-				<linearGradient id="rabbit-brand-mark-paint13" x1="92.57" x2="92.57" y1="180" y2="191.4" gradientUnits="userSpaceOnUse">
-					<stop stopColor="#F8BBA6" offset="0" />
-					<stop stopColor="#F8BBA6" stopOpacity=".53" offset="1" />
-				</linearGradient>
-				<linearGradient id="rabbit-brand-mark-paint14" x1="115.1" x2="115.1" y1="87.71" y2="154.5" gradientUnits="userSpaceOnUse">
-					<stop stopColor="#FF7152" offset="0" />
-					<stop stopColor="#CC442A" offset="1" />
-				</linearGradient>
-				<linearGradient id="rabbit-brand-mark-paint15" x1="114.8" x2="114.8" y1="120.4" y2="153.8" gradientUnits="userSpaceOnUse">
-					<stop stopColor="#F39A75" offset="0" />
-					<stop stopColor="#CC442A" offset="1" />
+				<linearGradient id={paint9} x1="26.9" x2="41.74" y1="183.3" y2="210.7" gradientUnits="userSpaceOnUse">
+					<stop stopColor="#20D69E" offset="0" />
+					<stop stopColor="#0B789C" offset="1" />
 				</linearGradient>
 			</defs>
 		</svg>

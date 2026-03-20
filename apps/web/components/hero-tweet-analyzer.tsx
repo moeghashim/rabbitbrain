@@ -71,7 +71,10 @@ export interface HeroTweetAnalyzerProps {
 	initialModel?: string;
 	showProviderSelector?: boolean;
 	showModelSelector?: boolean;
+	theme?: "editorial" | "obsidian";
 }
+
+type HeroTweetAnalyzerTheme = NonNullable<HeroTweetAnalyzerProps["theme"]>;
 
 function cleanAnalyzeFlagInUrl(): void {
 	if (typeof window === "undefined") {
@@ -179,8 +182,10 @@ function renderLeadTweetMedia(tweet: TweetPreview): React.ReactNode {
 					className="w-full object-cover transition-transform duration-300 group-hover:scale-[1.01]"
 				/>
 				<div className="absolute inset-0 flex items-end justify-between bg-gradient-to-t from-black/65 via-black/15 to-transparent p-4">
-					<span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-black/50 text-sm text-white">▶</span>
-					<span className="text-xs font-semibold uppercase tracking-wider text-white">
+					<span className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-primary/30 bg-surface/80 text-sm text-primary">
+						▶
+					</span>
+					<span className="text-xs font-semibold uppercase tracking-wider text-secondary">
 						{mediaLabel} - Open on X
 					</span>
 				</div>
@@ -212,6 +217,7 @@ export interface TweetPreviewCardProps {
 	analysis: AnalyzeTweetResult;
 	selectedConceptTagKeys?: ReadonlySet<string>;
 	onToggleConceptTag?: (tag: string) => void;
+	theme?: HeroTweetAnalyzerTheme;
 }
 
 export function TweetPreviewCard({
@@ -219,7 +225,9 @@ export function TweetPreviewCard({
 	analysis,
 	selectedConceptTagKeys,
 	onToggleConceptTag,
+	theme = "editorial",
 }: Readonly<TweetPreviewCardProps>) {
+	const isObsidian = theme === "obsidian";
 	const interactionItems = [
 		{
 			label: "Replies",
@@ -241,51 +249,84 @@ export function TweetPreviewCard({
 
 	return (
 		<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-			<section className="rounded-4xl border border-white/10 bg-ink/70 p-5">
+			<section className={isObsidian ? "bg-surface-container-lowest p-6" : "rounded-4xl border border-white/10 bg-ink/70 p-5"}>
 				<div className="mb-4 flex items-start gap-3">
 					{tweet.authorAvatarUrl ? (
 						<img
 							src={tweet.authorAvatarUrl}
 							alt={tweet.authorName ? `${tweet.authorName} avatar` : "Tweet author avatar"}
-							className="h-10 w-10 rounded-full border border-white/20 object-cover"
+							className={
+								isObsidian ? "h-10 w-10 border border-outline-variant/30 object-cover" : "h-10 w-10 rounded-full border border-white/20 object-cover"
+							}
 						/>
 					) : (
-						<div className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-charcoal text-sm font-semibold text-white">
+						<div
+							className={
+								isObsidian
+									? "flex h-10 w-10 items-center justify-center border border-outline-variant/30 bg-surface-container-low font-label text-sm font-semibold text-primary"
+									: "flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-charcoal text-sm font-semibold text-white"
+							}
+						>
 							{defaultAvatarLabel(tweet)}
 						</div>
 					)}
 					<div>
-						<p className="text-sm font-semibold text-white">{tweet.authorName ?? "Unknown author"}</p>
-						<p className="text-xs text-peach/60">@{tweet.authorUsername ?? "unknown"}</p>
+						<p className={isObsidian ? "font-label text-sm uppercase tracking-[0.18em] text-on-surface" : "text-sm font-semibold text-white"}>
+							{tweet.authorName ?? "Unknown author"}
+						</p>
+						<p className={isObsidian ? "font-label text-[10px] uppercase tracking-[0.3em] text-secondary/60" : "text-xs text-peach/60"}>
+							@{tweet.authorUsername ?? "unknown"}
+						</p>
 					</div>
 				</div>
-				<p className="whitespace-pre-wrap text-sm leading-relaxed text-white/90">{tweet.text}</p>
+				<p className={isObsidian ? "whitespace-pre-wrap font-body text-sm leading-7 text-on-surface-variant" : "whitespace-pre-wrap text-sm leading-relaxed text-white/90"}>
+					{tweet.text}
+				</p>
 				{renderLeadTweetMedia(tweet)}
 				{interactionItems.length > 0 ? (
 					<div id="tweet-interaction-metrics" className="mt-4 flex flex-wrap gap-2">
 						{interactionItems.map((item) => (
-							<span key={item.label} className="rounded-full border border-white/15 bg-charcoal/50 px-3 py-1 text-xs text-peach/80">
-								<span className="font-semibold text-white">{formatInteractionCount(item.value)}</span> {item.label}
+							<span
+								key={item.label}
+								className={
+									isObsidian
+										? "border border-outline-variant/20 bg-surface px-3 py-2 font-label text-[10px] uppercase tracking-[0.24em] text-secondary/70"
+										: "rounded-full border border-white/15 bg-charcoal/50 px-3 py-1 text-xs text-peach/80"
+								}
+							>
+								<span className={isObsidian ? "text-primary" : "font-semibold text-white"}>{formatInteractionCount(item.value)}</span> {item.label}
 							</span>
 						))}
 					</div>
 				) : null}
-				<p className="mt-4 text-xs uppercase tracking-widest text-peach/50">Tweet ID: {tweet.id}</p>
+				<p className={isObsidian ? "mt-4 font-label text-[10px] uppercase tracking-[0.3em] text-secondary/50" : "mt-4 text-xs uppercase tracking-widest text-peach/50"}>
+					Tweet ID: {tweet.id}
+				</p>
 			</section>
-			<section className="rounded-4xl border border-coral/30 bg-coral/10 p-5">
-				<p className="text-xs font-semibold uppercase tracking-[0.2em] text-coral">Analysis</p>
-				<h3 className="mt-3 font-serif text-2xl text-white">{analysis.topic}</h3>
-				<p className="mt-3 text-sm leading-relaxed text-peach/90">{analysis.summary}</p>
-				<p className="mt-4 text-sm text-peach/70">
-					<span className="font-semibold text-white">Intent:</span> {analysis.intent}
+			<section className={isObsidian ? "emerald-glow bg-surface-container-high p-6" : "rounded-4xl border border-coral/30 bg-coral/10 p-5"}>
+				<p className={isObsidian ? "font-label text-[10px] uppercase tracking-[0.35em] text-primary" : "text-xs font-semibold uppercase tracking-[0.2em] text-coral"}>
+					Analysis
+				</p>
+				<h3 className={isObsidian ? "mt-3 font-headline text-2xl italic text-on-surface" : "mt-3 font-serif text-2xl text-white"}>
+					{analysis.topic}
+				</h3>
+				<p className={isObsidian ? "mt-3 font-body text-sm leading-7 text-on-surface-variant" : "mt-3 text-sm leading-relaxed text-peach/90"}>
+					{analysis.summary}
+				</p>
+				<p className={isObsidian ? "mt-4 font-label text-[11px] uppercase tracking-[0.24em] text-secondary/70" : "mt-4 text-sm text-peach/70"}>
+					<span className={isObsidian ? "text-primary" : "font-semibold text-white"}>Intent:</span> {analysis.intent}
 				</p>
 				<div id="analysis-concept-tags" className="mt-4 flex flex-wrap gap-2">
 					{analysis.novelConcepts.map((concept, index) => {
 						const normalizedTag = concept.name.trim().toLowerCase();
 						const isSelected = selectedConceptTagKeys?.has(normalizedTag) ?? false;
-						const className = isSelected
-							? "rounded-full border border-coral bg-coral/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-coral"
-							: "rounded-full border border-white/15 bg-ink/40 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white";
+						const className = isObsidian
+							? isSelected
+								? "border border-primary/50 bg-primary/10 px-3 py-2 font-label text-[10px] font-semibold uppercase tracking-[0.24em] text-primary"
+								: "border border-outline-variant/20 bg-surface px-3 py-2 font-label text-[10px] font-semibold uppercase tracking-[0.24em] text-on-surface"
+							: isSelected
+								? "rounded-full border border-coral bg-coral/20 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-coral"
+								: "rounded-full border border-white/15 bg-ink/40 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-white";
 
 						if (!onToggleConceptTag) {
 							return (
@@ -303,7 +344,11 @@ export function TweetPreviewCard({
 								onClick={() => {
 									onToggleConceptTag(concept.name);
 								}}
-								className={`${className} transition-colors hover:border-coral/60 hover:text-coral`}
+								className={
+									isObsidian
+										? `${className} transition-colors hover:border-primary/60 hover:text-primary`
+										: `${className} transition-colors hover:border-coral/60 hover:text-coral`
+								}
 							>
 								{concept.name}
 							</button>
@@ -321,6 +366,7 @@ export interface AnalyzerFollowControlsProps {
 	followSummary: FollowSummary;
 	isCreatingFollow?: boolean;
 	onCreateFollow?: (input: CreateFollowInput, successMessage: string) => void;
+	theme?: HeroTweetAnalyzerTheme;
 }
 
 export function AnalyzerFollowControls({
@@ -329,7 +375,9 @@ export function AnalyzerFollowControls({
 	followSummary,
 	isCreatingFollow = false,
 	onCreateFollow,
+	theme = "editorial",
 }: Readonly<AnalyzerFollowControlsProps>) {
+	const isObsidian = theme === "obsidian";
 	const normalizedUsername = normalizeUsername(tweet.authorUsername);
 	if (!normalizedUsername) {
 		return null;
@@ -344,17 +392,25 @@ export function AnalyzerFollowControls({
 	);
 
 	return (
-		<section id="analyzer-follow-controls" className="rounded-4xl border border-white/10 bg-ink/70 p-5">
+		<section id="analyzer-follow-controls" className={isObsidian ? "bg-surface-container-low p-6" : "rounded-4xl border border-white/10 bg-ink/70 p-5"}>
 			<div className="flex flex-col gap-4">
 				<div>
-					<p className="text-xs font-semibold uppercase tracking-[0.2em] text-coral">Follow</p>
-					<p className="mt-2 text-sm text-peach/70">
+					<p className={isObsidian ? "font-label text-[10px] uppercase tracking-[0.35em] text-primary" : "text-xs font-semibold uppercase tracking-[0.2em] text-coral"}>
+						Follow
+					</p>
+					<p className={isObsidian ? "mt-2 font-body text-sm leading-7 text-on-surface-variant" : "mt-2 text-sm text-peach/70"}>
 						Follow @{normalizedUsername} or follow the current topics selected on this analysis card.
 					</p>
 				</div>
 				<div className="flex flex-wrap gap-2">
 					{followState.isCreatorFeedFollowed ? (
-						<span className="rounded-full border border-coral/30 bg-coral/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-coral">
+						<span
+							className={
+								isObsidian
+									? "border border-primary/40 bg-primary/10 px-4 py-2 font-label text-[10px] font-semibold uppercase tracking-[0.24em] text-primary"
+									: "rounded-full border border-coral/30 bg-coral/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-coral"
+							}
+						>
 							Following @{normalizedUsername}
 						</span>
 					) : (
@@ -374,7 +430,11 @@ export function AnalyzerFollowControls({
 									`Now following @${normalizedUsername}'s saved feed.`,
 								);
 							}}
-							className="inline-flex items-center justify-center rounded-[16px] bg-coral px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-coral-hover disabled:cursor-not-allowed disabled:opacity-60"
+							className={
+								isObsidian
+									? "inline-flex items-center justify-center bg-primary-container px-4 py-3 font-label text-[10px] font-semibold uppercase tracking-[0.24em] text-on-primary-container transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+									: "inline-flex items-center justify-center rounded-[16px] bg-coral px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-coral-hover disabled:cursor-not-allowed disabled:opacity-60"
+							}
 						>
 							{isCreatingFollow ? "Saving..." : "Follow account"}
 						</button>
@@ -383,7 +443,11 @@ export function AnalyzerFollowControls({
 						isCreatorSubjectCovered(followState, tag) ? (
 							<span
 								key={`analyzer-follow-creator-${tag}`}
-								className="rounded-full border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-peach/70"
+								className={
+									isObsidian
+										? "border border-outline-variant/20 px-4 py-2 font-label text-[10px] font-semibold uppercase tracking-[0.24em] text-secondary/70"
+										: "rounded-full border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-peach/70"
+								}
 							>
 								Following @{normalizedUsername} for {tag}
 							</span>
@@ -405,7 +469,11 @@ export function AnalyzerFollowControls({
 										`Now following @${normalizedUsername} for ${tag}.`,
 									);
 								}}
-								className="inline-flex items-center justify-center rounded-[16px] border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+								className={
+									isObsidian
+										? "inline-flex items-center justify-center border border-outline-variant/20 px-4 py-3 font-label text-[10px] font-semibold uppercase tracking-[0.24em] text-on-surface transition-colors hover:border-primary/50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
+										: "inline-flex items-center justify-center rounded-[16px] border border-white/20 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
+								}
 							>
 								Follow @{normalizedUsername} for {tag}
 							</button>
@@ -415,7 +483,11 @@ export function AnalyzerFollowControls({
 						isSubjectFollowed(followSummary, tag) ? (
 							<span
 								key={`analyzer-follow-subject-${tag}`}
-								className="rounded-full border border-coral/30 bg-coral/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-coral"
+								className={
+									isObsidian
+										? "border border-primary/40 bg-primary/10 px-4 py-2 font-label text-[10px] font-semibold uppercase tracking-[0.24em] text-primary"
+										: "rounded-full border border-coral/30 bg-coral/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-coral"
+								}
 							>
 								Following Topic {tag}
 							</span>
@@ -433,7 +505,11 @@ export function AnalyzerFollowControls({
 										`Now following ${tag}.`,
 									);
 								}}
-								className="inline-flex items-center justify-center rounded-[16px] border border-coral/30 bg-coral/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-coral transition-colors hover:bg-coral/20 disabled:cursor-not-allowed disabled:opacity-60"
+								className={
+									isObsidian
+										? "inline-flex items-center justify-center border border-primary/40 bg-primary/10 px-4 py-3 font-label text-[10px] font-semibold uppercase tracking-[0.24em] text-primary transition-colors hover:border-primary hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60"
+										: "inline-flex items-center justify-center rounded-[16px] border border-coral/30 bg-coral/10 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-coral transition-colors hover:bg-coral/20 disabled:cursor-not-allowed disabled:opacity-60"
+								}
 							>
 								Follow topic {tag}
 							</button>
@@ -441,7 +517,7 @@ export function AnalyzerFollowControls({
 					)}
 				</div>
 				{activeTags.length === 0 ? (
-					<p className="text-xs text-peach/60">
+					<p className={isObsidian ? "font-body text-xs leading-6 text-secondary/60" : "text-xs text-peach/60"}>
 						Select concept tags or type topics above to unlock topic follow actions.
 					</p>
 				) : null}
@@ -457,7 +533,9 @@ export function HeroTweetAnalyzer({
 	initialModel,
 	showProviderSelector = true,
 	showModelSelector = true,
+	theme = "editorial",
 }: Readonly<HeroTweetAnalyzerProps>) {
+	const isObsidian = theme === "obsidian";
 	const [tweetUrlOrId, setTweetUrlOrId] = useState(initialTweetUrlOrId);
 	const [provider, setProvider] = useState<ProviderId>(initialProvider);
 	const [model, setModel] = useState(resolveProviderCatalogModel(initialProvider, initialModel));
@@ -781,14 +859,40 @@ export function HeroTweetAnalyzer({
 		void runAnalysis(initialTweetUrlOrId);
 	}, [autoAnalyze, initialTweetUrlOrId]);
 
+	const containerClassName = isObsidian
+		? "glass-panel flex w-full flex-col gap-6 border border-outline-variant/20 bg-surface-container-high/70 p-6 text-left md:p-8"
+		: "flex w-full flex-col gap-6 rounded-5xl border border-white/10 bg-charcoal/70 p-6 text-left shadow-[0_20px_50px_rgba(0,0,0,0.35)] backdrop-blur-md md:p-8";
+	const formClassName = isObsidian ? "flex w-full flex-col gap-0 md:flex-row" : "flex w-full flex-col gap-3 sm:flex-row";
+	const selectClassName = isObsidian
+		? "appearance-none border border-outline-variant/20 bg-surface-container-lowest px-4 py-5 pr-12 font-label text-xs uppercase tracking-[0.24em] text-on-surface focus:border-primary focus:outline-none md:text-sm"
+		: "appearance-none rounded-[20px] border border-white/20 bg-ink/70 px-4 py-4 pr-12 text-sm text-white focus:border-coral focus:outline-none md:text-base";
+	const inputClassName = isObsidian
+		? "w-full border-x-0 border-b border-t border-outline bg-surface-container-lowest px-6 py-5 font-label text-xs uppercase tracking-[0.24em] text-on-surface placeholder:text-secondary/30 focus:border-primary focus:outline-none md:text-sm"
+		: "w-full rounded-[20px] border border-white/20 bg-ink/70 px-5 py-4 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base";
+	const buttonClassName = isObsidian
+		? "inline-flex min-w-[200px] items-center justify-center bg-primary-container px-8 py-5 font-label text-xs font-bold uppercase tracking-[0.34em] text-on-primary-container transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+		: "inline-flex min-w-[180px] items-center justify-center rounded-[20px] bg-coral px-7 py-4 text-sm font-semibold text-white transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60 hover:bg-coral-hover md:text-base";
+	const errorClassName = isObsidian
+		? "border border-primary/30 bg-primary/10 px-4 py-3 font-body text-sm text-on-surface"
+		: "rounded-3xl border border-coral/40 bg-coral/10 px-4 py-3 text-sm text-peach";
+	const bookmarkSectionClassName = isObsidian
+		? "bg-surface-container-low p-6"
+		: "rounded-4xl border border-white/10 bg-ink/70 p-5";
+	const bookmarkInputClassName = isObsidian
+		? "w-full border border-outline-variant/20 bg-surface-container-lowest px-5 py-4 font-label text-xs uppercase tracking-[0.24em] text-on-surface placeholder:text-secondary/30 focus:border-primary focus:outline-none md:text-sm"
+		: "w-full rounded-[20px] border border-white/20 bg-charcoal/70 px-5 py-3 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base";
+	const bookmarkButtonClassName = isObsidian
+		? "inline-flex min-w-[220px] items-center justify-center bg-primary-container px-7 py-4 font-label text-xs font-semibold uppercase tracking-[0.24em] text-on-primary-container transition-colors hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+		: "inline-flex min-w-[190px] items-center justify-center rounded-[20px] bg-coral px-7 py-3 text-sm font-semibold text-white transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60 hover:bg-coral-hover md:text-base";
+
 	return (
-		<div className="flex w-full flex-col gap-6 rounded-5xl border border-white/10 bg-charcoal/70 p-6 text-left shadow-[0_20px_50px_rgba(0,0,0,0.35)] backdrop-blur-md md:p-8">
+		<div className={containerClassName}>
 			<form
 				onSubmit={(event) => {
 					event.preventDefault();
 					void runAnalysis(tweetUrlOrId);
 				}}
-				className="flex w-full flex-col gap-3 sm:flex-row"
+				className={formClassName}
 			>
 				{showProviderSelector ? (
 					<>
@@ -805,7 +909,7 @@ export function HeroTweetAnalyzer({
 									setProvider(nextProvider);
 									setModel(getProviderCatalogEntry(nextProvider).defaultModel);
 								}}
-								className="appearance-none rounded-[20px] border border-white/20 bg-ink/70 px-4 py-4 pr-12 text-sm text-white focus:border-coral focus:outline-none md:text-base"
+								className={selectClassName}
 							>
 								{PROVIDER_OPTIONS.map((option) => (
 									<option key={option.id} value={option.id}>
@@ -815,7 +919,7 @@ export function HeroTweetAnalyzer({
 							</select>
 							<ChevronDown
 								aria-hidden="true"
-								className="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-peach/70"
+								className={isObsidian ? "pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-primary/70" : "pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-peach/70"}
 							/>
 						</div>
 					</>
@@ -830,8 +934,8 @@ export function HeroTweetAnalyzer({
 					value={tweetUrlOrId}
 					onChange={(event) => setTweetUrlOrId(event.target.value)}
 					required
-					placeholder="https://x.com/username/status/123456789"
-					className="w-full rounded-[20px] border border-white/20 bg-ink/70 px-5 py-4 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base"
+					placeholder={isObsidian ? "PASTE TWEET URL OR RAW DATA STRATUM..." : "https://x.com/username/status/123456789"}
+					className={inputClassName}
 				/>
 				<input type="hidden" name="model" value={model} />
 				{showModelSelector ? (
@@ -846,7 +950,7 @@ export function HeroTweetAnalyzer({
 								onChange={(event) => {
 									setModel(event.target.value);
 								}}
-								className="w-full appearance-none rounded-[20px] border border-white/20 bg-ink/70 px-5 py-4 pr-14 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base"
+								className={selectClassName}
 							>
 								{modelOptions.map((candidate) => (
 									<option key={candidate} value={candidate}>
@@ -856,7 +960,7 @@ export function HeroTweetAnalyzer({
 							</select>
 							<ChevronDown
 								aria-hidden="true"
-								className="pointer-events-none absolute right-5 top-1/2 h-5 w-5 -translate-y-1/2 text-peach/70"
+								className={isObsidian ? "pointer-events-none absolute right-5 top-1/2 h-5 w-5 -translate-y-1/2 text-primary/70" : "pointer-events-none absolute right-5 top-1/2 h-5 w-5 -translate-y-1/2 text-peach/70"}
 							/>
 						</div>
 					</>
@@ -865,34 +969,37 @@ export function HeroTweetAnalyzer({
 					id="hero-analyze-button"
 					type="submit"
 					disabled={!canSubmit}
-					className="inline-flex min-w-[180px] items-center justify-center rounded-[20px] bg-coral px-7 py-4 text-sm font-semibold text-white transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60 hover:bg-coral-hover md:text-base"
+					className={buttonClassName}
 				>
-					{isLoading ? "Analyzing..." : "Analyze Tweet"}
+					{isLoading ? "Analyzing..." : isObsidian ? "Capture" : "Analyze Tweet"}
 				</button>
 			</form>
 
 			{errorMessage ? (
-				<p role="alert" className="rounded-3xl border border-coral/40 bg-coral/10 px-4 py-3 text-sm text-peach">
+				<p role="alert" className={errorClassName}>
 					{errorMessage}
 				</p>
 			) : null}
 
-				{tweet && analysis ? (
-					<>
-						<TweetPreviewCard
-							tweet={tweet}
-							analysis={analysis}
-							selectedConceptTagKeys={selectedBookmarkTagKeys}
-							onToggleConceptTag={toggleConceptTag}
-						/>
-						<section id="bookmark-save-controls" className="rounded-4xl border border-white/10 bg-ink/70 p-5">
-							<div className="flex flex-col gap-4">
-								<div>
-									<p className="text-xs font-semibold uppercase tracking-[0.2em] text-coral">Save Tweet</p>
-									<p className="mt-2 text-sm text-peach/70">
-										Click analysis tags or add comma-separated tags, then save this analyzed tweet to your bookmarks.
-									</p>
-								</div>
+			{tweet && analysis ? (
+				<>
+					<TweetPreviewCard
+						tweet={tweet}
+						analysis={analysis}
+						selectedConceptTagKeys={selectedBookmarkTagKeys}
+						onToggleConceptTag={toggleConceptTag}
+						theme={theme}
+					/>
+					<section id="bookmark-save-controls" className={bookmarkSectionClassName}>
+						<div className="flex flex-col gap-4">
+							<div>
+								<p className={isObsidian ? "font-label text-[10px] uppercase tracking-[0.35em] text-primary" : "text-xs font-semibold uppercase tracking-[0.2em] text-coral"}>
+									Save Tweet
+								</p>
+								<p className={isObsidian ? "mt-2 font-body text-sm leading-7 text-on-surface-variant" : "mt-2 text-sm text-peach/70"}>
+									Click analysis tags or add comma-separated tags, then save this analyzed tweet to your bookmarks.
+								</p>
+							</div>
 							<div className="flex flex-col gap-3 sm:flex-row">
 								<label htmlFor="bookmark-tags" className="sr-only">
 									Bookmark tags
@@ -906,8 +1013,8 @@ export function HeroTweetAnalyzer({
 										setBookmarkTagsInput(event.target.value);
 										setBookmarkSuccessMessage(null);
 									}}
-									placeholder="strategy, writing, growth"
-									className="w-full rounded-[20px] border border-white/20 bg-charcoal/70 px-5 py-3 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none md:text-base"
+									placeholder={isObsidian ? "strategy, systems, research" : "strategy, writing, growth"}
+									className={bookmarkInputClassName}
 								/>
 								<button
 									id="bookmark-save-button"
@@ -916,24 +1023,23 @@ export function HeroTweetAnalyzer({
 									onClick={() => {
 										void saveBookmark();
 									}}
-									className="inline-flex min-w-[190px] items-center justify-center rounded-[20px] bg-coral px-7 py-3 text-sm font-semibold text-white transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-60 hover:bg-coral-hover md:text-base"
+									className={bookmarkButtonClassName}
 								>
 									{isSavingBookmark ? "Saving..." : "Save to Bookmarks"}
 								</button>
 							</div>
 							{bookmarkErrorMessage ? (
-								<p
-									id="bookmark-save-error"
-									role="alert"
-									className="rounded-3xl border border-coral/40 bg-coral/10 px-4 py-3 text-sm text-peach"
-								>
+								<p id="bookmark-save-error" role="alert" className={errorClassName}>
 									{bookmarkErrorMessage}
 								</p>
 							) : null}
 							{bookmarkSuccessMessage ? (
-								<p id="bookmark-save-success" className="text-sm text-peach/80">
+								<p className={isObsidian ? "font-body text-sm text-on-surface-variant" : "text-sm text-peach/80"} id="bookmark-save-success">
 									{bookmarkSuccessMessage}{" "}
-									<Link href="/app/bookmarks" className="font-semibold text-coral transition-colors hover:text-coral-hover">
+									<Link
+										href="/app/bookmarks"
+										className={isObsidian ? "font-label text-[11px] uppercase tracking-[0.2em] text-primary transition-colors hover:text-primary/80" : "font-semibold text-coral transition-colors hover:text-coral-hover"}
+									>
 										Open Bookmarks
 									</Link>
 								</p>
@@ -948,17 +1054,21 @@ export function HeroTweetAnalyzer({
 						onCreateFollow={(input, successMessage) => {
 							void createFollow(input, successMessage);
 						}}
+						theme={theme}
 					/>
 					{followErrorMessage ? (
-						<p
-							id="analyzer-follow-error"
-							role="alert"
-							className="rounded-3xl border border-coral/40 bg-coral/10 px-4 py-3 text-sm text-peach"
-						>
+						<p id="analyzer-follow-error" role="alert" className={errorClassName}>
 							{followErrorMessage}
 						</p>
 					) : null}
-					{followSuccessMessage ? <p id="analyzer-follow-success" className="text-sm text-peach/80">{followSuccessMessage}</p> : null}
+					{followSuccessMessage ? (
+						<p
+							id="analyzer-follow-success"
+							className={isObsidian ? "font-body text-sm text-on-surface-variant" : "text-sm text-peach/80"}
+						>
+							{followSuccessMessage}
+						</p>
+					) : null}
 				</>
 			) : null}
 		</div>
