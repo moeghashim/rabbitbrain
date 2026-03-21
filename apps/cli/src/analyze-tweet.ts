@@ -13,7 +13,7 @@ import {
 	renderLearningTrackMarkdown,
 	type TweetLearningAnalysis,
 	prioritizeConcepts,
-} from "@pi-starter/core";
+} from "rabbitbrain";
 import type { ProviderId } from "@pi-starter/contracts";
 import {
 	buildThreadAnalysisPayload,

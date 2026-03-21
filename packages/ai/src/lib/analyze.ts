@@ -1,6 +1,6 @@
 import type { ProviderId } from "@pi-starter/contracts";
-import { parseTweetLearningAnalysisText, type TweetLearningAnalysis } from "@pi-starter/core";
 import type { TweetPayload } from "@pi-starter/x-client";
+import { parseTweetLearningAnalysisText, type TweetLearningAnalysis } from "rabbitbrain";
 
 import { getProviderCatalogEntry } from "./catalog.js";
 import { AiProviderError } from "./errors.js";

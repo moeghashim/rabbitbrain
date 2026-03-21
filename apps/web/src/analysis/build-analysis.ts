@@ -2,7 +2,7 @@ import {
 	AnalyzeTweetResultSchema,
 	type AnalyzeTweetResult,
 } from "@pi-starter/contracts";
-import { parseTweetLearningAnalysisText } from "@pi-starter/core";
+import { parseTweetLearningAnalysisText } from "rabbitbrain";
 import type { TweetPayload } from "@pi-starter/x-client";
 
 function toSentence(text: string, maxLength: number): string {

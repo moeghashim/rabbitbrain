@@ -1,5 +1,5 @@
 import type { ProviderId } from "@pi-starter/contracts";
-import type { TweetLearningAnalysis } from "@pi-starter/core";
+import type { TweetLearningAnalysis } from "rabbitbrain";
 import type { ThreadPayload, ThreadTweetPayload } from "@pi-starter/x-client";
 
 export interface AnalyzeCliJsonResult {

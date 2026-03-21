@@ -5,7 +5,7 @@ import {
 	type CreateLearningTrackResult,
 	type SavedAnalysis,
 } from "@pi-starter/contracts";
-import { buildFeynmanTrack, prioritizeConcepts } from "@pi-starter/core";
+import { buildFeynmanTrack, prioritizeConcepts } from "rabbitbrain";
 
 export interface TrackStorage {
 	insert(record: Omit<CreateLearningTrackResult, "id">): Promise<CreateLearningTrackResult>;

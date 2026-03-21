@@ -9,7 +9,7 @@
 		"paths": {
 			"@pi-starter/ai": ["../../packages/ai/src/index.ts"],
 			"@pi-starter/contracts": ["../../packages/contracts/src/index.ts"],
-			"@pi-starter/core": ["../../packages/core/src/index.ts"]
+			"rabbitbrain": ["../../packages/core/src/index.ts"]
 		}
 	},
 	"include": ["src/**/*.ts"]

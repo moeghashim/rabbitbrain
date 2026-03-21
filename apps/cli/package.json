@@ -12,7 +12,7 @@
   "dependencies": {
     "@pi-starter/ai": "0.1.1",
     "@pi-starter/contracts": "0.1.1",
-    "@pi-starter/core": "0.1.1"
+    "rabbitbrain": "0.1.1"
   },
   "engines": {
     "node": ">=20.0.0"
