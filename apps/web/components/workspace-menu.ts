@@ -1,4 +1,4 @@
-export type WorkspaceMenuItem = "Philosophy" | "Following" | "Bookmarks" | "Manifesto";
+export type WorkspaceMenuItem = "Following" | "Bookmarks";
 
 export interface WorkspaceMenuLink {
 	label: WorkspaceMenuItem;
@@ -6,8 +6,6 @@ export interface WorkspaceMenuLink {
 }
 
 export const workspaceMenuLinks: WorkspaceMenuLink[] = [
-	{ label: "Philosophy", href: "#" },
 	{ label: "Following", href: "/app/following" },
 	{ label: "Bookmarks", href: "/app/bookmarks" },
-	{ label: "Manifesto", href: "#" },
 ];

@@ -11,6 +11,7 @@ import React from "react";
 import { HeroTweetAnalyzer } from "../components/hero-tweet-analyzer.js";
 import { RabbitBrandMark } from "../components/rabbit-brand-mark.js";
 import { Reveal } from "../components/reveal.js";
+import { workspaceMenuLinks } from "../components/workspace-menu.js";
 import { getServerAuthSession } from "../src/auth/auth.js";
 
 const twitterLoginPath = "/auth/popup-start?redirect_url=%2Fapp";
@@ -94,24 +95,15 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 						<span className="font-headline text-2xl font-bold tracking-tight text-primary">Rabbit Brain</span>
 					</Link>
 					<div className="hidden items-center gap-12 md:flex">
-						<Link
-							href="/app"
-							className="border-b border-primary pb-1 font-mono text-sm uppercase tracking-[0.35em] text-primary"
-						>
-							Terminal
-						</Link>
-						<Link
-							href="/app/bookmarks"
-							className="font-mono text-sm uppercase tracking-[0.35em] text-secondary transition-colors hover:text-primary"
-						>
-							Bookmarks
-						</Link>
-						<Link
-							href="/support"
-							className="font-mono text-sm uppercase tracking-[0.35em] text-secondary transition-colors hover:text-primary"
-						>
-							Support
-						</Link>
+						{workspaceMenuLinks.map((item) => (
+							<Link
+								key={item.label}
+								href={item.href}
+								className="font-mono text-sm uppercase tracking-[0.35em] text-secondary transition-colors hover:text-primary"
+							>
+								{item.label}
+							</Link>
+						))}
 					</div>
 					<Link
 						href={navCtaHref}

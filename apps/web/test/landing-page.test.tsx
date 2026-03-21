@@ -20,9 +20,9 @@ test("landing page ctas route to auth pages", async () => {
 	const page = await LandingPage({});
 	const html = renderToStaticMarkup(page);
 	assert.match(html, /id=\"nav-cta\"[^>]*href=\"\/auth\/popup-start\?redirect_url=%2Fapp\"/);
+	assert.match(html, /href=\"\/app\/following\"[^>]*>Following<\/a>/);
 	assert.match(html, /href=\"\/app\/bookmarks\"[^>]*>Bookmarks<\/a>/);
 	assert.match(html, /href=\"\/privacy\"[^>]*>Privacy<\/a>/);
-	assert.match(html, /href=\"\/support\"[^>]*>Support<\/a>/);
 	assert.match(html, /id=\"hero-analyze-button\"/);
 	assert.match(html, /Connect<\/a>/);
 	assert.match(html, /Authenticate with X/);

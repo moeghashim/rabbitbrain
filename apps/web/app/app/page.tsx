@@ -15,7 +15,7 @@ const recentTracks = [
 export default function AppHomePage() {
 	return (
 		<div className="min-h-screen bg-ink text-peach">
-			<AppWorkspaceNav activeItem="Philosophy" />
+			<AppWorkspaceNav />
 			<main className="px-6 pb-16 pt-10">
 				<div className="mx-auto flex w-full max-w-6xl flex-col gap-10">
 					<section className="rounded-5xl border border-white/10 bg-charcoal/90 p-8">
