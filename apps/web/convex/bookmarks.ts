@@ -2,6 +2,7 @@ import {
 	DeleteBookmarkInputSchema,
 	DeleteBookmarkResultSchema,
 	SaveBookmarkInputSchema,
+	type SavedBookmark,
 	SavedBookmarkSchema,
 	UpdateBookmarkTagsInputSchema,
 } from "@pi-starter/contracts";
