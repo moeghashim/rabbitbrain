@@ -3,7 +3,13 @@ import test from "node:test";
 
 import type { FollowSummary, SavedBookmark } from "@pi-starter/contracts";
 
-import { dedupeBookmarks, filterBookmarksBySearch, filterBookmarksByTags } from "../components/bookmarks-browser.js";
+import {
+	buildCollapsedTagFilterOptions,
+	dedupeBookmarks,
+	filterBookmarksBySearch,
+	filterBookmarksByTags,
+	sortTagFilterOptionsForDisplay,
+} from "../components/bookmarks-browser.js";
 import {
 	buildBookmarkFollowState,
 	isCreatorSubjectCovered,
@@ -101,6 +107,58 @@ test("filterBookmarksByTags ignores empty selected values", () => {
 	const bookmarks = [createBookmark("1", ["Strategy"]), createBookmark("2", ["Growth"])];
 	const filtered = filterBookmarksByTags(bookmarks, ["", "  "]);
 	assert.deepEqual(filtered, bookmarks);
+});
+
+test("sortTagFilterOptionsForDisplay prioritizes active tags and then higher counts", () => {
+	const options = [
+		{ key: "research", label: "Research", count: 1 },
+		{ key: "seo", label: "SEO", count: 3 },
+		{ key: "tips", label: "Tips", count: 4 },
+		{ key: "workflow", label: "Workflow", count: 2 },
+	];
+
+	const sorted = sortTagFilterOptionsForDisplay(options, ["workflow"]);
+	assert.deepEqual(
+		sorted.map((option) => option.key),
+		["workflow", "tips", "seo", "research"],
+	);
+});
+
+test("buildCollapsedTagFilterOptions keeps active tags visible beyond the default limit", () => {
+	const options = sortTagFilterOptionsForDisplay(
+		[
+			{ key: "tips", label: "Tips", count: 8 },
+			{ key: "seo", label: "SEO", count: 7 },
+			{ key: "workflow", label: "Workflow", count: 6 },
+			{ key: "media", label: "Media", count: 5 },
+			{ key: "social", label: "Social", count: 4 },
+		],
+		["social", "workflow"],
+	);
+
+	const collapsed = buildCollapsedTagFilterOptions(options, ["social", "workflow"], 3);
+	assert.deepEqual(
+		collapsed.map((option) => option.key),
+		["workflow", "social", "tips"],
+	);
+});
+
+test("buildCollapsedTagFilterOptions returns the highest-priority tags when nothing is selected", () => {
+	const options = sortTagFilterOptionsForDisplay(
+		[
+			{ key: "research", label: "Research", count: 1 },
+			{ key: "seo", label: "SEO", count: 3 },
+			{ key: "tips", label: "Tips", count: 4 },
+			{ key: "workflow", label: "Workflow", count: 2 },
+		],
+		[],
+	);
+
+	const collapsed = buildCollapsedTagFilterOptions(options, [], 2);
+	assert.deepEqual(
+		collapsed.map((option) => option.key),
+		["tips", "seo"],
+	);
 });
 
 test("dedupeBookmarks keeps the most recently updated copy of the same tweet", () => {

@@ -44,6 +44,8 @@ interface BookmarkTagFilterOption {
 	count: number;
 }
 
+const DEFAULT_VISIBLE_TAG_FILTERS = 6;
+
 function compareBookmarksByRecency(left: Pick<SavedBookmark, "updatedAt" | "createdAt">, right: Pick<SavedBookmark, "updatedAt" | "createdAt">): number {
 	if (right.updatedAt !== left.updatedAt) {
 		return right.updatedAt - left.updatedAt;
@@ -108,6 +110,64 @@ function buildTagFilterOptions(bookmarks: SavedBookmark[]): BookmarkTagFilterOpt
 	return Array.from(byKey.values()).sort((left, right) => left.label.localeCompare(right.label, undefined, { sensitivity: "base" }));
 }
 
+export function sortTagFilterOptionsForDisplay(
+	options: BookmarkTagFilterOption[],
+	activeTagKeys: string[],
+): BookmarkTagFilterOption[] {
+	const normalizedActiveKeys = new Set(
+		activeTagKeys.map((tagKey) => tagKey.trim().toLowerCase()).filter((tagKey) => tagKey.length > 0),
+	);
+
+	return [...options].sort((left, right) => {
+		const leftActive = normalizedActiveKeys.has(left.key);
+		const rightActive = normalizedActiveKeys.has(right.key);
+		if (leftActive !== rightActive) {
+			return leftActive ? -1 : 1;
+		}
+		if (right.count !== left.count) {
+			return right.count - left.count;
+		}
+		return left.label.localeCompare(right.label, undefined, { sensitivity: "base" });
+	});
+}
+
+export function buildCollapsedTagFilterOptions(
+	options: BookmarkTagFilterOption[],
+	activeTagKeys: string[],
+	limit = DEFAULT_VISIBLE_TAG_FILTERS,
+): BookmarkTagFilterOption[] {
+	if (limit <= 0) {
+		return [];
+	}
+
+	const normalizedActiveKeys = new Set(
+		activeTagKeys.map((tagKey) => tagKey.trim().toLowerCase()).filter((tagKey) => tagKey.length > 0),
+	);
+	const visibleOptions: BookmarkTagFilterOption[] = [];
+	const visibleKeys = new Set<string>();
+
+	for (const option of options) {
+		if (!normalizedActiveKeys.has(option.key) || visibleKeys.has(option.key)) {
+			continue;
+		}
+		visibleOptions.push(option);
+		visibleKeys.add(option.key);
+	}
+
+	for (const option of options) {
+		if (visibleOptions.length >= limit) {
+			break;
+		}
+		if (visibleKeys.has(option.key)) {
+			continue;
+		}
+		visibleOptions.push(option);
+		visibleKeys.add(option.key);
+	}
+
+	return visibleOptions;
+}
+
 export function dedupeBookmarks(bookmarks: SavedBookmark[]): SavedBookmark[] {
 	const dedupedByIdentity = new Map<string, SavedBookmark>();
 	for (const bookmark of bookmarks) {
@@ -156,6 +216,7 @@ export function BookmarksBrowser() {
 	const [viewMode, setViewMode] = useState<BookmarkViewMode>("tile");
 	const [searchQuery, setSearchQuery] = useState("");
 	const [activeTagFilters, setActiveTagFilters] = useState<string[]>([]);
+	const [isTagFiltersExpanded, setIsTagFiltersExpanded] = useState(false);
 	const [selectedBookmark, setSelectedBookmark] = useState<SavedBookmark | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -314,6 +375,24 @@ export function BookmarksBrowser() {
 	}, [viewMode]);
 
 	const tagFilterOptions = useMemo(() => buildTagFilterOptions(bookmarks), [bookmarks]);
+	const orderedTagFilterOptions = useMemo(
+		() => sortTagFilterOptionsForDisplay(tagFilterOptions, activeTagFilters),
+		[tagFilterOptions, activeTagFilters],
+	);
+	const visibleTagFilterOptions = useMemo(() => {
+		if (isTagFiltersExpanded) {
+			return orderedTagFilterOptions;
+		}
+		return buildCollapsedTagFilterOptions(orderedTagFilterOptions, activeTagFilters);
+	}, [activeTagFilters, isTagFiltersExpanded, orderedTagFilterOptions]);
+	const hiddenTagFilterCount = Math.max(tagFilterOptions.length - visibleTagFilterOptions.length, 0);
+	const followActionOptions = useMemo(() => {
+		if (activeTagFilters.length > 0) {
+			const activeKeys = new Set(activeTagFilters);
+			return orderedTagFilterOptions.filter((option) => activeKeys.has(option.key));
+		}
+		return [];
+	}, [activeTagFilters, orderedTagFilterOptions]);
 
 	const searchedBookmarks = useMemo(() => filterBookmarksBySearch(bookmarks, searchQuery), [bookmarks, searchQuery]);
 	const filteredBookmarks = useMemo(
@@ -566,73 +645,123 @@ export function BookmarksBrowser() {
 
 			{tagFilterOptions.length > 0 ? (
 				<div className="border border-outline-variant/10 bg-surface-container-low p-4">
-					<div className="flex flex-wrap items-center gap-2">
-						<button
-							id="bookmarks-filter-all"
-							type="button"
-							aria-pressed={activeTagFilters.length === 0}
-							onClick={() => setActiveTagFilters([])}
-							className={`border px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.24em] transition-colors ${
-								activeTagFilters.length === 0
-									? "border-primary bg-primary/10 text-primary"
-									: "border-outline-variant/20 text-secondary/80 hover:border-primary/40 hover:text-primary"
-							}`}
-						>
-							All tags
-						</button>
-						{tagFilterOptions.map((option) => {
-							const isActive = activeTagFilters.includes(option.key);
-							return (
+					<div className="flex flex-col gap-4">
+						<div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+							<div>
+								<p className="font-mono text-[11px] uppercase tracking-[0.28em] text-secondary/70">
+									Tag filters
+								</p>
+								<p className="mt-1 font-body text-sm text-secondary/70">
+									{tagFilterOptions.length} indexed tag{tagFilterOptions.length === 1 ? "" : "s"}
+									{activeTagFilters.length > 0 ? ` • ${activeTagFilters.length} selected` : ""}
+								</p>
+							</div>
+							{hiddenTagFilterCount > 0 ? (
 								<button
-									key={option.key}
+									id="bookmarks-tag-toggle"
 									type="button"
-									aria-pressed={isActive}
-									onClick={() => {
-										toggleTagFilter(option.key);
-									}}
-									className={`border px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.24em] transition-colors ${
-										isActive
-											? "border-primary bg-primary/10 text-primary"
-											: "border-outline-variant/20 text-secondary/80 hover:border-primary/40 hover:text-primary"
-									}`}
+									aria-controls="bookmarks-tag-filters"
+									aria-expanded={isTagFiltersExpanded}
+									onClick={() => setIsTagFiltersExpanded((current) => !current)}
+									className="border border-outline-variant/20 px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.24em] text-secondary transition-colors hover:border-primary/40 hover:text-primary"
 								>
-									{option.label} ({option.count})
+									{isTagFiltersExpanded
+										? "Show fewer tags"
+										: `Show all ${tagFilterOptions.length} tags`}
 								</button>
-							);
-						})}
-						{tagFilterOptions.map((option) => {
-							const followed = isSubjectFollowed(followSummary, option.label);
-							if (followed) {
-								return (
-									<span
-										key={`follow-${option.key}`}
-										className="border border-primary/40 bg-primary/10 px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.24em] text-primary"
-									>
-										Following {option.label}
-									</span>
-								);
-							}
+							) : null}
+						</div>
 
-							return (
-								<button
-									key={`follow-${option.key}`}
-									type="button"
-									disabled={isCreatingFollow}
-									onClick={() => {
-										void createFollow(
-											{
-												kind: "subject",
-												subjectTag: option.label,
-											},
-											`Now following ${option.label}.`,
+						<div id="bookmarks-tag-filters" className="flex flex-wrap items-center gap-2">
+							<button
+								id="bookmarks-filter-all"
+								type="button"
+								aria-pressed={activeTagFilters.length === 0}
+								onClick={() => setActiveTagFilters([])}
+								className={`border px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.24em] transition-colors ${
+									activeTagFilters.length === 0
+										? "border-primary bg-primary/10 text-primary"
+										: "border-outline-variant/20 text-secondary/80 hover:border-primary/40 hover:text-primary"
+								}`}
+							>
+								All tags
+							</button>
+							{visibleTagFilterOptions.map((option) => {
+								const isActive = activeTagFilters.includes(option.key);
+								return (
+									<button
+										key={option.key}
+										type="button"
+										aria-pressed={isActive}
+										onClick={() => {
+											toggleTagFilter(option.key);
+										}}
+										className={`border px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.24em] transition-colors ${
+											isActive
+												? "border-primary bg-primary/10 text-primary"
+												: "border-outline-variant/20 text-secondary/80 hover:border-primary/40 hover:text-primary"
+										}`}
+									>
+										{option.label} ({option.count})
+									</button>
+								);
+							})}
+						</div>
+
+						{hiddenTagFilterCount > 0 && !isTagFiltersExpanded ? (
+							<p className="font-body text-sm text-secondary/60">
+								+{hiddenTagFilterCount} more tag{hiddenTagFilterCount === 1 ? "" : "s"} hidden until expanded.
+							</p>
+						) : null}
+
+						{followActionOptions.length > 0 ? (
+							<div className="border-t border-outline-variant/10 pt-4">
+								<div className="flex flex-col gap-1 md:flex-row md:items-center md:justify-between">
+									<p className="font-mono text-[11px] uppercase tracking-[0.28em] text-secondary/70">
+										Follow selected tags
+									</p>
+									<p className="font-body text-sm text-secondary/60">
+										Create subject follows only for the tags you have selected above.
+									</p>
+								</div>
+
+								<div className="mt-3 flex flex-wrap items-center gap-2">
+									{followActionOptions.map((option) => {
+										const followed = isSubjectFollowed(followSummary, option.label);
+										if (followed) {
+											return (
+												<span
+													key={`follow-${option.key}`}
+													className="border border-primary/40 bg-primary/10 px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.24em] text-primary"
+												>
+													Following {option.label}
+												</span>
+											);
+										}
+
+										return (
+											<button
+												key={`follow-${option.key}`}
+												type="button"
+												disabled={isCreatingFollow}
+												onClick={() => {
+													void createFollow(
+														{
+															kind: "subject",
+															subjectTag: option.label,
+														},
+														`Now following ${option.label}.`,
+													);
+												}}
+												className="border border-outline-variant/20 bg-surface-container-lowest px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.24em] text-secondary transition-colors hover:border-primary/40 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
+											>
+												Follow {option.label}
+											</button>
 										);
-									}}
-									className="border border-outline-variant/20 bg-surface-container-lowest px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.24em] text-secondary transition-colors hover:border-primary/40 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
-								>
-									Follow {option.label}
-								</button>
-							);
-						})}
+									})}
+								</div>
+							</div>
+						) : null}
 					</div>
 				</div>
 			) : null}
