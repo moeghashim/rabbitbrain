@@ -103,6 +103,24 @@ test("TweetPreviewCard renders tweet interaction metrics", () => {
 	assert.match(html, /Quotes/);
 });
 
+test("TweetPreviewCard renders tweet body as the primary content block and linkifies URLs", () => {
+	const html = renderToStaticMarkup(
+		<TweetPreviewCard
+			tweet={{
+				id: "2028960626685386994",
+				text: "good read https://t.co/hlbgT53dti",
+				authorUsername: "ctatedev",
+			}}
+			analysis={analysisFixture}
+			theme="obsidian"
+		/>,
+	);
+
+	assert.match(html, /id="tweet-text-content"/);
+	assert.match(html, /good read/);
+	assert.match(html, /href="https:\/\/t\.co\/hlbgT53dti"/);
+});
+
 test("TweetPreviewCard renders concept names as tags without explanation text", () => {
 	const html = renderToStaticMarkup(
 		<TweetPreviewCard

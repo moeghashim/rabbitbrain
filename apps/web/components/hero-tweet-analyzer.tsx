@@ -143,6 +143,58 @@ function normalizeFollowTags(bookmarkTagsInput: string): string[] {
 	return parseBookmarkTags(bookmarkTagsInput);
 }
 
+function splitTrailingUrlPunctuation(value: string): { url: string; trailing: string } {
+	const match = value.match(/[),.!?:;]+$/);
+	if (!match) {
+		return {
+			url: value,
+			trailing: "",
+		};
+	}
+
+	const trailing = match[0];
+	return {
+		url: value.slice(0, -trailing.length),
+		trailing,
+	};
+}
+
+function renderTweetTextContent(text: string, isObsidian: boolean): React.ReactNode {
+	const segments = text.split(/(https?:\/\/\S+)/g);
+	return segments.map((segment, index) => {
+		if (!segment) {
+			return null;
+		}
+
+		if (!/^https?:\/\/\S+$/.test(segment)) {
+			return <React.Fragment key={`tweet-text-${index}`}>{segment}</React.Fragment>;
+		}
+
+		const { url, trailing } = splitTrailingUrlPunctuation(segment);
+		if (!url) {
+			return <React.Fragment key={`tweet-text-${index}`}>{segment}</React.Fragment>;
+		}
+
+		return (
+			<React.Fragment key={`tweet-text-${index}`}>
+				<a
+					href={url}
+					target="_blank"
+					rel="noopener noreferrer"
+					className={
+						isObsidian
+							? "font-label text-[11px] uppercase tracking-[0.16em] text-primary underline decoration-primary/40 underline-offset-4 transition-colors hover:text-on-surface"
+							: "font-semibold text-coral underline decoration-coral/50 underline-offset-4 transition-colors hover:text-white"
+					}
+				>
+					{url}
+				</a>
+				{trailing}
+			</React.Fragment>
+		);
+	});
+}
+
 function renderLeadTweetMedia(tweet: TweetPreview): React.ReactNode {
 	const media = selectLeadTweetMedia(tweet);
 	if (!media) {
@@ -250,7 +302,7 @@ export function TweetPreviewCard({
 	return (
 		<div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
 			<section className={isObsidian ? "bg-surface-container-lowest p-6" : "rounded-4xl border border-white/10 bg-ink/70 p-5"}>
-				<div className="mb-4 flex items-start gap-3">
+				<div className="mb-5 flex items-start gap-3">
 					{tweet.authorAvatarUrl ? (
 						<img
 							src={tweet.authorAvatarUrl}
@@ -270,8 +322,8 @@ export function TweetPreviewCard({
 							{defaultAvatarLabel(tweet)}
 						</div>
 					)}
-					<div>
-						<p className={isObsidian ? "font-label text-sm uppercase tracking-[0.18em] text-on-surface" : "text-sm font-semibold text-white"}>
+					<div className="min-w-0 flex-1">
+						<p className={isObsidian ? "font-label text-sm uppercase tracking-[0.18em] text-on-surface" : "text-sm font-semibold uppercase tracking-[0.12em] text-white"}>
 							{tweet.authorName ?? "Unknown author"}
 						</p>
 						<p className={isObsidian ? "font-label text-[10px] uppercase tracking-[0.3em] text-secondary/60" : "text-xs text-peach/60"}>
@@ -279,9 +331,16 @@ export function TweetPreviewCard({
 						</p>
 					</div>
 				</div>
-				<p className={isObsidian ? "whitespace-pre-wrap font-body text-sm leading-7 text-on-surface-variant" : "whitespace-pre-wrap text-sm leading-relaxed text-white/90"}>
-					{tweet.text}
-				</p>
+				<div
+					id="tweet-text-content"
+					className={
+						isObsidian
+							? "whitespace-pre-wrap border-y border-outline-variant/10 py-5 font-body text-[1.06rem] leading-8 text-on-surface"
+							: "whitespace-pre-wrap border-y border-white/10 py-4 text-base leading-8 text-white"
+					}
+				>
+					{renderTweetTextContent(tweet.text, isObsidian)}
+				</div>
 				{renderLeadTweetMedia(tweet)}
 				{interactionItems.length > 0 ? (
 					<div id="tweet-interaction-metrics" className="mt-4 flex flex-wrap gap-2">
@@ -290,8 +349,8 @@ export function TweetPreviewCard({
 								key={item.label}
 								className={
 									isObsidian
-										? "border border-outline-variant/20 bg-surface px-3 py-2 font-label text-[10px] uppercase tracking-[0.24em] text-secondary/70"
-										: "rounded-full border border-white/15 bg-charcoal/50 px-3 py-1 text-xs text-peach/80"
+										? "border border-outline-variant/20 bg-surface px-3 py-2 font-label text-[10px] uppercase tracking-[0.24em] text-secondary/55"
+										: "rounded-full border border-white/15 bg-charcoal/50 px-3 py-1 text-xs text-peach/70"
 								}
 							>
 								<span className={isObsidian ? "text-primary" : "font-semibold text-white"}>{formatInteractionCount(item.value)}</span> {item.label}

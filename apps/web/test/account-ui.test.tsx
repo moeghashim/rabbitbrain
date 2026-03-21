@@ -6,18 +6,19 @@ import { renderToStaticMarkup } from "react-dom/server";
 import AccountPage from "../app/account/page.js";
 import AppHomePage from "../app/app/page.js";
 
-test("dashboard page includes analyze action controls", () => {
-	const html = renderToStaticMarkup(<AppHomePage />);
+test("app home page mirrors the landing analyzer shell", async () => {
+	const page = await AppHomePage({});
+	const html = renderToStaticMarkup(page);
+
 	assert.match(html, /id=\"hero-analyze-button\"/);
-	assert.match(html, /id=\"nav-cta\"[^>]*>Account Settings<\/a>/);
+	assert.match(html, /id=\"nav-cta\"[^>]*href=\"\/auth\/popup-start\?redirect_url=%2Fapp\"/);
 	assert.match(html, /href=\"\/app\/following\"[^>]*>Following<\/a>/);
 	assert.match(html, /href=\"\/app\/bookmarks\"[^>]*>Bookmarks<\/a>/);
-	assert.match(html, /name=\"tweetUrlOrId\"/);
-	assert.match(html, /Analyze Tweet/);
-	assert.doesNotMatch(html, /Analyze any tweet instantly/);
-	assert.doesNotMatch(html, /Workspace/);
-	assert.doesNotMatch(html, /Account Dashboard/);
-	assert.match(html, /Learning Tracks/);
+	assert.match(html, /id=\"hero-tweet-url\"/);
+	assert.match(html, /Neural ingestion terminal/);
+	assert.match(html, /Transform the <span class=\"text-glow text-primary\">signal<\/span>/);
+	assert.match(html, /Enter the protocol/);
+	assert.doesNotMatch(html, /Learning Tracks/);
 });
 
 test("account page includes preferences and sign-out actions", () => {
