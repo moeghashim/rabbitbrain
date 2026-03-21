@@ -90,8 +90,8 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 
 			<nav className="fixed top-0 z-50 w-full border-b border-outline-variant/10 bg-surface/95 backdrop-blur-md">
 				<div className="mx-auto flex max-w-[1440px] items-center justify-between gap-8 px-6 py-4 sm:px-10 lg:px-16">
-					<Link href="/" className="flex items-center gap-3">
-						<RabbitBrandMark className="h-8 w-8 text-primary" />
+					<Link href="/" className="group flex items-center gap-3">
+						<RabbitBrandMark className="h-8 w-8 text-primary transition-transform duration-700 ease-redsun group-hover:-rotate-6 group-hover:scale-105" />
 						<span className="font-headline text-2xl font-bold tracking-tight text-primary">Rabbit Brain</span>
 					</Link>
 					<div className="hidden items-center gap-12 md:flex">
