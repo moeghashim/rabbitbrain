@@ -966,6 +966,28 @@ export function BookmarksBrowser() {
 							</div>
 						</div>
 						<p className="mt-5 whitespace-pre-wrap font-body text-sm leading-7 text-on-surface-variant">{selectedBookmark.tweetText}</p>
+						{selectedBookmark.thread && selectedBookmark.thread.tweets.length > 1 ? (
+							<div className="mt-6 border border-outline-variant/10 bg-surface-container-low p-4">
+								<p className="font-mono text-[11px] uppercase tracking-[0.28em] text-primary">
+									Thread ({selectedBookmark.thread.tweets.length} posts)
+								</p>
+								<div className="mt-4 flex flex-col gap-4">
+									{selectedBookmark.thread.tweets.map((tweet, index) => (
+										<div
+											key={`${selectedBookmark.id}-thread-${tweet.id}`}
+											className="border border-outline-variant/10 bg-surface-container-lowest p-4"
+										>
+											<p className="font-mono text-[10px] uppercase tracking-[0.24em] text-secondary/60">
+												Post {index + 1}
+											</p>
+											<p className="mt-3 whitespace-pre-wrap font-body text-sm leading-7 text-on-surface-variant">
+												{tweet.text}
+											</p>
+										</div>
+									))}
+								</div>
+							</div>
+						) : null}
 						<div className="mt-5 flex flex-wrap gap-2">
 							{selectedBookmark.tags.map((tag) => (
 								<span key={tag} className="border border-primary/35 bg-primary/10 px-3 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">

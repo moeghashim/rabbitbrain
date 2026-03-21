@@ -43,6 +43,8 @@ test("XApiV2Client returns tweet payload on success", async () => {
 					id: "123",
 					text: "Hello from X",
 					author_id: "user_1",
+					created_at: "2026-03-20T10:00:00.000Z",
+					conversation_id: "123",
 					attachments: {
 						media_keys: ["3_photo_1"],
 					},
@@ -98,6 +100,8 @@ test("XApiV2Client returns tweet payload on success", async () => {
 	assert.equal(tweet.authorUsername, "moe");
 	assert.equal(tweet.authorName, "Moe");
 	assert.equal(tweet.authorAvatarUrl, "https://example.com/avatar.jpg");
+	assert.equal(tweet.createdAt, "2026-03-20T10:00:00.000Z");
+	assert.equal(tweet.conversationId, "123");
 
 	assert.deepEqual(tweet.media, [
 		{
@@ -120,8 +124,111 @@ test("XApiV2Client returns tweet payload on success", async () => {
 
 	const requestUrl = new URL(calledUrl);
 	assert.equal(requestUrl.searchParams.get("expansions"), "author_id,attachments.media_keys");
-	assert.equal(requestUrl.searchParams.get("tweet.fields"), "author_id,attachments,public_metrics");
+	assert.equal(
+		requestUrl.searchParams.get("tweet.fields"),
+		"author_id,attachments,public_metrics,created_at,conversation_id,referenced_tweets",
+	);
 	assert.equal(requestUrl.searchParams.get("media.fields"), "type,url,preview_image_url,alt_text,width,height");
+});
+
+test("XApiV2Client returns ordered thread payload on success", async () => {
+	const requestedUrls: string[] = [];
+	const fetchFn: FetchLike = async (input) => {
+		requestedUrls.push(input);
+		const url = new URL(input);
+		if (url.pathname === "/2/tweets/123") {
+			return responseFrom({
+				status: 200,
+				body: {
+					data: {
+						id: "123",
+						text: "Root post",
+						author_id: "user_1",
+						created_at: "2026-03-20T10:00:00.000Z",
+						conversation_id: "123",
+					},
+					includes: {
+						users: [
+							{
+								id: "user_1",
+								username: "moe",
+								name: "Moe",
+							},
+						],
+					},
+				},
+			});
+		}
+
+		return responseFrom({
+			status: 200,
+			body: {
+				data: [
+					{
+						id: "124",
+						text: "Second post",
+						author_id: "user_1",
+						created_at: "2026-03-20T10:01:00.000Z",
+						conversation_id: "123",
+						referenced_tweets: [{ type: "replied_to", id: "123" }],
+					},
+					{
+						id: "123",
+						text: "Root post",
+						author_id: "user_1",
+						created_at: "2026-03-20T10:00:00.000Z",
+						conversation_id: "123",
+					},
+					{
+						id: "125",
+						text: "Third post",
+						author_id: "user_1",
+						created_at: "2026-03-20T10:02:00.000Z",
+						conversation_id: "123",
+						referenced_tweets: [{ type: "replied_to", id: "124" }],
+					},
+				],
+				includes: {
+					users: [
+						{
+							id: "user_1",
+							username: "moe",
+							name: "Moe",
+						},
+					],
+				},
+				meta: {
+					result_count: 3,
+				},
+			},
+		});
+	};
+
+	const client = new XApiV2Client({
+		config: {
+			apiKey: "key",
+			apiSecret: "secret",
+			bearerToken: "bearer",
+			timeoutMs: 500,
+			retryCount: 0,
+			retryBaseDelayMs: 1,
+		},
+		fetchFn,
+	});
+
+	const thread = await client.getThreadByUrlOrId("123");
+	assert.equal(thread.rootTweetId, "123");
+	assert.deepEqual(
+		thread.tweets.map((tweet) => tweet.id),
+		["123", "124", "125"],
+	);
+	assert.equal(thread.tweets[1]?.inReplyToTweetId, "123");
+	assert.equal(thread.tweets[2]?.inReplyToTweetId, "124");
+
+	const searchUrl = new URL(requestedUrls[1] ?? "");
+	assert.equal(searchUrl.pathname, "/2/tweets/search/recent");
+	assert.equal(searchUrl.searchParams.get("query"), "conversation_id:123 from:moe");
+	assert.equal(searchUrl.searchParams.get("max_results"), "100");
 });
 
 test("XApiV2Client maps 404 to NOT_FOUND", async () => {

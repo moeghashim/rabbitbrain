@@ -24,6 +24,7 @@ interface BookmarkRecord {
 	authorUsername: string;
 	authorName?: string;
 	authorAvatarUrl?: string;
+	thread?: SavedBookmark["thread"];
 	tags: string[];
 	createdAt: number;
 	updatedAt: number;
@@ -41,6 +42,7 @@ function toSavedBookmark(
 		authorUsername: record.authorUsername,
 		authorName: record.authorName,
 		authorAvatarUrl: record.authorAvatarUrl,
+		thread: record.thread,
 		tags: record.tags,
 		createdAt: record.createdAt,
 		updatedAt: record.updatedAt,
@@ -63,6 +65,7 @@ function toBookmarkRecord(record: {
 	authorUsername: string;
 	authorName?: string;
 	authorAvatarUrl?: string;
+	thread?: SavedBookmark["thread"];
 	tags: string[];
 	createdAt: number;
 	updatedAt: number;
@@ -76,6 +79,7 @@ function toBookmarkRecord(record: {
 		authorUsername: record.authorUsername,
 		authorName: record.authorName,
 		authorAvatarUrl: record.authorAvatarUrl,
+		thread: record.thread,
 		tags: record.tags,
 		createdAt: record.createdAt,
 		updatedAt: record.updatedAt,
@@ -90,6 +94,46 @@ export const save = mutationGeneric({
 		authorUsername: v.string(),
 		authorName: v.optional(v.string()),
 		authorAvatarUrl: v.optional(v.string()),
+		thread: v.optional(
+			v.object({
+				rootTweetId: v.string(),
+				tweets: v.array(
+					v.object({
+						id: v.string(),
+						text: v.string(),
+						authorId: v.optional(v.string()),
+						authorUsername: v.optional(v.string()),
+						authorName: v.optional(v.string()),
+						authorAvatarUrl: v.optional(v.string()),
+						createdAt: v.optional(v.string()),
+						conversationId: v.optional(v.string()),
+						inReplyToTweetId: v.optional(v.string()),
+						media: v.optional(
+							v.array(
+								v.object({
+									mediaKey: v.string(),
+									type: v.union(v.literal("photo"), v.literal("video"), v.literal("animated_gif")),
+									url: v.optional(v.string()),
+									previewImageUrl: v.optional(v.string()),
+									altText: v.optional(v.string()),
+									width: v.optional(v.number()),
+									height: v.optional(v.number()),
+								}),
+							),
+						),
+						publicMetrics: v.optional(
+							v.object({
+								replyCount: v.optional(v.number()),
+								repostCount: v.optional(v.number()),
+								likeCount: v.optional(v.number()),
+								quoteCount: v.optional(v.number()),
+								bookmarkCount: v.optional(v.number()),
+							}),
+						),
+					}),
+				),
+			}),
+		),
 		tags: v.array(v.string()),
 	},
 	handler: async (ctx, args) => {
@@ -123,6 +167,7 @@ export const save = mutationGeneric({
 			authorUsername: validated.authorUsername,
 			authorName: validated.authorName,
 			authorAvatarUrl: validated.authorAvatarUrl,
+			thread: validated.thread,
 			tags: validated.tags,
 			createdAt: now,
 			updatedAt: now,
@@ -184,6 +229,7 @@ export const updateTags = mutationGeneric({
 			authorUsername: existing.authorUsername,
 			authorName: existing.authorName,
 			authorAvatarUrl: existing.authorAvatarUrl,
+			thread: existing.thread,
 			tags: validated.tags,
 			createdAt: existing.createdAt,
 			updatedAt: now,

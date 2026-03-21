@@ -45,6 +45,19 @@ export function buildBookmarksArchiveFileName(tags: string[]): string {
 
 export function renderBookmarkMarkdown(bookmark: SavedBookmark): string {
 	const authorLabel = bookmark.authorName?.trim() ? `${bookmark.authorName} (@${bookmark.authorUsername})` : `@${bookmark.authorUsername}`;
+	const threadSection =
+		bookmark.thread && bookmark.thread.tweets.length > 1
+			? [
+					"## Thread",
+					"",
+					...bookmark.thread.tweets.flatMap((tweet, index) => [
+						`### Post ${index + 1}`,
+						"",
+						tweet.text,
+						"",
+					]),
+				]
+			: [];
 
 	return [
 		`# ${authorLabel}`,
@@ -59,6 +72,7 @@ export function renderBookmarkMarkdown(bookmark: SavedBookmark): string {
 		"",
 		bookmark.tweetText,
 		"",
+		...threadSection,
 	].join("\n");
 }
 

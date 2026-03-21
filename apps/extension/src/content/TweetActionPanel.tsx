@@ -123,6 +123,23 @@ export function TweetActionPanel({
 						</section>
 					</div>
 
+					{analysisResult.thread && analysisResult.thread.tweets.length > 1 ? (
+						<section className="rb-card rb-card--tweet">
+							<p className="rb-kicker">Thread</p>
+							<p className="rb-bookmark-copy">
+								Showing all {analysisResult.thread.tweets.length} posts in the analyzed thread.
+							</p>
+							<div className="rb-stack">
+								{analysisResult.thread.tweets.map((tweet, index) => (
+									<div key={tweet.id} className="rb-card rb-card--tweet">
+										<p className="rb-caption">Post {index + 1}</p>
+										<p className="rb-tweet-text">{tweet.text}</p>
+									</div>
+								))}
+							</div>
+						</section>
+					) : null}
+
 					<section className="rb-card rb-card--bookmark">
 						<div className="rb-bookmark-header">
 							<div>

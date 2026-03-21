@@ -9,14 +9,25 @@ import {
 import type { TweetSourceProvider } from "@pi-starter/x-client";
 
 function createFakeTweetSource(): TweetSourceProvider {
+	const readTweet = async (input: string) => {
+		return {
+			id: "123",
+			text: `Weekend deployment completed successfully for ${input}.` +
+				" Observability dashboards stayed green and rollback path was unused.",
+			authorId: "author_1",
+			raw: { input },
+		};
+	};
+
 	return {
 		async getTweetByUrlOrId(input: string) {
+			return await readTweet(input);
+		},
+		async getThreadByUrlOrId(input: string) {
+			const tweet = await readTweet(input);
 			return {
-				id: "123",
-				text: `Weekend deployment completed successfully for ${input}.` +
-					" Observability dashboards stayed green and rollback path was unused.",
-				authorId: "author_1",
-				raw: { input },
+				rootTweetId: tweet.id,
+				tweets: [tweet],
 			};
 		},
 	};

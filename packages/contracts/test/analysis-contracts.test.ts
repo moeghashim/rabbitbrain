@@ -66,6 +66,22 @@ test("SavedAnalysisSchema validates persisted analysis shape", () => {
 		tweetUrlOrId: "https://x.com/user/status/123",
 		provider: "openai",
 		model: "gpt-4.1",
+		thread: {
+			rootTweetId: "123",
+			tweets: [
+				{
+					id: "123",
+					text: "Part one",
+					authorUsername: "user",
+				},
+				{
+					id: "124",
+					text: "Part two",
+					authorUsername: "user",
+					inReplyToTweetId: "123",
+				},
+			],
+		},
 		createdAt: 1_700_000_000_000,
 		...sampleAnalysisResult(),
 	};
@@ -83,6 +99,22 @@ test("SaveBookmarkInputSchema validates bookmark save payload", () => {
 		authorUsername: "user",
 		authorName: "User Name",
 		authorAvatarUrl: "https://pbs.twimg.com/profile_images/avatar.jpg",
+		thread: {
+			rootTweetId: "123",
+			tweets: [
+				{
+					id: "123",
+					text: "Part one",
+					authorUsername: "user",
+				},
+				{
+					id: "124",
+					text: "Part two",
+					authorUsername: "user",
+					inReplyToTweetId: "123",
+				},
+			],
+		},
 		tags: ["infra", "reliability"],
 	};
 
@@ -149,6 +181,22 @@ test("SavedBookmarkSchema validates persisted bookmark shape", () => {
 		authorUsername: "user",
 		authorName: "User Name",
 		authorAvatarUrl: "https://pbs.twimg.com/profile_images/avatar.jpg",
+		thread: {
+			rootTweetId: "123",
+			tweets: [
+				{
+					id: "123",
+					text: "Part one",
+					authorUsername: "user",
+				},
+				{
+					id: "124",
+					text: "Part two",
+					authorUsername: "user",
+					inReplyToTweetId: "123",
+				},
+			],
+		},
 		tags: ["infra"],
 		createdAt: 1_700_000_000_000,
 		updatedAt: 1_700_000_000_123,

@@ -33,6 +33,24 @@ function createProps() {
 					{ name: "Confidence", whyItMattersInTweet: "Shipping increases confidence." },
 				],
 			},
+			thread: {
+				rootTweetId: "2028960626685386994",
+				tweets: [
+					{
+						id: "2028960626685386994",
+						text: "Ship small and often.",
+						authorUsername: "ctatedev",
+						authorName: "Chris Tate",
+					},
+					{
+						id: "2028960626685386995",
+						text: "Follow-up detail in the same thread.",
+						authorUsername: "ctatedev",
+						authorName: "Chris Tate",
+						inReplyToTweetId: "2028960626685386994",
+					},
+				],
+			},
 		},
 		tagsInput: "Iteration, Scope",
 		errorMessage: null,
@@ -53,6 +71,8 @@ test("TweetActionPanel renders analysis and bookmark states", () => {
 	assert.match(html, /Saved to Rabbitbrain bookmarks/);
 	assert.match(html, /Iteration/);
 	assert.match(html, /Open Bookmarks/);
+	assert.match(html, /Showing all 2 posts in the analyzed thread/);
+	assert.match(html, /Follow-up detail in the same thread/);
 });
 
 test("TweetActionPanel renders auth-pending message", () => {

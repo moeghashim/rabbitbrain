@@ -40,6 +40,7 @@ function buildBookmarkPayload(analysisResult: AnalyzeTweetResponse, tags: string
 		authorUsername: analysisResult.tweet.authorUsername?.replace(/^@/, "") ?? "unknown",
 		authorName: analysisResult.tweet.authorName,
 		authorAvatarUrl: analysisResult.tweet.authorAvatarUrl,
+		thread: analysisResult.thread,
 		tags,
 	};
 }

@@ -74,6 +74,7 @@ const createFromComputedRef = makeFunctionReference<
 		tweetUrlOrId: string;
 		provider: ProviderId;
 		model?: string;
+		thread?: SavedAnalysis["thread"];
 		topic: string;
 		summary: string;
 		intent: string;
@@ -291,11 +292,13 @@ export async function persistAnalysisForSession({
 	sessionUser,
 	input,
 	analysis,
+	thread,
 	env,
 }: {
 	sessionUser: SessionUserIdentity;
 	input: AnalyzeTweetInput & { provider: ProviderId; model: string };
 	analysis: AnalyzeTweetResult;
+	thread?: SavedAnalysis["thread"];
 	env?: ConvexEnv;
 }): Promise<SavedAnalysis> {
 	const { client } = await createAuthedAdminClient({ sessionUser, env });
@@ -304,6 +307,7 @@ export async function persistAnalysisForSession({
 		tweetUrlOrId: input.tweetUrlOrId,
 		provider: input.provider,
 		model: input.model,
+		thread,
 		topic: analysis.topic,
 		summary: analysis.summary,
 		intent: analysis.intent,

@@ -67,12 +67,21 @@ export const TweetPreviewSchema = z.object({
 	authorUsername: z.string().min(1).optional(),
 	authorName: z.string().min(1).optional(),
 	authorAvatarUrl: z.string().url().optional(),
+	createdAt: z.string().min(1).optional(),
+	conversationId: z.string().min(1).optional(),
+	inReplyToTweetId: z.string().min(1).optional(),
 	media: z.array(TweetMediaSchema).optional(),
 	publicMetrics: TweetPublicMetricsSchema.optional(),
 });
 
+export const ThreadPreviewSchema = z.object({
+	rootTweetId: z.string().min(1),
+	tweets: z.array(TweetPreviewSchema).min(1),
+});
+
 export const AnalyzeTweetResponseSchema = z.object({
 	tweet: TweetPreviewSchema,
+	thread: ThreadPreviewSchema.optional(),
 	analysis: AnalyzeTweetResultSchema,
 });
 
@@ -98,6 +107,7 @@ export const SavedAnalysisSchema = AnalyzeTweetResultSchema.extend({
 	tweetUrlOrId: z.string().min(1),
 	provider: ProviderIdSchema,
 	model: z.string().min(1),
+	thread: ThreadPreviewSchema.optional(),
 	createdAt: z.number().int().nonnegative(),
 });
 
@@ -136,6 +146,7 @@ export const BookmarkedTweetSchema = z.object({
 	authorUsername: z.string().min(1),
 	authorName: z.string().min(1).optional(),
 	authorAvatarUrl: z.string().url().optional(),
+	thread: ThreadPreviewSchema.optional(),
 });
 
 export const SaveBookmarkInputSchema = BookmarkedTweetSchema.extend({
@@ -277,6 +288,7 @@ export type AnalyzeTweetResult = z.infer<typeof AnalyzeTweetResultSchema>;
 export type TweetMedia = z.infer<typeof TweetMediaSchema>;
 export type TweetPublicMetrics = z.infer<typeof TweetPublicMetricsSchema>;
 export type TweetPreview = z.infer<typeof TweetPreviewSchema>;
+export type ThreadPreview = z.infer<typeof ThreadPreviewSchema>;
 export type AnalyzeTweetResponse = z.infer<typeof AnalyzeTweetResponseSchema>;
 export type ExtensionSessionUser = z.infer<typeof ExtensionSessionUserSchema>;
 export type ExtensionSessionStatus = z.infer<typeof ExtensionSessionStatusSchema>;

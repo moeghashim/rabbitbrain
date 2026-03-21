@@ -5,7 +5,13 @@ import {
 	type AnalyzeTweetInput,
 } from "@pi-starter/contracts";
 import { AiProviderError, analyzeTweetPayload } from "@pi-starter/ai";
-import { XApiV2Client, type TweetSourceProvider, XProviderError } from "@pi-starter/x-client";
+import {
+	buildThreadAnalysisPayload,
+	XApiV2Client,
+	type TweetPayload,
+	type TweetSourceProvider,
+	XProviderError,
+} from "@pi-starter/x-client";
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
@@ -54,6 +60,22 @@ const defaultDependencies: AnalyzeRouteDependencies = {
 	persistAnalysisForSession,
 	reportServerError,
 };
+
+function toTweetPreview(tweet: TweetPayload) {
+	return {
+		id: tweet.id,
+		text: tweet.text,
+		authorId: tweet.authorId,
+		authorUsername: tweet.authorUsername,
+		authorName: tweet.authorName,
+		authorAvatarUrl: tweet.authorAvatarUrl,
+		createdAt: tweet.createdAt,
+		conversationId: tweet.conversationId,
+		inReplyToTweetId: tweet.inReplyToTweetId,
+		media: tweet.media,
+		publicMetrics: tweet.publicMetrics,
+	};
+}
 
 async function readAnalyzeInput(req: Request): Promise<AnalyzeTweetInput> {
 	const contentType = req.headers.get("content-type") ?? "";
@@ -130,12 +152,16 @@ export async function handleAnalyzePost(
 			return NextResponse.json(mapped.body, { status: mapped.status });
 		}
 
-		const tweet = await client.getTweetByUrlOrId(input.tweetUrlOrId);
+		const thread = await client.getThreadByUrlOrId(input.tweetUrlOrId);
+		const tweet = thread.tweets.find((item) => item.id === thread.rootTweetId) ?? thread.tweets[0];
+		if (!tweet) {
+			throw new Error("Thread payload did not include a root tweet.");
+		}
 		const analysis = await dependencies.analyzeTweetPayload({
 			provider,
 			apiKey,
 			model,
-			tweet,
+			tweet: buildThreadAnalysisPayload(thread),
 		});
 		try {
 			await dependencies.persistAnalysisForSession({
@@ -150,6 +176,10 @@ export async function handleAnalyzePost(
 					model,
 				},
 				analysis,
+				thread: {
+					rootTweetId: thread.rootTweetId,
+					tweets: thread.tweets.map(toTweetPreview),
+				},
 			});
 		} catch (error) {
 			dependencies.reportServerError({
@@ -163,16 +193,14 @@ export async function handleAnalyzePost(
 		}
 
 		return NextResponse.json({
-			tweet: {
-				id: tweet.id,
-				text: tweet.text,
-				authorId: tweet.authorId,
-				authorUsername: tweet.authorUsername,
-				authorName: tweet.authorName,
-				authorAvatarUrl: tweet.authorAvatarUrl,
-				media: tweet.media,
-				publicMetrics: tweet.publicMetrics,
-			},
+			tweet: toTweetPreview(tweet),
+			thread:
+				thread.tweets.length > 1
+					? {
+							rootTweetId: thread.rootTweetId,
+							tweets: thread.tweets.map(toTweetPreview),
+						}
+					: undefined,
 			analysis: {
 				topic: analysis.topic,
 				summary: analysis.summary,

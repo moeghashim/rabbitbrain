@@ -9,6 +9,7 @@ import {
 	HeroTweetAnalyzer,
 	parseBookmarkTags,
 	selectLeadTweetMedia,
+	ThreadPreviewSection,
 	TweetPreviewCard,
 	validateBookmarkTags,
 } from "../components/hero-tweet-analyzer.js";
@@ -144,6 +145,43 @@ test("TweetPreviewCard renders concept names as tags without explanation text", 
 	assert.match(html, /id="analysis-concept-tags"/);
 	assert.match(html, />Coding</);
 	assert.doesNotMatch(html, /This term appears central to the tweet narrative/);
+});
+
+test("ThreadPreviewSection renders the full thread and combined-analysis copy", () => {
+	const html = renderToStaticMarkup(
+		<ThreadPreviewSection
+			rootTweet={{
+				id: "2028960626685386994",
+				text: "Root post",
+				authorUsername: "ctatedev",
+				authorName: "Chris Tate",
+			}}
+			thread={{
+				rootTweetId: "2028960626685386994",
+				tweets: [
+					{
+						id: "2028960626685386994",
+						text: "Root post",
+						authorUsername: "ctatedev",
+						authorName: "Chris Tate",
+					},
+					{
+						id: "2028960626685386995",
+						text: "Reply post",
+						authorUsername: "ctatedev",
+						authorName: "Chris Tate",
+						inReplyToTweetId: "2028960626685386994",
+					},
+				],
+			}}
+			analysis={analysisFixture}
+		/>,
+	);
+
+	assert.match(html, /id="thread-preview-section"/);
+	assert.match(html, /Showing all 2 posts in this thread/);
+	assert.match(html, /Reply post/);
+	assert.match(html, /Open on X/);
 });
 
 test("selectLeadTweetMedia returns only the first media item", () => {

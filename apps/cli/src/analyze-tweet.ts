@@ -15,7 +15,12 @@ import {
 	prioritizeConcepts,
 } from "@pi-starter/core";
 import type { ProviderId } from "@pi-starter/contracts";
-import type { TweetPayload } from "@pi-starter/x-client";
+import {
+	buildThreadAnalysisPayload,
+	type ThreadPayload,
+	type ThreadTweetPayload,
+} from "@pi-starter/x-client";
+import { buildAnalyzeCliJsonResult, renderThreadMarkdown } from "./output.js";
 import {
 	DEFAULT_MODELS,
 	DEFAULT_PROVIDER,
@@ -32,13 +37,14 @@ interface CliArgs {
 	chooseProvider: boolean;
 	chooseModel: boolean;
 	learn: boolean;
+	json: boolean;
 }
 
 function printUsage() {
 	console.error(
 		[
 			"Usage:",
-			"  npm run xurl:analyze -- <tweet_url_or_id> [--provider PROVIDER] [--model MODEL] [--choose-provider] [--choose-model] [--learn]",
+			"  npm run xurl:analyze -- <tweet_url_or_id> [--provider PROVIDER] [--model MODEL] [--choose-provider] [--choose-model] [--learn] [--json]",
 			"",
 			"Environment:",
 			"  OPENAI_API_KEY, GOOGLE_API_KEY, XAI_API_KEY, ANTHROPIC_API_KEY",
@@ -60,6 +66,7 @@ function parseArgs(argv: string[]): CliArgs {
 	let chooseProvider = false;
 	let chooseModel = false;
 	let learn = false;
+	let json = false;
 
 	for (let i = 0; i < argv.length; i += 1) {
 		const arg = argv[i];
@@ -96,6 +103,10 @@ function parseArgs(argv: string[]): CliArgs {
 			learn = true;
 			continue;
 		}
+		if (arg === "--json") {
+			json = true;
+			continue;
+		}
 		if (arg === "-h" || arg === "--help") {
 			printUsage();
 			process.exit(0);
@@ -111,10 +122,13 @@ function parseArgs(argv: string[]): CliArgs {
 		throw new Error("Missing tweet URL or ID");
 	}
 
-	return { tweetInput, provider, model, chooseProvider, chooseModel, learn };
+	return { tweetInput, provider, model, chooseProvider, chooseModel, learn, json };
 }
 
-function ensureLearnModeIsInteractive(learn: boolean): void {
+function ensureLearnModeIsInteractive(learn: boolean, json: boolean): void {
+	if (learn && json) {
+		throw new Error("`--json` cannot be combined with `--learn`.");
+	}
 	if (!learn) {
 		return;
 	}
@@ -185,6 +199,17 @@ function pickPrimaryTweet(payload: unknown): Record<string, unknown> | null {
 	return null;
 }
 
+function pickTweetArray(payload: unknown): Record<string, unknown>[] {
+	if (typeof payload !== "object" || payload === null) {
+		return [];
+	}
+	const maybeData = (payload as { data?: unknown }).data;
+	if (!Array.isArray(maybeData)) {
+		return [];
+	}
+	return maybeData.filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null);
+}
+
 function findIncludedUser(payload: unknown, authorId: string | undefined): Record<string, unknown> | null {
 	if (!authorId || typeof payload !== "object" || payload === null) {
 		return null;
@@ -202,12 +227,21 @@ function findIncludedUser(payload: unknown, authorId: string | undefined): Recor
 	return null;
 }
 
-function toTweetPayload(payload: unknown): TweetPayload {
-	const primaryTweet = pickPrimaryTweet(payload);
-	if (!primaryTweet) {
-		throw new Error("xurl did not return a tweet payload.");
+function readInReplyToTweetId(primaryTweet: Record<string, unknown>): string | undefined {
+	const referencedTweets = Array.isArray(primaryTweet.referenced_tweets) ? primaryTweet.referenced_tweets : [];
+	for (const entry of referencedTweets) {
+		if (typeof entry !== "object" || entry === null) {
+			continue;
+		}
+		if ((entry as { type?: unknown }).type === "replied_to") {
+			const id = (entry as { id?: unknown }).id;
+			return typeof id === "string" ? id : undefined;
+		}
 	}
+	return undefined;
+}
 
+function toThreadTweetPayload(payload: unknown, primaryTweet: Record<string, unknown>): ThreadTweetPayload {
 	const authorId = typeof primaryTweet.author_id === "string" ? primaryTweet.author_id : undefined;
 	const includedUser = findIncludedUser(payload, authorId);
 	const text = typeof primaryTweet.text === "string" ? primaryTweet.text : "";
@@ -224,20 +258,87 @@ function toTweetPayload(payload: unknown): TweetPayload {
 		authorUsername: typeof includedUser?.username === "string" ? includedUser.username : undefined,
 		authorName: typeof includedUser?.name === "string" ? includedUser.name : undefined,
 		authorAvatarUrl: typeof includedUser?.profile_image_url === "string" ? includedUser.profile_image_url : undefined,
+		createdAt: typeof primaryTweet.created_at === "string" ? primaryTweet.created_at : undefined,
+		conversationId: typeof primaryTweet.conversation_id === "string" ? primaryTweet.conversation_id : undefined,
+		inReplyToTweetId: readInReplyToTweetId(primaryTweet),
 		raw: payload,
 	};
 }
 
-async function readTweetWithXurl(tweetInput: string): Promise<TweetPayload> {
+function compareTweetsByCreatedAt(left: ThreadTweetPayload, right: ThreadTweetPayload): number {
+	const leftTimestamp = left.createdAt ? Date.parse(left.createdAt) : Number.POSITIVE_INFINITY;
+	const rightTimestamp = right.createdAt ? Date.parse(right.createdAt) : Number.POSITIVE_INFINITY;
+	if (leftTimestamp !== rightTimestamp) {
+		return leftTimestamp - rightTimestamp;
+	}
+	return left.id.localeCompare(right.id);
+}
+
+async function execXurlJson(args: string[]): Promise<unknown> {
 	try {
-		const { stdout } = await execFileAsync("xurl", ["read", tweetInput], { maxBuffer: 10 * 1024 * 1024 });
-		return toTweetPayload(JSON.parse(stdout));
+		const { stdout } = await execFileAsync("xurl", args, { maxBuffer: 10 * 1024 * 1024 });
+		return JSON.parse(stdout);
 	} catch (error) {
 		const err = error as { stderr?: unknown; stdout?: unknown };
 		const stderr = typeof err.stderr === "string" ? err.stderr : "";
 		const stdout = typeof err.stdout === "string" ? err.stdout : "";
-		throw new Error(`Failed to read tweet with xurl.\n${stderr || stdout || String(error)}`.trim());
+		throw new Error(`Failed to read from xurl.\n${stderr || stdout || String(error)}`.trim());
 	}
+}
+
+async function readThreadWithXurl(tweetInput: string): Promise<ThreadPayload> {
+	const rootPayload = await execXurlJson(["read", tweetInput]);
+	const primaryTweet = pickPrimaryTweet(rootPayload);
+	if (!primaryTweet) {
+		throw new Error("xurl did not return a tweet payload.");
+	}
+	const rootTweet = toThreadTweetPayload(rootPayload, primaryTweet);
+	const conversationId = rootTweet.conversationId;
+	const authorUsername = rootTweet.authorUsername;
+	if (!conversationId || !authorUsername) {
+		return {
+			rootTweetId: rootTweet.id,
+			tweets: [rootTweet],
+		};
+	}
+
+	const threadTweets: ThreadTweetPayload[] = [rootTweet];
+	const seenIds = new Set<string>([rootTweet.id]);
+	let nextToken: string | undefined;
+	do {
+		const params = new URLSearchParams({
+			query: `conversation_id:${conversationId} from:${authorUsername}`,
+			max_results: "100",
+			expansions: "author_id,attachments.media_keys",
+			"tweet.fields": "author_id,attachments,public_metrics,created_at,conversation_id,referenced_tweets",
+			"user.fields": "id,username,name,profile_image_url",
+			"media.fields": "type,url,preview_image_url,alt_text,width,height",
+		});
+		if (nextToken) {
+			params.set("next_token", nextToken);
+		}
+		const payload = await execXurlJson([`/2/tweets/search/recent?${params.toString()}`]);
+		for (const candidate of pickTweetArray(payload)) {
+			const tweet = toThreadTweetPayload(payload, candidate);
+			if (seenIds.has(tweet.id)) {
+				continue;
+			}
+			seenIds.add(tweet.id);
+			threadTweets.push(tweet);
+		}
+		nextToken =
+			typeof payload === "object" &&
+			payload !== null &&
+			typeof (payload as { meta?: { next_token?: unknown } }).meta?.next_token === "string"
+				? ((payload as { meta: { next_token: string } }).meta.next_token)
+				: undefined;
+	} while (nextToken);
+
+	threadTweets.sort(compareTweetsByCreatedAt);
+	return {
+		rootTweetId: rootTweet.id,
+		tweets: threadTweets,
+	};
 }
 
 function readProviderApiKey(provider: ProviderId, config: Awaited<ReturnType<typeof readAIConfig>>): string {
@@ -305,10 +406,10 @@ async function collectConceptRatings(analysis: TweetLearningAnalysis): Promise<C
 }
 
 async function main() {
-	const { tweetInput, provider: providerArg, model: modelArg, chooseProvider, chooseModel, learn } = parseArgs(
+	const { tweetInput, provider: providerArg, model: modelArg, chooseProvider, chooseModel, learn, json } = parseArgs(
 		process.argv.slice(2),
 	);
-	ensureLearnModeIsInteractive(learn);
+	ensureLearnModeIsInteractive(learn, json);
 
 	const config = await readAIConfig();
 	let provider = (providerArg || config.defaultProvider || DEFAULT_PROVIDER) as ProviderId;
@@ -322,9 +423,32 @@ async function main() {
 	}
 
 	const apiKey = readProviderApiKey(provider, config);
-	const tweet = await readTweetWithXurl(tweetInput);
-	const analysis = await analyzeTweetPayload({ provider, apiKey, model, tweet });
+	const thread = await readThreadWithXurl(tweetInput);
+	const rootTweet = thread.tweets.find((tweet) => tweet.id === thread.rootTweetId) ?? thread.tweets[0];
+	if (!rootTweet) {
+		throw new Error("Thread payload did not include a root post.");
+	}
+	const analysis = await analyzeTweetPayload({ provider, apiKey, model, tweet: buildThreadAnalysisPayload(thread) });
 
+	if (json) {
+		console.log(
+			JSON.stringify(
+				buildAnalyzeCliJsonResult({
+					tweet: rootTweet,
+					thread,
+					analysis,
+					provider,
+					model,
+				}),
+				null,
+				2,
+			),
+		);
+		return;
+	}
+
+	console.log(renderThreadMarkdown(thread));
+	console.log("");
 	console.log(`# Analysis (${getProviderCatalogEntry(provider).label} / ${model})`);
 	console.log("");
 	console.log(renderAnalysisMarkdown(analysis));

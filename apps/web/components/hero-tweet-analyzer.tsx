@@ -36,12 +36,21 @@ export interface TweetPreview {
 	authorUsername?: string;
 	authorName?: string;
 	authorAvatarUrl?: string;
+	createdAt?: string;
+	conversationId?: string;
+	inReplyToTweetId?: string;
 	media?: TweetMedia[];
 	publicMetrics?: TweetPublicMetrics;
 }
 
+export interface ThreadPreview {
+	rootTweetId: string;
+	tweets: TweetPreview[];
+}
+
 interface AnalyzeResponseSuccess {
 	tweet: TweetPreview;
+	thread?: ThreadPreview;
 	analysis: AnalyzeTweetResult;
 	provider?: ProviderId;
 	model?: string;
@@ -419,6 +428,151 @@ export function TweetPreviewCard({
 	);
 }
 
+interface ThreadReplyCardProps {
+	tweet: TweetPreview;
+	index: number;
+	total: number;
+	theme?: HeroTweetAnalyzerTheme;
+}
+
+function ThreadReplyCard({
+	tweet,
+	index,
+	total,
+	theme = "editorial",
+}: Readonly<ThreadReplyCardProps>) {
+	const isObsidian = theme === "obsidian";
+
+	return (
+		<section
+			className={
+				isObsidian
+					? "border border-outline-variant/20 bg-surface-container-lowest p-5"
+					: "rounded-4xl border border-white/10 bg-ink/60 p-5"
+			}
+		>
+			<div className="flex items-start justify-between gap-3">
+				<div className="min-w-0">
+					<p
+						className={
+							isObsidian
+								? "font-label text-[10px] uppercase tracking-[0.3em] text-primary"
+								: "text-xs font-semibold uppercase tracking-[0.2em] text-coral"
+						}
+					>
+						Thread {index + 1}/{total}
+					</p>
+					<p
+						className={
+							isObsidian
+								? "mt-2 font-label text-sm uppercase tracking-[0.16em] text-on-surface"
+								: "mt-2 text-sm font-semibold uppercase tracking-[0.12em] text-white"
+						}
+					>
+						{tweet.authorName ?? "Unknown author"}
+					</p>
+					<p
+						className={
+							isObsidian
+								? "font-label text-[10px] uppercase tracking-[0.3em] text-secondary/60"
+								: "text-xs text-peach/60"
+						}
+					>
+						@{tweet.authorUsername ?? "unknown"}
+					</p>
+				</div>
+				<a
+					href={buildTweetCanonicalUrl(tweet)}
+					target="_blank"
+					rel="noopener noreferrer"
+					className={
+						isObsidian
+							? "font-label text-[10px] uppercase tracking-[0.24em] text-primary transition-colors hover:text-on-surface"
+							: "text-xs font-semibold uppercase tracking-wider text-coral transition-colors hover:text-white"
+					}
+				>
+					Open on X
+				</a>
+			</div>
+			<div
+				className={
+					isObsidian
+						? "mt-4 whitespace-pre-wrap border-t border-outline-variant/10 pt-4 font-body text-sm leading-7 text-on-surface"
+						: "mt-4 whitespace-pre-wrap border-t border-white/10 pt-4 text-sm leading-7 text-white"
+				}
+			>
+				{renderTweetTextContent(tweet.text, isObsidian)}
+			</div>
+		</section>
+	);
+}
+
+export interface ThreadPreviewSectionProps {
+	rootTweet: TweetPreview;
+	thread: ThreadPreview;
+	analysis: AnalyzeTweetResult;
+	selectedConceptTagKeys?: ReadonlySet<string>;
+	onToggleConceptTag?: (tag: string) => void;
+	theme?: HeroTweetAnalyzerTheme;
+}
+
+export function ThreadPreviewSection({
+	rootTweet,
+	thread,
+	analysis,
+	selectedConceptTagKeys,
+	onToggleConceptTag,
+	theme = "editorial",
+}: Readonly<ThreadPreviewSectionProps>) {
+	const isObsidian = theme === "obsidian";
+	const replies = thread.tweets.filter((tweet) => tweet.id !== thread.rootTweetId);
+
+	return (
+		<section id="thread-preview-section" className="flex flex-col gap-4">
+			<div className="flex flex-col gap-2">
+				<p
+					className={
+						isObsidian
+							? "font-label text-[10px] uppercase tracking-[0.35em] text-primary"
+							: "text-xs font-semibold uppercase tracking-[0.2em] text-coral"
+					}
+				>
+					Thread
+				</p>
+				<p
+					className={
+						isObsidian
+							? "font-body text-sm leading-7 text-on-surface-variant"
+							: "text-sm text-peach/70"
+					}
+				>
+					Showing all {thread.tweets.length} posts in this thread. Analysis is based on the combined thread text.
+				</p>
+			</div>
+			<TweetPreviewCard
+				tweet={rootTweet}
+				analysis={analysis}
+				selectedConceptTagKeys={selectedConceptTagKeys}
+				onToggleConceptTag={onToggleConceptTag}
+				theme={theme}
+			/>
+			{replies.length > 0 ? (
+				<div className="flex flex-col gap-3">
+					{replies.map((reply, index) => (
+						<ThreadReplyCard
+							key={reply.id}
+							tweet={reply}
+							index={index + 1}
+							total={thread.tweets.length}
+							theme={theme}
+						/>
+					))}
+				</div>
+			) : null}
+		</section>
+	);
+}
+
 export interface AnalyzerFollowControlsProps {
 	tweet: TweetPreview;
 	activeTags: string[];
@@ -601,6 +755,7 @@ export function HeroTweetAnalyzer({
 	const [isLoading, setIsLoading] = useState(false);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [tweet, setTweet] = useState<TweetPreview | null>(null);
+	const [thread, setThread] = useState<ThreadPreview | null>(null);
 	const [analysis, setAnalysis] = useState<AnalyzeTweetResult | null>(null);
 	const [bookmarkTagsInput, setBookmarkTagsInput] = useState("");
 	const [isSavingBookmark, setIsSavingBookmark] = useState(false);
@@ -689,6 +844,7 @@ export function HeroTweetAnalyzer({
 		setBookmarkSuccessMessage(null);
 		setFollowErrorMessage(null);
 		setFollowSuccessMessage(null);
+		setThread(null);
 
 		try {
 			const response = await fetch("/api/analyze", {
@@ -748,6 +904,7 @@ export function HeroTweetAnalyzer({
 			}
 
 			setTweet(payload.tweet);
+			setThread(payload.thread ?? null);
 			setAnalysis(payload.analysis);
 			setTweetUrlOrId(trimmedValue);
 			if ("provider" in payload && payload.provider) {
@@ -794,6 +951,7 @@ export function HeroTweetAnalyzer({
 					authorUsername: normalizeUsername(tweet.authorUsername) ?? "unknown",
 					authorName: tweet.authorName?.trim() ? tweet.authorName.trim() : undefined,
 					authorAvatarUrl: tweet.authorAvatarUrl?.trim() ? tweet.authorAvatarUrl.trim() : undefined,
+					thread: thread && thread.tweets.length > 1 ? thread : undefined,
 					tags,
 				}),
 			});
@@ -1042,13 +1200,24 @@ export function HeroTweetAnalyzer({
 
 			{tweet && analysis ? (
 				<>
-					<TweetPreviewCard
-						tweet={tweet}
-						analysis={analysis}
-						selectedConceptTagKeys={selectedBookmarkTagKeys}
-						onToggleConceptTag={toggleConceptTag}
-						theme={theme}
-					/>
+					{thread && thread.tweets.length > 1 ? (
+						<ThreadPreviewSection
+							rootTweet={tweet}
+							thread={thread}
+							analysis={analysis}
+							selectedConceptTagKeys={selectedBookmarkTagKeys}
+							onToggleConceptTag={toggleConceptTag}
+							theme={theme}
+						/>
+					) : (
+						<TweetPreviewCard
+							tweet={tweet}
+							analysis={analysis}
+							selectedConceptTagKeys={selectedBookmarkTagKeys}
+							onToggleConceptTag={toggleConceptTag}
+							theme={theme}
+						/>
+					)}
 					<section id="bookmark-save-controls" className={bookmarkSectionClassName}>
 						<div className="flex flex-col gap-4">
 							<div>
