@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.0
+
+### Major Changes
+
+- a4766ab: Rename the published core package from `@pi-starter/core` to `rabbitbrain` and update internal consumers to use the new package name.
+
 ## 0.1.1
 
 ### Patch Changes

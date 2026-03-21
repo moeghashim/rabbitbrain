@@ -1,6 +1,6 @@
 {
 	"name": "@pi-starter/ai",
-	"version": "0.1.1",
+	"version": "1.0.0",
 	"description": "Shared AI provider adapters and model catalog",
 	"license": "MIT",
 	"type": "module",
@@ -22,8 +22,8 @@
 		"node": ">=20.0.0"
 	},
 	"dependencies": {
-		"@pi-starter/contracts": "0.1.1",
-		"rabbitbrain": "0.1.1",
-		"@pi-starter/x-client": "0.1.1"
+		"@pi-starter/contracts": "1.0.0",
+		"rabbitbrain": "1.0.0",
+		"@pi-starter/x-client": "1.0.0"
 	}
 }
