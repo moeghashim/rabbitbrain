@@ -32,11 +32,11 @@ export function SignOutButton() {
 					void handleClick();
 				}}
 				disabled={isSigningOut}
-				className="rounded-[48px] border border-white/25 px-7 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-70"
+				className="w-full border border-outline-variant/20 px-5 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.28em] text-secondary transition-colors hover:border-primary/40 hover:text-primary disabled:cursor-not-allowed disabled:opacity-70"
 			>
 				{isSigningOut ? "Signing Out..." : "Sign Out"}
 			</button>
-			{errorMessage ? <p className="text-xs text-peach/70">{errorMessage}</p> : null}
+			{errorMessage ? <p className="font-body text-xs text-secondary/70">{errorMessage}</p> : null}
 		</div>
 	);
 }

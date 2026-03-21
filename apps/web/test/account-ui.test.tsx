@@ -23,6 +23,10 @@ test("app home page mirrors the landing analyzer shell", async () => {
 
 test("account page includes preferences and sign-out actions", () => {
 	const html = renderToStaticMarkup(<AccountPage />);
+	assert.match(html, /id=\"nav-logo\"/);
+	assert.match(html, /id=\"nav-cta\"[^>]*href=\"\/app\"/);
+	assert.match(html, /Account Settings/);
+	assert.match(html, /Back to Workspace/);
 	assert.match(html, /action=\"\/api\/me\/preferences\"/);
 	assert.match(html, /name=\"defaultProvider\"/);
 	assert.match(html, /name=\"defaultModel\"/);

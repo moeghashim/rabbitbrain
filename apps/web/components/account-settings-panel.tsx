@@ -147,69 +147,90 @@ export function AccountSettingsPanel() {
 
 	return (
 		<div className="flex flex-col gap-8">
-			<form action="/api/me/preferences" method="post" onSubmit={savePreferences} className="flex flex-col gap-5">
-				<div>
-					<label htmlFor="defaultProvider" className="text-sm font-semibold uppercase tracking-widest text-peach/70">
-						Default provider
-					</label>
-					<div className="relative mt-2">
-						<select
-							id="defaultProvider"
-							name="defaultProvider"
-							value={preferences.defaultProvider}
-							onChange={(event) => {
-								const provider = event.target.value as ProviderId;
-								setPreferences((current) => ({
-									...current,
-									defaultProvider: provider,
-									defaultModel: getProviderCatalogEntry(provider).defaultModel,
-								}));
-							}}
-							className="w-full appearance-none rounded-4xl border border-white/20 bg-ink/70 px-5 py-4 pr-14 text-white"
-						>
-							{PROVIDER_OPTIONS.map((provider) => (
-								<option key={provider.id} value={provider.id}>
-									{provider.label}
-								</option>
-							))}
-						</select>
-						<ChevronDown
-							aria-hidden="true"
-							className="pointer-events-none absolute right-5 top-1/2 h-5 w-5 -translate-y-1/2 text-peach/70"
-						/>
+			<div className="grid gap-px border border-outline-variant/10 bg-outline-variant/10 md:grid-cols-[minmax(0,1fr)_280px]">
+				<div className="bg-surface-container p-6">
+					<p className="font-mono text-[11px] uppercase tracking-[0.28em] text-secondary/70">Defaults</p>
+					<h2 className="mt-4 font-headline text-3xl uppercase tracking-[-0.03em] text-on-surface">
+						Preference stack
+					</h2>
+					<p className="mt-4 font-body text-sm leading-7 text-on-surface-variant">
+						Set the provider, model, and study cadence Rabbit Brain should reach for first when a workflow does not override them.
+					</p>
+				</div>
+				<div className="bg-surface-container-low p-6">
+					<p className="font-mono text-[11px] uppercase tracking-[0.28em] text-secondary/70">Signals</p>
+					<p className="mt-4 font-body text-sm leading-7 text-on-surface-variant">
+						Saved preferences apply across the analyzer, bookmark exports, and any authenticated workspace session.
+					</p>
+				</div>
+			</div>
+
+			<form action="/api/me/preferences" method="post" onSubmit={savePreferences} className="grid gap-5">
+				<div className="grid gap-5 lg:grid-cols-2">
+					<div>
+						<label htmlFor="defaultProvider" className="font-mono text-[11px] font-semibold uppercase tracking-[0.28em] text-secondary/75">
+							Default provider
+						</label>
+						<div className="relative mt-2">
+							<select
+								id="defaultProvider"
+								name="defaultProvider"
+								value={preferences.defaultProvider}
+								onChange={(event) => {
+									const provider = event.target.value as ProviderId;
+									setPreferences((current) => ({
+										...current,
+										defaultProvider: provider,
+										defaultModel: getProviderCatalogEntry(provider).defaultModel,
+									}));
+								}}
+								className="w-full appearance-none border border-outline-variant/20 bg-surface-container-lowest px-5 py-4 pr-14 font-body text-sm text-on-surface focus:border-primary focus:outline-none"
+							>
+								{PROVIDER_OPTIONS.map((provider) => (
+									<option key={provider.id} value={provider.id}>
+										{provider.label}
+									</option>
+								))}
+							</select>
+							<ChevronDown
+								aria-hidden="true"
+								className="pointer-events-none absolute right-5 top-1/2 h-5 w-5 -translate-y-1/2 text-secondary/70"
+							/>
+						</div>
+					</div>
+					<div>
+						<label htmlFor="defaultModel" className="font-mono text-[11px] font-semibold uppercase tracking-[0.28em] text-secondary/75">
+							Default model
+						</label>
+						<input type="hidden" name="defaultModel" value={preferences.defaultModel} />
+						<div className="relative mt-2">
+							<select
+								id="defaultModel"
+								value={resolveProviderCatalogModel(preferences.defaultProvider, preferences.defaultModel)}
+								onChange={(event) => {
+									setPreferences((current) => ({
+										...current,
+										defaultModel: event.target.value,
+									}));
+								}}
+								className="w-full appearance-none border border-outline-variant/20 bg-surface-container-lowest px-5 py-4 pr-14 font-body text-sm text-on-surface focus:border-primary focus:outline-none"
+							>
+								{modelSuggestions.map((model) => (
+									<option key={model} value={model}>
+										{model}
+									</option>
+								))}
+							</select>
+							<ChevronDown
+								aria-hidden="true"
+								className="pointer-events-none absolute right-5 top-1/2 h-5 w-5 -translate-y-1/2 text-secondary/70"
+							/>
+						</div>
 					</div>
 				</div>
+
 				<div>
-					<label htmlFor="defaultModel" className="text-sm font-semibold uppercase tracking-widest text-peach/70">
-						Default model
-					</label>
-					<input type="hidden" name="defaultModel" value={preferences.defaultModel} />
-					<div className="relative mt-2">
-						<select
-							id="defaultModel"
-							value={resolveProviderCatalogModel(preferences.defaultProvider, preferences.defaultModel)}
-							onChange={(event) => {
-								setPreferences((current) => ({
-									...current,
-									defaultModel: event.target.value,
-								}));
-							}}
-							className="w-full appearance-none rounded-4xl border border-white/20 bg-ink/70 px-5 py-4 pr-14 text-white"
-						>
-							{modelSuggestions.map((model) => (
-								<option key={model} value={model}>
-									{model}
-								</option>
-							))}
-						</select>
-						<ChevronDown
-							aria-hidden="true"
-							className="pointer-events-none absolute right-5 top-1/2 h-5 w-5 -translate-y-1/2 text-peach/70"
-						/>
-					</div>
-				</div>
-				<div>
-					<label htmlFor="learningMinutes" className="text-sm font-semibold uppercase tracking-widest text-peach/70">
+					<label htmlFor="learningMinutes" className="font-mono text-[11px] font-semibold uppercase tracking-[0.28em] text-secondary/75">
 						Minutes per day
 					</label>
 					<input
@@ -225,13 +246,13 @@ export function AccountSettingsPanel() {
 						}}
 						min={5}
 						max={120}
-						className="mt-2 w-full rounded-4xl border border-white/20 bg-ink/70 px-5 py-4 text-white"
+						className="mt-2 w-full border border-outline-variant/20 bg-surface-container-lowest px-5 py-4 font-body text-sm text-on-surface focus:border-primary focus:outline-none"
 					/>
 				</div>
 				<div className="flex flex-wrap gap-3">
 					<button
 						type="submit"
-						className="rounded-[48px] bg-coral px-7 py-3 text-sm font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-coral-hover"
+						className="bg-primary-container px-6 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.32em] text-on-primary-container transition-transform hover:scale-[1.02]"
 					>
 						Save Preferences
 					</button>
@@ -239,7 +260,23 @@ export function AccountSettingsPanel() {
 			</form>
 
 			<section className="grid gap-4">
-				<h3 className="font-serif text-2xl text-white">Provider API Keys</h3>
+				<div className="grid gap-px border border-outline-variant/10 bg-outline-variant/10 md:grid-cols-[minmax(0,1fr)_280px]">
+					<div className="bg-surface-container p-6">
+						<p className="font-mono text-[11px] uppercase tracking-[0.28em] text-secondary/70">Credentials</p>
+						<h3 className="mt-4 font-headline text-3xl uppercase tracking-[-0.03em] text-on-surface">
+							Provider API Keys
+						</h3>
+						<p className="mt-4 font-body text-sm leading-7 text-on-surface-variant">
+							Attach or rotate provider keys without leaving the workspace. Each provider card reflects the current stored state.
+						</p>
+					</div>
+					<div className="bg-surface-container-low p-6">
+						<p className="font-mono text-[11px] uppercase tracking-[0.28em] text-secondary/70">Storage</p>
+						<p className="mt-4 font-body text-sm leading-7 text-on-surface-variant">
+							Keys stay account-scoped. Remove a key here to disable that provider across future sessions.
+						</p>
+					</div>
+				</div>
 				{PROVIDER_OPTIONS.map((provider) => {
 					const summary = credentials[provider.id];
 					return (
@@ -256,27 +293,29 @@ export function AccountSettingsPanel() {
 									}
 								})();
 							}}
-							className="rounded-4xl border border-white/10 bg-ink/70 p-5"
+							className="border border-outline-variant/10 bg-surface-container p-5"
 						>
 							<div className="flex flex-col gap-4">
 								<div className="flex items-center justify-between gap-3">
 									<div>
-										<p className="font-semibold text-white">{provider.label}</p>
-										<p className="text-sm text-peach/70">{provider.keyHint}</p>
+										<p className="font-headline text-2xl uppercase tracking-[-0.02em] text-on-surface">{provider.label}</p>
+										<p className="mt-2 font-body text-sm text-on-surface-variant">{provider.keyHint}</p>
 									</div>
-									<p className="text-sm text-peach/70">{summary?.configured ? summary.keyHint ?? "Configured" : "Not configured"}</p>
+									<p className="font-mono text-[11px] uppercase tracking-[0.24em] text-secondary/75">
+										{summary?.configured ? summary.keyHint ?? "Configured" : "Not configured"}
+									</p>
 								</div>
 								<input
 									type="password"
 									name="apiKey"
 									placeholder={provider.envVar}
-									className="w-full rounded-[20px] border border-white/20 bg-charcoal/70 px-5 py-3 text-sm text-white placeholder:text-peach/40 focus:border-coral focus:outline-none"
+									className="w-full border border-outline-variant/20 bg-surface-container-lowest px-5 py-3 font-body text-sm text-on-surface placeholder:text-secondary/40 focus:border-primary focus:outline-none"
 								/>
 								<div className="flex flex-wrap gap-3">
 									<button
 										type="submit"
 										disabled={pendingProvider === provider.id}
-										className="rounded-[48px] bg-coral px-5 py-2 text-sm font-semibold text-white disabled:opacity-60"
+										className="bg-primary-container px-5 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.28em] text-on-primary-container disabled:opacity-60"
 									>
 										{summary?.configured ? "Update Key" : "Save Key"}
 									</button>
@@ -286,7 +325,7 @@ export function AccountSettingsPanel() {
 										onClick={() => {
 											void removeProviderKey(provider.id);
 										}}
-										className="rounded-[48px] border border-white/20 px-5 py-2 text-sm font-semibold text-white disabled:opacity-40"
+										className="border border-outline-variant/20 px-5 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.28em] text-secondary transition-colors hover:border-primary/40 hover:text-primary disabled:opacity-40"
 									>
 										Remove Key
 									</button>
@@ -297,8 +336,16 @@ export function AccountSettingsPanel() {
 				})}
 			</section>
 
-			{message ? <p className="text-sm text-coral">{message}</p> : null}
-			{errorMessage ? <p role="alert" className="text-sm text-peach">{errorMessage}</p> : null}
+			{message ? (
+				<p className="border border-primary/30 bg-primary/10 px-4 py-3 font-body text-sm text-on-surface">
+					{message}
+				</p>
+			) : null}
+			{errorMessage ? (
+				<p role="alert" className="border border-primary/30 bg-primary/10 px-4 py-3 font-body text-sm text-on-surface">
+					{errorMessage}
+				</p>
+			) : null}
 		</div>
 	);
 }

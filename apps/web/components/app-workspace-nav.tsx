@@ -6,9 +6,15 @@ import { workspaceMenuLinks, type WorkspaceMenuItem } from "./workspace-menu.js"
 
 export interface AppWorkspaceNavProps {
 	activeItem?: WorkspaceMenuItem;
+	ctaHref?: string;
+	ctaLabel?: string;
 }
 
-export function AppWorkspaceNav({ activeItem }: Readonly<AppWorkspaceNavProps>) {
+export function AppWorkspaceNav({
+	activeItem,
+	ctaHref = "/account",
+	ctaLabel = "Account Settings",
+}: Readonly<AppWorkspaceNavProps>) {
 	return (
 		<nav className="sticky top-0 z-40 border-b border-outline-variant/10 bg-surface/95 backdrop-blur-md">
 			<div className="mx-auto flex max-w-[1440px] items-center justify-between gap-8 px-6 py-4 sm:px-10 lg:px-16">
@@ -32,11 +38,11 @@ export function AppWorkspaceNav({ activeItem }: Readonly<AppWorkspaceNavProps>) 
 				</div>
 
 				<Link
-					href="/account"
+					href={ctaHref}
 					id="nav-cta"
 					className="bg-primary-container px-6 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.32em] text-on-primary-container transition-transform hover:scale-[1.02]"
 				>
-					Account Settings
+					{ctaLabel}
 				</Link>
 			</div>
 		</nav>
