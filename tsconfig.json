@@ -3,6 +3,9 @@
 	"compilerOptions": {
 		"noEmit": true,
 		"paths": {
+			"rabbitbrain": [
+				"./packages/core/src/index.ts"
+			],
 			"@pi-starter/*": [
 				"./packages/*/src/index.ts"
 			]
