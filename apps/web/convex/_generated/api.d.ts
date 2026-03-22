@@ -14,6 +14,7 @@ import type * as bookmarks from "../bookmarks.js";
 import type * as follows from "../follows.js";
 import type * as preferences from "../preferences.js";
 import type * as provider_credentials from "../provider_credentials.js";
+import type * as takeaways from "../takeaways.js";
 import type * as tracks from "../tracks.js";
 import type * as users from "../users.js";
 
@@ -30,6 +31,7 @@ declare const fullApi: ApiFromModules<{
   follows: typeof follows;
   preferences: typeof preferences;
   provider_credentials: typeof provider_credentials;
+  takeaways: typeof takeaways;
   tracks: typeof tracks;
   users: typeof users;
 }>;

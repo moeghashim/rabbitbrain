@@ -1,5 +1,11 @@
 {
   "framework": "nextjs",
   "buildCommand": "npm run -w @pi-starter/web build",
-  "outputDirectory": "apps/web/.next"
+  "outputDirectory": "apps/web/.next",
+  "crons": [
+    {
+      "path": "/api/internal/takeaways/refresh",
+      "schedule": "0 8 * * *"
+    }
+  ]
 }

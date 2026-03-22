@@ -36,6 +36,14 @@ export interface TweetPayload {
 	raw: unknown;
 }
 
+export interface XUserPayload {
+	id: string;
+	username: string;
+	name?: string;
+	avatarUrl?: string;
+	raw: unknown;
+}
+
 export type ThreadTweetPayload = TweetPayload;
 
 export interface ThreadPayload {
@@ -57,6 +65,11 @@ export type XProviderWarningReporter = (event: XProviderWarningEvent) => void;
 export interface TweetSourceProvider {
 	getTweetByUrlOrId(input: string): Promise<TweetPayload>;
 	getThreadByUrlOrId(input: string): Promise<ThreadPayload>;
+}
+
+export interface AccountTimelineProvider extends TweetSourceProvider {
+	getUserByUsername(username: string): Promise<XUserPayload>;
+	getLatestPostsByUsername(username: string, limit: number): Promise<TweetPayload[]>;
 }
 
 export interface FetchHeadersLike {

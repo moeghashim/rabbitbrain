@@ -2,6 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { parseBookmarkTags, validateBookmarkTags } from "../src/bookmark-tags.js";
 import {
+	type AccountTakeawayAnalysis,
+	AccountTakeawayAnalysisSchema,
+	type AccountTakeawaySnapshot,
+	AccountTakeawaySnapshotSchema,
 	type AnalyzeTweetInput,
 	AnalyzeTweetInputSchema,
 	type AnalyzeTweetResult,
@@ -89,6 +93,64 @@ test("SavedAnalysisSchema validates persisted analysis shape", () => {
 	const parsed = SavedAnalysisSchema.parse(payload);
 	assert.equal(parsed.id, "analysis_1");
 	assert.equal(parsed.novelConcepts.length, 5);
+});
+
+test("AccountTakeawayAnalysisSchema validates takeaway summary and bullets", () => {
+	const payload: AccountTakeawayAnalysis = {
+		summary: "This account focuses on reliable product shipping and clear execution updates.",
+		takeaways: [
+			"Shipping cadence is a recurring theme.",
+			"Posts emphasize reliability and rollback discipline.",
+			"Examples are concrete rather than aspirational.",
+		],
+	};
+
+	const parsed = AccountTakeawayAnalysisSchema.parse(payload);
+	assert.equal(parsed.takeaways.length, 3);
+});
+
+test("AccountTakeawaySnapshotSchema validates persisted snapshot shape", () => {
+	const payload: AccountTakeawaySnapshot = {
+		id: "snapshot_1",
+		userId: "user_1",
+		followId: "follow_1",
+		accountId: "12345",
+		accountUsername: "ctatedev",
+		accountName: "Chris Tate",
+		accountAvatarUrl: "https://pbs.twimg.com/profile_images/avatar.jpg",
+		provider: "openai",
+		model: "gpt-4.1",
+		summary: "The account posts practical engineering lessons from recent shipping work.",
+		takeaways: [
+			"Reliability is framed as a product feature.",
+			"Posts cite concrete incidents and experiments.",
+			"Operational feedback loops show up repeatedly.",
+		],
+		sampleSize: 3,
+		snapshotDateKey: "2026-03-22",
+		posts: [
+			{
+				id: "123",
+				text: "Ship the smaller change first.",
+				authorUsername: "ctatedev",
+			},
+			{
+				id: "124",
+				text: "Measure rollback time every week.",
+				authorUsername: "ctatedev",
+			},
+			{
+				id: "125",
+				text: "Launches fail when ownership is vague.",
+				authorUsername: "ctatedev",
+			},
+		],
+		createdAt: 1_700_000_000_000,
+	};
+
+	const parsed = AccountTakeawaySnapshotSchema.parse(payload);
+	assert.equal(parsed.accountUsername, "ctatedev");
+	assert.equal(parsed.posts.length, 3);
 });
 
 test("SaveBookmarkInputSchema validates bookmark save payload", () => {

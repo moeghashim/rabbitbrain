@@ -42,6 +42,11 @@ export const AnalyzeTweetResultSchema = z.object({
 	novelConcepts: z.array(AnalyzeConceptSchema).length(5),
 });
 
+export const AccountTakeawayAnalysisSchema = z.object({
+	summary: z.string().min(1),
+	takeaways: z.array(z.string().min(1)).min(1).max(5),
+});
+
 export const TweetMediaSchema = z.object({
 	mediaKey: z.string().min(1),
 	type: z.enum(["photo", "video", "animated_gif"]),
@@ -109,6 +114,71 @@ export const SavedAnalysisSchema = AnalyzeTweetResultSchema.extend({
 	model: z.string().min(1),
 	thread: ThreadPreviewSchema.optional(),
 	createdAt: z.number().int().nonnegative(),
+});
+
+export const TakeawayRefreshStatusSchema = z.enum(["idle", "success", "error"]);
+
+export const TakeawayFollowSchema = z.object({
+	id: z.string().min(1),
+	userId: z.string().min(1),
+	accountId: z.string().min(1).optional(),
+	accountUsername: z.string().min(1),
+	accountName: z.string().min(1).optional(),
+	accountAvatarUrl: z.string().url().optional(),
+	lastRefreshDateKey: z.string().min(1).optional(),
+	lastRefreshedAt: z.number().int().nonnegative().optional(),
+	lastRefreshStatus: TakeawayRefreshStatusSchema,
+	lastRefreshError: z.string().min(1).optional(),
+	createdAt: z.number().int().nonnegative(),
+	updatedAt: z.number().int().nonnegative(),
+});
+
+export const CreateTakeawayFollowInputSchema = z.object({
+	accountUsername: z.string().min(1, "accountUsername is required"),
+});
+
+export const DeleteTakeawayFollowInputSchema = z.object({
+	followId: z.string().min(1, "followId is required"),
+});
+
+export const DeleteTakeawayFollowResultSchema = z.object({
+	followId: z.string().min(1),
+});
+
+export const TakeawayWorkspaceResponseSchema = z.object({
+	follows: z.array(TakeawayFollowSchema),
+});
+
+export const AccountTakeawayPostSchema = TweetPreviewSchema;
+
+export const AccountTakeawaySnapshotSchema = AccountTakeawayAnalysisSchema.extend({
+	id: z.string().min(1),
+	userId: z.string().min(1),
+	followId: z.string().min(1),
+	accountId: z.string().min(1).optional(),
+	accountUsername: z.string().min(1),
+	accountName: z.string().min(1).optional(),
+	accountAvatarUrl: z.string().url().optional(),
+	provider: ProviderIdSchema,
+	model: z.string().min(1),
+	sampleSize: z.number().int().positive(),
+	snapshotDateKey: z.string().min(1),
+	posts: z.array(AccountTakeawayPostSchema).min(1).max(20),
+	createdAt: z.number().int().nonnegative(),
+});
+
+export const TakeawayHistoryResponseSchema = z.object({
+	latest: AccountTakeawaySnapshotSchema.optional(),
+	history: z.array(AccountTakeawaySnapshotSchema),
+});
+
+export const RefreshTakeawayInputSchema = z.object({
+	followId: z.string().min(1, "followId is required"),
+});
+
+export const RefreshTakeawayResultSchema = z.object({
+	snapshot: AccountTakeawaySnapshotSchema,
+	deduped: z.boolean(),
 });
 
 export const ProviderCredentialSummarySchema = z.object({
@@ -285,6 +355,7 @@ export const FollowingFeedResponseSchema = z.object({
 
 export type AnalyzeTweetInput = z.infer<typeof AnalyzeTweetInputSchema>;
 export type AnalyzeTweetResult = z.infer<typeof AnalyzeTweetResultSchema>;
+export type AccountTakeawayAnalysis = z.infer<typeof AccountTakeawayAnalysisSchema>;
 export type TweetMedia = z.infer<typeof TweetMediaSchema>;
 export type TweetPublicMetrics = z.infer<typeof TweetPublicMetricsSchema>;
 export type TweetPreview = z.infer<typeof TweetPreviewSchema>;
@@ -293,6 +364,17 @@ export type AnalyzeTweetResponse = z.infer<typeof AnalyzeTweetResponseSchema>;
 export type ExtensionSessionUser = z.infer<typeof ExtensionSessionUserSchema>;
 export type ExtensionSessionStatus = z.infer<typeof ExtensionSessionStatusSchema>;
 export type SavedAnalysis = z.infer<typeof SavedAnalysisSchema>;
+export type TakeawayRefreshStatus = z.infer<typeof TakeawayRefreshStatusSchema>;
+export type TakeawayFollow = z.infer<typeof TakeawayFollowSchema>;
+export type CreateTakeawayFollowInput = z.infer<typeof CreateTakeawayFollowInputSchema>;
+export type DeleteTakeawayFollowInput = z.infer<typeof DeleteTakeawayFollowInputSchema>;
+export type DeleteTakeawayFollowResult = z.infer<typeof DeleteTakeawayFollowResultSchema>;
+export type TakeawayWorkspaceResponse = z.infer<typeof TakeawayWorkspaceResponseSchema>;
+export type AccountTakeawayPost = z.infer<typeof AccountTakeawayPostSchema>;
+export type AccountTakeawaySnapshot = z.infer<typeof AccountTakeawaySnapshotSchema>;
+export type TakeawayHistoryResponse = z.infer<typeof TakeawayHistoryResponseSchema>;
+export type RefreshTakeawayInput = z.infer<typeof RefreshTakeawayInputSchema>;
+export type RefreshTakeawayResult = z.infer<typeof RefreshTakeawayResultSchema>;
 export type ProviderCredentialSummary = z.infer<typeof ProviderCredentialSummarySchema>;
 export type ProviderCredentialInput = z.infer<typeof ProviderCredentialInputSchema>;
 export type SaveBookmarkInput = z.infer<typeof SaveBookmarkInputSchema>;

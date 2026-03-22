@@ -3,13 +3,14 @@ import { toXProviderError, toXProviderErrorFromPayload } from "./provider-errors
 import { toPositiveNumber, toTweetMediaType } from "./tweet-media-utils.js";
 import { parseTweetPublicMetrics } from "./tweet-public-metrics.js";
 import type {
+	AccountTimelineProvider,
 	FetchLike,
 	ThreadPayload,
 	TweetMedia,
 	TweetPayload,
-	TweetSourceProvider,
 	XApiConfig,
 	XProviderWarningReporter,
+	XUserPayload,
 } from "./types.js";
 
 function readRequiredEnv(name: "X_API_KEY" | "X_API_SECRET" | "X_BEARER_TOKEN", env: NodeJS.ProcessEnv): string {
@@ -51,6 +52,18 @@ function parseTweetId(input: string): string {
 	}
 
 	return match[1];
+}
+
+function sanitizeUsername(input: string): string {
+	const trimmed = input.trim().replace(/^@+/, "");
+	if (!trimmed) {
+		throw new XProviderError({
+			code: "INVALID_INPUT",
+			message: `Invalid username: ${input}`,
+			retryable: false,
+		});
+	}
+	return trimmed;
 }
 
 function jitterDelay(baseMs: number, randomFn: () => number): number {
@@ -294,6 +307,35 @@ function readTweetPayload(responseBody: unknown, reportWarning: XProviderWarning
 	});
 }
 
+function readUserPayload(responseBody: unknown): XUserPayload {
+	if (!isRecord(responseBody)) {
+		throw new XProviderError({
+			code: "UPSTREAM_ERROR",
+			message: "X API returned an invalid payload.",
+			retryable: false,
+		});
+	}
+
+	const data = responseBody.data;
+	if (!isRecord(data)) {
+		throw toXProviderErrorFromPayload(responseBody, "X API payload missing user data.");
+	}
+
+	const id = toNonEmptyString(data.id);
+	const username = toNonEmptyString(data.username);
+	if (!id || !username) {
+		throw toXProviderErrorFromPayload(responseBody, "X API payload missing required user fields.");
+	}
+
+	return {
+		id,
+		username,
+		name: toNonEmptyString(data.name),
+		avatarUrl: toNonEmptyString(data.profile_image_url),
+		raw: responseBody,
+	};
+}
+
 function readTweetArrayPayload(responseBody: unknown, reportWarning: XProviderWarningReporter): TweetPayload[] {
 	if (!isRecord(responseBody)) {
 		throw new XProviderError({
@@ -381,7 +423,7 @@ export function buildThreadAnalysisPayload(thread: ThreadPayload): TweetPayload 
 	};
 }
 
-export class XApiV2Client implements TweetSourceProvider {
+export class XApiV2Client implements AccountTimelineProvider {
 	private readonly config: XApiConfig;
 	private readonly fetchFn: FetchLike;
 	private readonly sleepFn: (ms: number) => Promise<void>;
@@ -434,6 +476,25 @@ export class XApiV2Client implements TweetSourceProvider {
 		if (nextToken) {
 			url.searchParams.set("next_token", nextToken);
 		}
+		return url;
+	}
+
+	private createUserByUsernameUrl(username: string): URL {
+		const url = new URL(`https://api.x.com/2/users/by/username/${encodeURIComponent(username)}`);
+		url.searchParams.set("user.fields", "id,username,name,profile_image_url");
+		return url;
+	}
+
+	private createUserTweetsUrl(userId: string, limit: number): URL {
+		const url = new URL(`https://api.x.com/2/users/${encodeURIComponent(userId)}/tweets`);
+		url.searchParams.set("max_results", String(Math.max(5, Math.min(limit, 100))));
+		url.searchParams.set("expansions", "author_id,attachments.media_keys");
+		url.searchParams.set(
+			"tweet.fields",
+			"author_id,attachments,public_metrics,created_at,conversation_id,referenced_tweets",
+		);
+		url.searchParams.set("user.fields", "id,username,name,profile_image_url");
+		url.searchParams.set("media.fields", "type,url,preview_image_url,alt_text,width,height");
 		return url;
 	}
 
@@ -522,5 +583,16 @@ export class XApiV2Client implements TweetSourceProvider {
 		} while (nextToken);
 
 		return toThreadPayload(rootTweet, tweets);
+	}
+
+	async getUserByUsername(username: string): Promise<XUserPayload> {
+		const responseBody = await this.requestJson(this.createUserByUsernameUrl(sanitizeUsername(username)));
+		return readUserPayload(responseBody);
+	}
+
+	async getLatestPostsByUsername(username: string, limit: number): Promise<TweetPayload[]> {
+		const user = await this.getUserByUsername(username);
+		const responseBody = await this.requestJson(this.createUserTweetsUrl(user.id, limit));
+		return readTweetArrayPayload(responseBody, this.warningReporter).slice(0, Math.max(1, limit));
 	}
 }

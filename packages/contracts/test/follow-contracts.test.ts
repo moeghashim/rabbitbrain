@@ -3,8 +3,11 @@ import test from "node:test";
 
 import {
 	CreateCreatorFollowInputSchema,
+	CreateTakeawayFollowInputSchema,
+	DeleteTakeawayFollowInputSchema,
 	FollowingFeedResponseSchema,
 	FollowSuggestionsResponseSchema,
+	TakeawayWorkspaceResponseSchema,
 } from "../src/index.js";
 
 test("creator follow input requires subjectTag for subject scope", () => {
@@ -74,4 +77,39 @@ test("follow suggestions response parses counts and recency", () => {
 
 	assert.equal(parsed.subjectTag, "Growth");
 	assert.equal(parsed.suggestions[0]?.bookmarkCount, 3);
+});
+
+test("takeaway follow input accepts account usernames", () => {
+	const parsed = CreateTakeawayFollowInputSchema.parse({
+		accountUsername: "@ctatedev",
+	});
+
+	assert.equal(parsed.accountUsername, "@ctatedev");
+});
+
+test("takeaway delete input requires followId", () => {
+	const result = DeleteTakeawayFollowInputSchema.safeParse({
+		followId: "",
+	});
+
+	assert.equal(result.success, false);
+});
+
+test("takeaway workspace response parses follow refresh state", () => {
+	const parsed = TakeawayWorkspaceResponseSchema.parse({
+		follows: [
+			{
+				id: "follow_1",
+				userId: "user_1",
+				accountUsername: "ctatedev",
+				lastRefreshStatus: "success",
+				lastRefreshDateKey: "2026-03-22",
+				lastRefreshedAt: 200,
+				createdAt: 100,
+				updatedAt: 200,
+			},
+		],
+	});
+
+	assert.equal(parsed.follows[0]?.lastRefreshStatus, "success");
 });

@@ -1,13 +1,18 @@
 import {
+	AccountTakeawaySnapshotSchema,
+	type AccountTakeawaySnapshot,
 	type AnalyzeTweetInput,
 	type AnalyzeTweetResult,
 	type CreatorFollow,
 	type CreateCreatorFollowInput,
 	type CreateSubjectFollowInput,
+	type CreateTakeawayFollowInput,
 	DeleteFollowResultSchema,
 	type DeleteFollowResult,
 	DeleteBookmarkResultSchema,
 	type DeleteBookmarkResult,
+	DeleteTakeawayFollowResultSchema,
+	type DeleteTakeawayFollowResult,
 	FollowSuggestionsResponseSchema,
 	type FollowSuggestionsResponse,
 	FollowSummarySchema,
@@ -16,11 +21,19 @@ import {
 	type FollowingFeedResponse,
 	ProviderCredentialSummaryListSchema,
 	ProviderIdSchema,
+	type RefreshTakeawayResult,
+	RefreshTakeawayResultSchema,
 	type SaveBookmarkInput,
 	SavedAnalysisSchema,
 	type SavedAnalysis,
 	SavedBookmarkSchema,
 	type SavedBookmark,
+	TakeawayFollowSchema,
+	type TakeawayFollow,
+	TakeawayHistoryResponseSchema,
+	type TakeawayHistoryResponse,
+	TakeawayWorkspaceResponseSchema,
+	type TakeawayWorkspaceResponse,
 	CreatorFollowSchema,
 	type SubjectFollow,
 	SubjectFollowSchema,
@@ -138,6 +151,56 @@ const listFollowSuggestionsRef = makeFunctionReference<"query", { subjectTag: st
 const listFollowingFeedRef = makeFunctionReference<"query", Record<string, never>, FollowingFeedResponse>(
 	"follows:listFollowingFeed",
 );
+const listTakeawayWorkspaceRef = makeFunctionReference<"query", Record<string, never>, TakeawayWorkspaceResponse>(
+	"takeaways:listWorkspace",
+);
+const getTakeawayFollowByIdRef = makeFunctionReference<"query", { followId: string }, TakeawayFollow>(
+	"takeaways:getFollowById",
+);
+const upsertTakeawayFollowRef = makeFunctionReference<
+	"mutation",
+	CreateTakeawayFollowInput & {
+		accountId?: string;
+		accountName?: string;
+		accountAvatarUrl?: string;
+	},
+	TakeawayFollow
+>("takeaways:upsertFollow");
+const deleteTakeawayFollowRef = makeFunctionReference<"mutation", { followId: string }, DeleteTakeawayFollowResult>(
+	"takeaways:removeFollow",
+);
+const getTakeawayHistoryRef = makeFunctionReference<"query", { followId: string }, TakeawayHistoryResponse>(
+	"takeaways:getHistoryForFollow",
+);
+const markTakeawayRefreshErrorRef = makeFunctionReference<
+	"mutation",
+	{ followId: string; dateKey: string; refreshedAt: number; errorMessage: string },
+	TakeawayFollow
+>("takeaways:markRefreshError");
+const saveTakeawaySnapshotRef = makeFunctionReference<
+	"mutation",
+	{
+		followId: string;
+		accountId?: string;
+		accountUsername: string;
+		accountName?: string;
+		accountAvatarUrl?: string;
+		provider: ProviderId;
+		model: string;
+		summary: string;
+		takeaways: string[];
+		sampleSize: number;
+		snapshotDateKey: string;
+		posts: AccountTakeawaySnapshot["posts"];
+		createdAt: number;
+	},
+	AccountTakeawaySnapshot
+>("takeaways:saveSnapshotForFollow");
+const listDueTakeawayRefreshJobsRef = makeFunctionReference<
+	"query",
+	{ dateKey: string; limit: number },
+	Array<{ userId: string; followId: string; accountUsername: string }>
+>("takeaways:listDueRefreshJobs");
 
 function readRequiredEnv(name: keyof ConvexEnv, env: ConvexEnv): string {
 	const value = env[name];
@@ -156,6 +219,15 @@ function createActingIdentity(user: SessionUserIdentity): ConvexActingIdentity {
 		email: user.email ?? undefined,
 		name: user.name ?? undefined,
 	};
+}
+
+function createDeployKeyAdminClient(env: ConvexEnv = process.env): ConvexHttpClient {
+	const convexUrl = readRequiredEnv("NEXT_PUBLIC_CONVEX_URL", env);
+	const deployKey = readRequiredEnv("CONVEX_DEPLOY_KEY", env);
+	const client = new ConvexHttpClient(convexUrl);
+	const clientWithAdminAuth = client as ConvexHttpClientWithAdminAuth;
+	clientWithAdminAuth.setAdminAuth(deployKey);
+	return client;
 }
 
 function createAdminClient({ user, env = process.env }: { user: SessionUserIdentity; env?: ConvexEnv }): ConvexHttpClient {
@@ -463,4 +535,137 @@ export async function listFollowingFeedForSession({
 }): Promise<FollowingFeedResponse> {
 	const { client } = await createAuthedAdminClient({ sessionUser, env });
 	return FollowingFeedResponseSchema.parse(await client.query(listFollowingFeedRef, {}));
+}
+
+export async function listTakeawayWorkspaceForSession({
+	sessionUser,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	env?: ConvexEnv;
+}): Promise<TakeawayWorkspaceResponse> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return TakeawayWorkspaceResponseSchema.parse(await client.query(listTakeawayWorkspaceRef, {}));
+}
+
+export async function getTakeawayFollowByIdForSession({
+	sessionUser,
+	followId,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	followId: string;
+	env?: ConvexEnv;
+}): Promise<TakeawayFollow> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return TakeawayFollowSchema.parse(await client.query(getTakeawayFollowByIdRef, { followId }));
+}
+
+export async function createTakeawayFollowForSession({
+	sessionUser,
+	input,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	input: CreateTakeawayFollowInput & {
+		accountId?: string;
+		accountName?: string;
+		accountAvatarUrl?: string;
+	};
+	env?: ConvexEnv;
+}): Promise<TakeawayFollow> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return TakeawayFollowSchema.parse(await client.mutation(upsertTakeawayFollowRef, input));
+}
+
+export async function deleteTakeawayFollowForSession({
+	sessionUser,
+	followId,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	followId: string;
+	env?: ConvexEnv;
+}): Promise<DeleteTakeawayFollowResult> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return DeleteTakeawayFollowResultSchema.parse(await client.mutation(deleteTakeawayFollowRef, { followId }));
+}
+
+export async function getTakeawayHistoryForSession({
+	sessionUser,
+	followId,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	followId: string;
+	env?: ConvexEnv;
+}): Promise<TakeawayHistoryResponse> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return TakeawayHistoryResponseSchema.parse(await client.query(getTakeawayHistoryRef, { followId }));
+}
+
+export async function markTakeawayRefreshErrorForSession({
+	sessionUser,
+	followId,
+	dateKey,
+	refreshedAt,
+	errorMessage,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	followId: string;
+	dateKey: string;
+	refreshedAt: number;
+	errorMessage: string;
+	env?: ConvexEnv;
+}): Promise<TakeawayFollow> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return TakeawayFollowSchema.parse(
+		await client.mutation(markTakeawayRefreshErrorRef, {
+			followId,
+			dateKey,
+			refreshedAt,
+			errorMessage,
+		}),
+	);
+}
+
+export async function persistTakeawaySnapshotForSession({
+	sessionUser,
+	input,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	input: {
+		followId: string;
+		accountId?: string;
+		accountUsername: string;
+		accountName?: string;
+		accountAvatarUrl?: string;
+		provider: ProviderId;
+		model: string;
+		summary: string;
+		takeaways: string[];
+		sampleSize: number;
+		snapshotDateKey: string;
+		posts: AccountTakeawaySnapshot["posts"];
+		createdAt: number;
+	};
+	env?: ConvexEnv;
+}): Promise<AccountTakeawaySnapshot> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return AccountTakeawaySnapshotSchema.parse(await client.mutation(saveTakeawaySnapshotRef, input));
+}
+
+export async function listDueTakeawayRefreshJobs({
+	dateKey,
+	limit,
+	env,
+}: {
+	dateKey: string;
+	limit: number;
+	env?: ConvexEnv;
+}): Promise<Array<{ userId: string; followId: string; accountUsername: string }>> {
+	const client = createDeployKeyAdminClient(env);
+	return await client.query(listDueTakeawayRefreshJobsRef, { dateKey, limit });
 }

@@ -1,10 +1,15 @@
-import type { ProviderId } from "@pi-starter/contracts";
-import type { TweetPayload } from "@pi-starter/x-client";
+import { type AccountTakeawayAnalysis, AccountTakeawayAnalysisSchema, type ProviderId } from "@pi-starter/contracts";
+import type { TweetPayload, XUserPayload } from "@pi-starter/x-client";
 import { parseTweetLearningAnalysisText, type TweetLearningAnalysis } from "rabbitbrain";
 
 import { getProviderCatalogEntry } from "./catalog.js";
 import { AiProviderError } from "./errors.js";
-import { buildTweetAnalysisSystemPrompt, buildTweetAnalysisUserPrompt } from "./prompt.js";
+import {
+	buildAccountTakeawaySystemPrompt,
+	buildAccountTakeawayUserPrompt,
+	buildTweetAnalysisSystemPrompt,
+	buildTweetAnalysisUserPrompt,
+} from "./prompt.js";
 
 interface JsonObject {
 	[key: string]: unknown;
@@ -187,28 +192,31 @@ function parseProviderText(provider: ProviderId, text: string): TweetLearningAna
 	}
 }
 
-export async function analyzeTweetPayload({
+function parseAccountTakeawayText(provider: ProviderId, text: string): AccountTakeawayAnalysis {
+	try {
+		return AccountTakeawayAnalysisSchema.parse(JSON.parse(text));
+	} catch (error) {
+		throw new AiProviderError({
+			provider,
+			code: "INVALID_RESPONSE",
+			message: error instanceof Error ? error.message : "Provider returned invalid takeaway output.",
+		});
+	}
+}
+
+async function generateProviderText({
 	provider,
 	apiKey,
 	model,
-	tweet,
+	systemPrompt,
+	userPrompt,
 }: {
 	provider: ProviderId;
 	apiKey: string;
 	model: string;
-	tweet: TweetPayload;
-}): Promise<TweetLearningAnalysis> {
-	if (!apiKey.trim()) {
-		throw new AiProviderError({
-			provider,
-			code: "CONFIG_ERROR",
-			message: `Missing API key for ${getProviderCatalogEntry(provider).label}.`,
-		});
-	}
-
-	const systemPrompt = buildTweetAnalysisSystemPrompt();
-	const userPrompt = buildTweetAnalysisUserPrompt(tweet);
-
+	systemPrompt: string;
+	userPrompt: string;
+}): Promise<string> {
 	let text = "";
 	if (provider === "openai") {
 		const payload = await postJson(provider, "https://api.openai.com/v1/responses", {
@@ -284,5 +292,77 @@ export async function analyzeTweetPayload({
 		});
 	}
 
+	return text;
+}
+
+export async function analyzeTweetPayload({
+	provider,
+	apiKey,
+	model,
+	tweet,
+}: {
+	provider: ProviderId;
+	apiKey: string;
+	model: string;
+	tweet: TweetPayload;
+}): Promise<TweetLearningAnalysis> {
+	if (!apiKey.trim()) {
+		throw new AiProviderError({
+			provider,
+			code: "CONFIG_ERROR",
+			message: `Missing API key for ${getProviderCatalogEntry(provider).label}.`,
+		});
+	}
+
+	const systemPrompt = buildTweetAnalysisSystemPrompt();
+	const userPrompt = buildTweetAnalysisUserPrompt(tweet);
+	const text = await generateProviderText({
+		provider,
+		apiKey,
+		model,
+		systemPrompt,
+		userPrompt,
+	});
 	return parseProviderText(provider, text);
+}
+
+export async function analyzeAccountTakeaway({
+	provider,
+	apiKey,
+	model,
+	account,
+	posts,
+}: {
+	provider: ProviderId;
+	apiKey: string;
+	model: string;
+	account: Pick<XUserPayload, "id" | "username" | "name">;
+	posts: TweetPayload[];
+}): Promise<AccountTakeawayAnalysis> {
+	if (!apiKey.trim()) {
+		throw new AiProviderError({
+			provider,
+			code: "CONFIG_ERROR",
+			message: `Missing API key for ${getProviderCatalogEntry(provider).label}.`,
+		});
+	}
+	if (posts.length === 0) {
+		return AccountTakeawayAnalysisSchema.parse({
+			summary: `No recent posts were available for @${account.username}.`,
+			takeaways: ["No recent posts were returned by X for this account."],
+		});
+	}
+
+	const text = await generateProviderText({
+		provider,
+		apiKey,
+		model,
+		systemPrompt: buildAccountTakeawaySystemPrompt(),
+		userPrompt: buildAccountTakeawayUserPrompt({
+			account,
+			posts,
+		}),
+	});
+
+	return parseAccountTakeawayText(provider, text);
 }

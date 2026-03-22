@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { analyzeTweetPayload } from "../src/index.js";
+import { analyzeAccountTakeaway, analyzeTweetPayload } from "../src/index.js";
 
 const VALID_ANALYSIS_JSON = JSON.stringify({
 	topic: "Prompt Engineering",
@@ -55,6 +55,55 @@ test("analyzeTweetPayload parses OpenAI Responses API message content", async ()
 
 		assert.equal(analysis.topic, "Prompt Engineering");
 		assert.equal(analysis.novelConcepts.length, 5);
+	} finally {
+		globalThis.fetch = originalFetch;
+	}
+});
+
+test("analyzeAccountTakeaway parses OpenAI Responses API message content", async () => {
+	const originalFetch = globalThis.fetch;
+	globalThis.fetch = async () =>
+		new Response(
+			JSON.stringify({
+				output_text: JSON.stringify({
+					summary: "The account posts concise execution updates and product lessons.",
+					takeaways: [
+						"Execution updates are a recurring theme.",
+						"Posts are grounded in concrete product work.",
+						"Operational feedback loops appear often.",
+					],
+				}),
+			}),
+			{
+				status: 200,
+				headers: {
+					"content-type": "application/json",
+				},
+			},
+		);
+
+	try {
+		const analysis = await analyzeAccountTakeaway({
+			provider: "openai",
+			apiKey: "sk-test",
+			model: "gpt-4.1",
+			account: {
+				id: "user_1",
+				username: "ctatedev",
+				name: "Chris Tate",
+			},
+			posts: [
+				{
+					id: "123",
+					text: "Ship the smaller change first.",
+					authorUsername: "ctatedev",
+					raw: {},
+				},
+			],
+		});
+
+		assert.match(analysis.summary, /execution updates/i);
+		assert.equal(analysis.takeaways.length, 3);
 	} finally {
 		globalThis.fetch = originalFetch;
 	}
