@@ -10,6 +10,7 @@ test("privacy page discloses extension data handling and contact details", () =>
 	assert.match(html, /Rabbit Brain for X/);
 	assert.match(html, /analyze X posts, save bookmarks, and track daily account takeaways/i);
 	assert.match(html, /only runs on https:\/\/x.com/);
+	assert.match(html, /Policy Snapshot/);
 	assert.match(html, /Data Collected/);
 	assert.match(html, /Where Data Lives/);
 	assert.match(html, /Third-Party Services/);
@@ -17,5 +18,7 @@ test("privacy page discloses extension data handling and contact details", () =>
 	assert.match(html, /does not execute remote code inside x\.com/i);
 	assert.match(html, /CLI takeaway state is stored locally/i);
 	assert.match(html, /AI providers are used to produce structured tweet analysis/i);
-	assert.match(html, /support@rabbitbrain.app/);
+	assert.match(html, /rabbitbrain@10claws\.com/);
+	assert.doesNotMatch(html, /Open Support/);
+	assert.doesNotMatch(html, /support@rabbitbrain\.app/);
 });
