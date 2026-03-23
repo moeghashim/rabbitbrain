@@ -129,6 +129,7 @@ export const save = mutationGeneric({
 								likeCount: v.optional(v.number()),
 								quoteCount: v.optional(v.number()),
 								bookmarkCount: v.optional(v.number()),
+								impressionCount: v.optional(v.number()),
 							}),
 						),
 					}),

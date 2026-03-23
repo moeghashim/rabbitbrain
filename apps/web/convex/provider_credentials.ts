@@ -11,6 +11,13 @@ import { v } from "convex/values";
 
 import { requireUserBySession } from "./auth_helpers.js";
 
+function pickLatestRecord<T extends { updatedAt: number }>(records: T[]): T | null {
+	if (records.length === 0) {
+		return null;
+	}
+	return records.reduce((latest, record) => (record.updatedAt > latest.updatedAt ? record : latest));
+}
+
 export const listByUser = queryGeneric({
 	args: {},
 	handler: async (ctx) => {
@@ -38,11 +45,11 @@ export const getByProvider = queryGeneric({
 	handler: async (ctx, args) => {
 		const user = await requireUserBySession(ctx);
 		const provider = ProviderIdSchema.parse(args.provider);
-		const record = await ctx.db
+		const record = pickLatestRecord(await ctx.db
 			.query("userProviderCredentials")
 			.withIndex("by_user_id_provider", (query) => query.eq("userId", user._id))
 			.filter((query) => query.eq(query.field("provider"), provider))
-			.unique();
+			.collect());
 		if (!record) {
 			return null;
 		}
@@ -65,11 +72,11 @@ export const upsert = mutationGeneric({
 	handler: async (ctx, args) => {
 		const user = await requireUserBySession(ctx);
 		const provider = ProviderIdSchema.parse(args.provider) as ProviderId;
-		const existing = await ctx.db
+		const existing = pickLatestRecord(await ctx.db
 			.query("userProviderCredentials")
 			.withIndex("by_user_id_provider", (query) => query.eq("userId", user._id))
 			.filter((query) => query.eq(query.field("provider"), provider))
-			.unique();
+			.collect());
 		const updatedAt = Date.now();
 
 		if (existing) {
@@ -99,11 +106,11 @@ export const remove = mutationGeneric({
 	handler: async (ctx, args) => {
 		const user = await requireUserBySession(ctx);
 		const provider = ProviderIdSchema.parse(args.provider) as ProviderId;
-		const existing = await ctx.db
+		const existing = pickLatestRecord(await ctx.db
 			.query("userProviderCredentials")
 			.withIndex("by_user_id_provider", (query) => query.eq("userId", user._id))
 			.filter((query) => query.eq(query.field("provider"), provider))
-			.unique();
+			.collect());
 
 		if (existing) {
 			await ctx.db.delete(existing._id);

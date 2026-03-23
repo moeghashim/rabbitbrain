@@ -8,6 +8,13 @@ import { v } from "convex/values";
 
 import { requireUserBySession } from "./auth_helpers.js";
 
+function pickLatestRecord<T extends { updatedAt: number }>(records: T[]): T | null {
+	if (records.length === 0) {
+		return null;
+	}
+	return records.reduce((latest, record) => (record.updatedAt > latest.updatedAt ? record : latest));
+}
+
 export function normalizeStoredProvider(provider: string | undefined): "openai" | "google" | "xai" | "anthropic" {
 	const parsed = ProviderIdSchema.safeParse(provider);
 	return parsed.success ? parsed.data : "openai";
@@ -24,10 +31,10 @@ export const getPreferences = queryGeneric({
 	args: {},
 	handler: async (ctx) => {
 		const user = await requireUserBySession(ctx);
-		const existing = await ctx.db
+		const existing = pickLatestRecord(await ctx.db
 			.query("userPreferences")
 			.withIndex("by_user_id", (query) => query.eq("userId", user._id))
-			.unique();
+			.collect());
 		if (existing) {
 			const defaultProvider = normalizeStoredProvider(existing.defaultProvider);
 			return UserPreferencesResultSchema.parse({
@@ -59,10 +66,10 @@ export const updatePreferences = mutationGeneric({
 		const user = await requireUserBySession(ctx);
 		const validated = UserPreferencesInputSchema.parse(args);
 		const now = Date.now();
-		const existing = await ctx.db
+		const existing = pickLatestRecord(await ctx.db
 			.query("userPreferences")
 			.withIndex("by_user_id", (query) => query.eq("userId", user._id))
-			.unique();
+			.collect());
 		if (existing) {
 			await ctx.db.patch(existing._id, {
 				defaultProvider: validated.defaultProvider,

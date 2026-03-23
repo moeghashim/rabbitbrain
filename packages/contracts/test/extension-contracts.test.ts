@@ -25,6 +25,7 @@ test("AnalyzeTweetResponseSchema accepts tweet previews with media and metrics",
 				repostCount: 33,
 				likeCount: 240,
 				quoteCount: 4,
+				impressionCount: 1024,
 			},
 		},
 		analysis: {
@@ -42,6 +43,7 @@ test("AnalyzeTweetResponseSchema accepts tweet previews with media and metrics",
 	});
 
 	assert.equal(parsed.tweet.media?.[0]?.type, "photo");
+	assert.equal(parsed.tweet.publicMetrics?.impressionCount, 1024);
 	assert.equal(parsed.analysis.novelConcepts.length, 5);
 });
 

@@ -133,6 +133,10 @@ test("AccountTakeawaySnapshotSchema validates persisted snapshot shape", () => {
 				id: "123",
 				text: "Ship the smaller change first.",
 				authorUsername: "ctatedev",
+				publicMetrics: {
+					replyCount: 4,
+					impressionCount: 1500,
+				},
 			},
 			{
 				id: "124",
@@ -150,6 +154,7 @@ test("AccountTakeawaySnapshotSchema validates persisted snapshot shape", () => {
 
 	const parsed = AccountTakeawaySnapshotSchema.parse(payload);
 	assert.equal(parsed.accountUsername, "ctatedev");
+	assert.equal(parsed.posts[0]?.publicMetrics?.impressionCount, 1500);
 	assert.equal(parsed.posts.length, 3);
 });
 

@@ -20,6 +20,13 @@ import { requireUserBySession } from "./auth_helpers.js";
 
 type DbCtx = QueryCtx | MutationCtx;
 
+function pickLatestRecord<T extends { updatedAt: number }>(records: T[]): T | null {
+	if (records.length === 0) {
+		return null;
+	}
+	return records.reduce((latest, record) => (record.updatedAt > latest.updatedAt ? record : latest));
+}
+
 const tweetPreviewValue = v.object({
 	id: v.string(),
 	text: v.string(),
@@ -50,6 +57,7 @@ const tweetPreviewValue = v.object({
 			likeCount: v.optional(v.number()),
 			quoteCount: v.optional(v.number()),
 			bookmarkCount: v.optional(v.number()),
+			impressionCount: v.optional(v.number()),
 		}),
 	),
 });
@@ -197,11 +205,11 @@ export const upsertFollow = mutationGeneric({
 		const accountUsername = sanitizeAccountUsername(args.accountUsername);
 		const accountUsernameLower = normalizeAccountUsername(args.accountUsername);
 		const now = Date.now();
-		const existing = await ctx.db
+		const existing = pickLatestRecord(await ctx.db
 			.query("takeawayFollows")
 			.withIndex("by_user_id_account_username", (query) => query.eq("userId", user._id))
 			.filter((query) => query.eq(query.field("accountUsernameLower"), accountUsernameLower))
-			.unique();
+			.collect());
 
 		if (existing) {
 			await ctx.db.patch(existing._id, {

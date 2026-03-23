@@ -63,6 +63,7 @@ export const TweetPublicMetricsSchema = z.object({
 	likeCount: z.number().int().nonnegative().optional(),
 	quoteCount: z.number().int().nonnegative().optional(),
 	bookmarkCount: z.number().int().nonnegative().optional(),
+	impressionCount: z.number().int().nonnegative().optional(),
 });
 
 export const TweetPreviewSchema = z.object({
