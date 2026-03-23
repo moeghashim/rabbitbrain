@@ -65,12 +65,9 @@ function PopupApp() {
 			</section>
 
 			<section className="popup-card popup-row">
-				<p className="popup-kicker">Support</p>
-				<p className="popup-meta">Need policy or support details for review, publishing, or troubleshooting?</p>
+				<p className="popup-kicker">Privacy</p>
+				<p className="popup-meta">Need policy or contact details for review, publishing, or troubleshooting?</p>
 				<div className="popup-link-grid">
-					<a className="popup-link popup-link--secondary" href={`${APP_BASE_URL}/support`} target="_blank" rel="noreferrer">
-						Support
-					</a>
 					<a className="popup-link popup-link--secondary" href={`${APP_BASE_URL}/privacy`} target="_blank" rel="noreferrer">
 						Privacy
 					</a>

@@ -23,7 +23,7 @@
 1. Create or log into the Chrome Web Store publisher account.
 2. Upload the zip from the GitHub Release (or the local fallback zip) to create the listing.
 3. Set visibility to `Public` and enable deferred publishing.
-4. Fill the listing with the prepared title, description, screenshots, promo image, privacy answers, support URL, and privacy policy URL.
+4. Fill the listing with the prepared title, description, screenshots, promo image, privacy answers, and the privacy/contact URL: `https://www.rabbitbrain.app/privacy`.
 5. Add reviewer instructions covering:
    - install on desktop Chrome
    - visit `https://x.com`
