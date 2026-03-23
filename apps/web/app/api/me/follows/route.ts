@@ -9,10 +9,13 @@ import { getServerAuthSession } from "../../../../src/auth/auth.js";
 import { validateStartupEnvIfNeeded } from "../../../../src/config/startup-env.js";
 import {
 	createCreatorFollowForSession,
+	createTakeawayFollowForSession,
 	createSubjectFollowForSession,
 	deleteCreatorFollowForSession,
+	deleteTakeawayFollowForSession,
 	deleteSubjectFollowForSession,
 	listFollowsForSession,
+	listTakeawayWorkspaceForSession,
 } from "../../../../src/server/convex-admin.js";
 import { reportServerError } from "../../../../src/telemetry/report-error.js";
 
@@ -37,9 +40,12 @@ interface FollowsRouteDependencies {
 	getServerAuthSession: () => Promise<SessionLike | null>;
 	listFollowsForSession: typeof listFollowsForSession;
 	createCreatorFollowForSession: typeof createCreatorFollowForSession;
+	createTakeawayFollowForSession: typeof createTakeawayFollowForSession;
 	createSubjectFollowForSession: typeof createSubjectFollowForSession;
 	deleteCreatorFollowForSession: typeof deleteCreatorFollowForSession;
+	deleteTakeawayFollowForSession: typeof deleteTakeawayFollowForSession;
 	deleteSubjectFollowForSession: typeof deleteSubjectFollowForSession;
+	listTakeawayWorkspaceForSession: typeof listTakeawayWorkspaceForSession;
 	reportServerError: typeof reportServerError;
 }
 
@@ -48,9 +54,12 @@ const defaultDependencies: FollowsRouteDependencies = {
 	getServerAuthSession,
 	listFollowsForSession,
 	createCreatorFollowForSession,
+	createTakeawayFollowForSession,
 	createSubjectFollowForSession,
 	deleteCreatorFollowForSession,
+	deleteTakeawayFollowForSession,
 	deleteSubjectFollowForSession,
+	listTakeawayWorkspaceForSession,
 	reportServerError,
 };
 
@@ -73,6 +82,10 @@ function unauthorizedResponse() {
 
 function notFoundResponse(message: string) {
 	return NextResponse.json({ error: { message } }, { status: 404 });
+}
+
+function normalizeUsername(username: string): string {
+	return username.trim().replace(/^@+/, "").toLowerCase();
 }
 
 export async function handleFollowsGet(
@@ -127,6 +140,14 @@ export async function handleFollowsPost(
 					subjectTag: input.subjectTag,
 				},
 			});
+			await dependencies.createTakeawayFollowForSession({
+				sessionUser,
+				input: {
+					accountUsername: created.creatorUsername,
+					accountName: created.creatorName,
+					accountAvatarUrl: created.creatorAvatarUrl,
+				},
+			});
 			return NextResponse.json(created);
 		}
 
@@ -173,10 +194,37 @@ export async function handleFollowsDelete(
 
 		const input = DeleteFollowInputSchema.parse(await req.json());
 		if (input.kind === "creator") {
+			const followsBeforeDelete = await dependencies.listFollowsForSession({
+				sessionUser,
+			});
+			const removedFollow = followsBeforeDelete.creatorFollows.find((follow) => follow.id === input.followId);
 			const deleted = await dependencies.deleteCreatorFollowForSession({
 				sessionUser,
 				followId: input.followId,
 			});
+			if (removedFollow) {
+				const normalizedUsername = normalizeUsername(removedFollow.creatorUsername);
+				const followsAfterDelete = await dependencies.listFollowsForSession({
+					sessionUser,
+				});
+				const stillFollowingCreator = followsAfterDelete.creatorFollows.some(
+					(follow) => normalizeUsername(follow.creatorUsername) === normalizedUsername,
+				);
+				if (!stillFollowingCreator) {
+					const takeawayWorkspace = await dependencies.listTakeawayWorkspaceForSession({
+						sessionUser,
+					});
+					const takeawayFollow = takeawayWorkspace.follows.find(
+						(follow) => normalizeUsername(follow.accountUsername) === normalizedUsername,
+					);
+					if (takeawayFollow) {
+						await dependencies.deleteTakeawayFollowForSession({
+							sessionUser,
+							followId: takeawayFollow.id,
+						});
+					}
+				}
+			}
 			return NextResponse.json(deleted);
 		}
 

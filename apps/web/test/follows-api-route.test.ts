@@ -8,6 +8,8 @@ import type {
 	FollowSummary,
 	FollowingFeedResponse,
 	SubjectFollow,
+	TakeawayFollow,
+	TakeawayWorkspaceResponse,
 } from "@pi-starter/contracts";
 
 import {
@@ -60,15 +62,24 @@ function createDependencies() {
 				subjectFollows: [createSubjectFollow()],
 			}) as FollowSummary,
 		createCreatorFollowForSession: async () => createCreatorFollow(),
+		createTakeawayFollowForSession: async () => createTakeawayFollow(),
 		createSubjectFollowForSession: async () => createSubjectFollow(),
 		deleteCreatorFollowForSession: async () =>
 			({
 				followId: "creator_follow_1",
 			}) as DeleteFollowResult,
+		deleteTakeawayFollowForSession: async () =>
+			({
+				followId: "takeaway_follow_1",
+			}) as DeleteFollowResult,
 		deleteSubjectFollowForSession: async () =>
 			({
 				followId: "subject_follow_1",
 			}) as DeleteFollowResult,
+		listTakeawayWorkspaceForSession: async () =>
+			({
+				follows: [createTakeawayFollow()],
+			}) as TakeawayWorkspaceResponse,
 		listFollowSuggestionsForSession: async () =>
 			({
 				subjectTag: "Shipping",
@@ -103,6 +114,18 @@ function createDependencies() {
 	};
 }
 
+function createTakeawayFollow(): TakeawayFollow {
+	return {
+		id: "takeaway_follow_1",
+		userId: "user_1",
+		accountUsername: "ctatedev",
+		accountName: "Chris Tate",
+		lastRefreshStatus: "idle",
+		createdAt: 100,
+		updatedAt: 200,
+	};
+}
+
 test("GET /api/me/follows returns follows summary", async () => {
 	const response = await handleFollowsGet(
 		new Request("http://localhost/api/me/follows"),
@@ -116,6 +139,11 @@ test("GET /api/me/follows returns follows summary", async () => {
 });
 
 test("POST /api/me/follows creates creator follow", async () => {
+	let takeawayInput: {
+		accountUsername: string;
+		accountName?: string;
+		accountAvatarUrl?: string;
+	} | null = null;
 	const response = await handleFollowsPost(
 		new Request("http://localhost/api/me/follows", {
 			method: "POST",
@@ -127,12 +155,88 @@ test("POST /api/me/follows creates creator follow", async () => {
 			}),
 		}),
 		undefined,
-		createDependencies(),
+		{
+			...createDependencies(),
+			createTakeawayFollowForSession: async ({ input }) => {
+				takeawayInput = input;
+				return createTakeawayFollow();
+			},
+		},
 	);
 
 	assert.equal(response.status, 200);
 	const payload = (await response.json()) as CreatorFollow;
 	assert.equal(payload.scope, "all_feed");
+	assert.deepEqual(takeawayInput, {
+		accountUsername: "ctatedev",
+		accountName: "Chris Tate",
+		accountAvatarUrl: undefined,
+	});
+});
+
+test("POST /api/me/follows creates takeaway follow for creator subject follow", async () => {
+	let takeawayInput: {
+		accountUsername: string;
+		accountName?: string;
+		accountAvatarUrl?: string;
+	} | null = null;
+	const response = await handleFollowsPost(
+		new Request("http://localhost/api/me/follows", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				kind: "creator",
+				creatorUsername: "ctatedev",
+				scope: "subject",
+				subjectTag: "Shipping",
+			}),
+		}),
+		undefined,
+		{
+			...createDependencies(),
+			createCreatorFollowForSession: async () => ({
+				...createCreatorFollow(),
+				scope: "subject",
+				subjectTag: "Shipping",
+			}),
+			createTakeawayFollowForSession: async ({ input }) => {
+				takeawayInput = input;
+				return createTakeawayFollow();
+			},
+		},
+	);
+
+	assert.equal(response.status, 200);
+	assert.deepEqual(takeawayInput, {
+		accountUsername: "ctatedev",
+		accountName: "Chris Tate",
+		accountAvatarUrl: undefined,
+	});
+});
+
+test("POST /api/me/follows does not create takeaway follow for subject follow", async () => {
+	let takeawayCalled = false;
+	const response = await handleFollowsPost(
+		new Request("http://localhost/api/me/follows", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				kind: "subject",
+				subjectTag: "Shipping",
+			}),
+		}),
+		undefined,
+		{
+			...createDependencies(),
+			createTakeawayFollowForSession: async () => {
+				takeawayCalled = true;
+				return createTakeawayFollow();
+			},
+		},
+	);
+
+	assert.equal(response.status, 200);
+	assert.equal(takeawayCalled, false);
 });
 
 test("DELETE /api/me/follows deletes subject follow", async () => {
@@ -152,6 +256,107 @@ test("DELETE /api/me/follows deletes subject follow", async () => {
 	assert.equal(response.status, 200);
 	const payload = (await response.json()) as DeleteFollowResult;
 	assert.equal(payload.followId, "subject_follow_1");
+});
+
+test("DELETE /api/me/follows deletes takeaway follow after removing last creator follow", async () => {
+	let deletedTakeawayFollowId: string | null = null;
+	let listFollowsCallCount = 0;
+	const response = await handleFollowsDelete(
+		new Request("http://localhost/api/me/follows", {
+			method: "DELETE",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				kind: "creator",
+				followId: "creator_follow_1",
+			}),
+		}),
+		undefined,
+		{
+			...createDependencies(),
+			listFollowsForSession: async () => {
+				listFollowsCallCount += 1;
+				if (listFollowsCallCount === 1) {
+					return {
+						creatorFollows: [createCreatorFollow()],
+						subjectFollows: [createSubjectFollow()],
+					} as FollowSummary;
+				}
+				return {
+					creatorFollows: [],
+					subjectFollows: [createSubjectFollow()],
+				} as FollowSummary;
+			},
+			deleteTakeawayFollowForSession: async ({ followId }) => {
+				deletedTakeawayFollowId = followId;
+				return {
+					followId,
+				};
+			},
+			listTakeawayWorkspaceForSession: async () =>
+				({
+					follows: [createTakeawayFollow()],
+				}) as TakeawayWorkspaceResponse,
+		},
+	);
+
+	assert.equal(response.status, 200);
+	assert.equal(deletedTakeawayFollowId, "takeaway_follow_1");
+});
+
+test("DELETE /api/me/follows keeps takeaway follow when another creator scope remains", async () => {
+	let deletedTakeawayFollowId: string | null = null;
+	let listFollowsCallCount = 0;
+	const response = await handleFollowsDelete(
+		new Request("http://localhost/api/me/follows", {
+			method: "DELETE",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				kind: "creator",
+				followId: "creator_follow_1",
+			}),
+		}),
+		undefined,
+		{
+			...createDependencies(),
+			listFollowsForSession: async () => {
+				listFollowsCallCount += 1;
+				if (listFollowsCallCount === 1) {
+					return {
+						creatorFollows: [
+							createCreatorFollow(),
+							{
+								...createCreatorFollow(),
+								id: "creator_follow_2",
+								scope: "subject",
+								subjectTag: "Shipping",
+							},
+						],
+						subjectFollows: [createSubjectFollow()],
+					} as FollowSummary;
+				}
+				return {
+					creatorFollows: [
+						{
+							...createCreatorFollow(),
+							id: "creator_follow_2",
+							scope: "subject",
+							subjectTag: "Shipping",
+						},
+					],
+					subjectFollows: [createSubjectFollow()],
+				} as FollowSummary;
+			},
+			deleteTakeawayFollowForSession: async ({ followId }) => {
+				deletedTakeawayFollowId = followId;
+				return {
+					followId,
+				};
+			},
+		},
+	);
+
+	assert.equal(response.status, 200);
+	assert.equal(deletedTakeawayFollowId, null);
 });
 
 test("GET /api/me/follows/suggestions returns subject suggestions", async () => {
