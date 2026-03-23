@@ -108,3 +108,53 @@ test("analyzeAccountTakeaway parses OpenAI Responses API message content", async
 		globalThis.fetch = originalFetch;
 	}
 });
+
+test("analyzeAccountTakeaway fails fast when the provider request times out", async () => {
+	const originalFetch = globalThis.fetch;
+	const originalSetTimeout = globalThis.setTimeout;
+	const originalClearTimeout = globalThis.clearTimeout;
+	globalThis.fetch = async (_input, init) =>
+		await new Promise<Response>((_resolve, reject) => {
+			if (init?.signal?.aborted) {
+				reject(new Error("Request aborted by timeout"));
+				return;
+			}
+			init?.signal?.addEventListener("abort", () => reject(new Error("Request aborted by timeout")), { once: true });
+		});
+	globalThis.setTimeout = ((callback: Parameters<typeof setTimeout>[0]) => {
+		if (typeof callback === "function") {
+			callback();
+		}
+		return 1 as unknown as ReturnType<typeof setTimeout>;
+	}) as typeof setTimeout;
+	globalThis.clearTimeout = (() => {}) as typeof clearTimeout;
+
+	try {
+		await assert.rejects(
+			() =>
+				analyzeAccountTakeaway({
+					provider: "openai",
+					apiKey: "sk-test",
+					model: "gpt-4.1",
+					account: {
+						id: "user_1",
+						username: "ctatedev",
+						name: "Chris Tate",
+					},
+					posts: [
+						{
+							id: "123",
+							text: "Ship the smaller change first.",
+							authorUsername: "ctatedev",
+							raw: {},
+						},
+					],
+				}),
+			/error.*timed out|OpenAI request timed out/i,
+		);
+	} finally {
+		globalThis.fetch = originalFetch;
+		globalThis.setTimeout = originalSetTimeout;
+		globalThis.clearTimeout = originalClearTimeout;
+	}
+});

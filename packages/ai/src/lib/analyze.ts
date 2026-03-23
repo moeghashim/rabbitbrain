@@ -15,6 +15,8 @@ interface JsonObject {
 	[key: string]: unknown;
 }
 
+const PROVIDER_REQUEST_TIMEOUT_MS = 25_000;
+
 function mapStatusToError(provider: ProviderId, status: number, message: string): AiProviderError {
 	if (status === 401 || status === 403) {
 		return new AiProviderError({ provider, code: "UNAUTHORIZED", status, message });
@@ -53,16 +55,27 @@ function toErrorMessage(payload: unknown, fallback: string): string {
 }
 
 async function postJson(provider: ProviderId, url: string, init: RequestInit): Promise<unknown> {
+	const controller = new AbortController();
+	const timeout = setTimeout(() => controller.abort(), PROVIDER_REQUEST_TIMEOUT_MS);
 	let response: Response;
 	try {
-		response = await fetch(url, init);
+		response = await fetch(url, {
+			...init,
+			signal: controller.signal,
+		});
 	} catch (error) {
 		throw new AiProviderError({
 			provider,
 			code: "NETWORK_ERROR",
-			message: error instanceof Error ? error.message : "Network request failed.",
+			message: controller.signal.aborted
+				? `${getProviderCatalogEntry(provider).label} request timed out.`
+				: error instanceof Error
+					? error.message
+					: "Network request failed.",
 			retryable: true,
 		});
+	} finally {
+		clearTimeout(timeout);
 	}
 
 	const contentType = response.headers.get("content-type") ?? "";
