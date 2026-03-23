@@ -1,5 +1,18 @@
 # @pi-starter/cli
 
+## 1.1.0
+
+### Minor Changes
+
+- d47eb1d: Add account takeaway tracking across the web app and CLI, including followed-account snapshots, daily refresh support, account timeline fetching, and source-post evidence.
+
+### Patch Changes
+
+- Updated dependencies [d47eb1d]
+  - @pi-starter/ai@1.1.0
+  - @pi-starter/contracts@1.1.0
+  - rabbitbrain@1.1.0
+
 ## 1.0.0
 
 ### Patch Changes
