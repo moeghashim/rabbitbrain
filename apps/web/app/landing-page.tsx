@@ -273,7 +273,7 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 					<div className="font-label text-[10px] uppercase tracking-[0.24em] text-secondary/60">
 						© 2026 Rabbit Brain. Built by @moeghashim as part of 10claws.com.
 					</div>
-					<div className="flex flex-wrap gap-8">
+					<div className="flex flex-wrap justify-end gap-8 self-end md:ml-auto">
 						<Link
 							href="/privacy"
 							className="font-mono text-[10px] uppercase tracking-[0.24em] text-secondary/60 transition-colors hover:text-primary"
@@ -287,7 +287,6 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 							GitHub
 						</a>
 					</div>
-					<div className="font-label text-xs font-semibold uppercase tracking-[0.2em] text-secondary">Rabbit Brain on X</div>
 				</div>
 			</footer>
 		</div>
