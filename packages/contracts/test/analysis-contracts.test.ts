@@ -153,6 +153,29 @@ test("AccountTakeawaySnapshotSchema validates persisted snapshot shape", () => {
 	assert.equal(parsed.posts.length, 3);
 });
 
+test("AccountTakeawaySnapshotSchema allows zero-post snapshots", () => {
+	const payload: AccountTakeawaySnapshot = {
+		id: "snapshot_2",
+		userId: "user_1",
+		followId: "follow_1",
+		accountId: "12345",
+		accountUsername: "quietaccount",
+		accountName: "Quiet Account",
+		provider: "openai",
+		model: "gpt-4.1",
+		summary: "No recent posts were available for @quietaccount.",
+		takeaways: ["No recent posts were returned by X for this account."],
+		sampleSize: 0,
+		snapshotDateKey: "2026-03-22",
+		posts: [],
+		createdAt: 1_700_000_000_000,
+	};
+
+	const parsed = AccountTakeawaySnapshotSchema.parse(payload);
+	assert.equal(parsed.sampleSize, 0);
+	assert.equal(parsed.posts.length, 0);
+});
+
 test("SaveBookmarkInputSchema validates bookmark save payload", () => {
 	const payload: SaveBookmarkInput = {
 		tweetId: "123",

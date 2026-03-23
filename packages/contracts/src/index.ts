@@ -161,9 +161,9 @@ export const AccountTakeawaySnapshotSchema = AccountTakeawayAnalysisSchema.exten
 	accountAvatarUrl: z.string().url().optional(),
 	provider: ProviderIdSchema,
 	model: z.string().min(1),
-	sampleSize: z.number().int().positive(),
+	sampleSize: z.number().int().nonnegative(),
 	snapshotDateKey: z.string().min(1),
-	posts: z.array(AccountTakeawayPostSchema).min(1).max(20),
+	posts: z.array(AccountTakeawayPostSchema).max(20),
 	createdAt: z.number().int().nonnegative(),
 });
 
