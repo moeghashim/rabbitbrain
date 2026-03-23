@@ -5,6 +5,8 @@ import { listDueTakeawayRefreshJobs } from "../../../../../src/server/convex-adm
 import { buildTakeawayDateKey, refreshTakeawayForSession } from "../../../../../src/takeaways/refresh-takeaway.js";
 import { reportServerError } from "../../../../../src/telemetry/report-error.js";
 
+export const maxDuration = 60;
+
 function isAuthorized(req: Request): boolean {
 	const cronSecret = process.env.CRON_SECRET?.trim();
 	if (!cronSecret) {

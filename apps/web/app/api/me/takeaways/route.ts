@@ -8,6 +8,8 @@ import { getTakeawayHistoryForSession } from "../../../../src/server/convex-admi
 import { refreshTakeawayForSession } from "../../../../src/takeaways/refresh-takeaway.js";
 import { reportServerError } from "../../../../src/telemetry/report-error.js";
 
+export const maxDuration = 60;
+
 interface SessionUserLike {
 	id?: string | null;
 	email?: string | null;

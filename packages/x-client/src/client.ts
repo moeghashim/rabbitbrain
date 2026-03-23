@@ -584,15 +584,16 @@ export class XApiV2Client implements AccountTimelineProvider {
 
 		return toThreadPayload(rootTweet, tweets);
 	}
-
 	async getUserByUsername(username: string): Promise<XUserPayload> {
 		const responseBody = await this.requestJson(this.createUserByUsernameUrl(sanitizeUsername(username)));
 		return readUserPayload(responseBody);
 	}
+	async getLatestPostsByUserId(userId: string, limit: number): Promise<TweetPayload[]> {
+		const responseBody = await this.requestJson(this.createUserTweetsUrl(userId, limit));
+		return readTweetArrayPayload(responseBody, this.warningReporter).slice(0, Math.max(1, limit));
+	}
 
 	async getLatestPostsByUsername(username: string, limit: number): Promise<TweetPayload[]> {
-		const user = await this.getUserByUsername(username);
-		const responseBody = await this.requestJson(this.createUserTweetsUrl(user.id, limit));
-		return readTweetArrayPayload(responseBody, this.warningReporter).slice(0, Math.max(1, limit));
+		return this.getLatestPostsByUserId((await this.getUserByUsername(username)).id, limit);
 	}
 }

@@ -128,3 +128,52 @@ test("XApiV2Client returns latest posts for a username", async () => {
 	assert.equal(requestUrl.pathname, "/2/users/user_1/tweets");
 	assert.equal(requestUrl.searchParams.get("max_results"), "20");
 });
+
+test("XApiV2Client returns latest posts for a known user id", async () => {
+	let calledUrl = "";
+	const fetchFn: FetchLike = async (input) => {
+		calledUrl = input;
+		return responseFrom({
+			status: 200,
+			body: {
+				data: [
+					{
+						id: "201",
+						text: "Newest post",
+						author_id: "user_1",
+						created_at: "2026-03-22T10:00:00.000Z",
+					},
+				],
+				includes: {
+					users: [
+						{
+							id: "user_1",
+							username: "ctatedev",
+							name: "Chris Tate",
+						},
+					],
+				},
+			},
+		});
+	};
+
+	const client = new XApiV2Client({
+		config: {
+			apiKey: "key",
+			apiSecret: "secret",
+			bearerToken: "bearer",
+			timeoutMs: 500,
+			retryCount: 0,
+			retryBaseDelayMs: 1,
+		},
+		fetchFn,
+	});
+
+	const posts = await client.getLatestPostsByUserId("user_1", 20);
+	assert.equal(posts.length, 1);
+	assert.equal(posts[0]?.authorUsername, "ctatedev");
+
+	const requestUrl = new URL(calledUrl);
+	assert.equal(requestUrl.pathname, "/2/users/user_1/tweets");
+	assert.equal(requestUrl.searchParams.get("max_results"), "20");
+});

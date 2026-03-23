@@ -67,7 +67,7 @@ async function buildSnapshot({
 
 	const xClient = new XApiV2Client();
 	const user = await xClient.getUserByUsername(follow.accountUsername);
-	const posts = await xClient.getLatestPostsByUsername(user.username, 20);
+	const posts = await xClient.getLatestPostsByUserId(user.id, 20);
 	const analysis = await analyzeAccountTakeaway({
 		provider,
 		apiKey,

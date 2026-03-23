@@ -69,6 +69,7 @@ export interface TweetSourceProvider {
 
 export interface AccountTimelineProvider extends TweetSourceProvider {
 	getUserByUsername(username: string): Promise<XUserPayload>;
+	getLatestPostsByUserId(userId: string, limit: number): Promise<TweetPayload[]>;
 	getLatestPostsByUsername(username: string, limit: number): Promise<TweetPayload[]>;
 }
 
