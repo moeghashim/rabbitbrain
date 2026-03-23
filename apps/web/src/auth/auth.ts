@@ -143,5 +143,5 @@ export function buildAuthOptions(
 }
 
 export async function getServerAuthSession() {
-	return await getServerSession(buildAuthOptions(process.env));
+	return await getServerSession(buildAuthOptions(process.env, { strictEnv: false }));
 }

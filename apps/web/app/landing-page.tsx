@@ -18,30 +18,30 @@ const twitterLoginPath = "/auth/popup-start?redirect_url=%2Fapp";
 
 const architectureCards = [
 	{
-		title: "Tone",
+		title: "Analyze Posts",
 		description:
-			"Acoustic fingerprinting of digital voice to keep authorship coherent across fragmented threads.",
+			"Paste any X URL or post ID to extract the topic, summary, intent, and five novel concepts worth learning.",
 		icon: AudioLines,
 		iconClassName: "text-primary",
 	},
 	{
-		title: "Context",
+		title: "Save What Matters",
 		description:
-			"Historical signal mapping that threads live posts into prior narratives, references, and intent.",
+			"Keep tagged bookmarks and creator or subject follows in one workspace so good posts do not disappear into the timeline.",
 		icon: Orbit,
 		iconClassName: "text-secondary",
 	},
 	{
-		title: "Semantic",
+		title: "Track Accounts",
 		description:
-			"Lexical decomposition of latent meaning so the analysis survives irony, jargon, and subtext.",
+			"Follow X accounts and turn their latest posts into concise daily takeaways with source-post evidence and history.",
 		icon: BrainCircuit,
 		iconClassName: "text-primary",
 	},
 	{
-		title: "Flow",
+		title: "Work Anywhere",
 		description:
-			"Real-time synthesis that turns captured signal into structured notes, follows, and reusable insight.",
+			"Use the web app, CLI, or extension depending on the workflow, without changing the underlying Rabbit Brain model.",
 		icon: ScanSearch,
 		iconClassName: "text-secondary",
 	},
@@ -80,6 +80,7 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 	const navCtaLabel = isAuthenticated ? "Account" : "Connect";
 	const footerCtaLabel = isAuthenticated ? "Open Workspace" : "Authenticate with X";
 	const footerCtaHref = isAuthenticated ? "/app" : twitterLoginPath;
+	const githubRepoUrl = "https://github.com/moeghashim/rabbitbrain";
 
 	return (
 		<div className="min-h-screen bg-surface text-on-surface">
@@ -122,15 +123,16 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 							<div className="mb-6 flex items-center gap-4">
 								<span className="h-2 w-2 bg-primary" />
 								<p className="font-label text-[11px] uppercase tracking-[0.5em] text-secondary/70">
-									Neural ingestion terminal
+									X analysis workspace
 								</p>
 							</div>
 							<h1 className="max-w-5xl font-headline text-[3.25rem] font-bold uppercase leading-[0.95] tracking-[-0.04em] text-on-surface sm:text-[5rem] lg:text-[6.4rem]">
-								Transform the <span className="text-glow text-primary">signal</span>
+								Turn X posts into
+								<span className="text-glow text-primary"> structured learning</span>
 							</h1>
 							<p className="mt-6 max-w-2xl font-body text-base leading-7 text-on-surface-variant sm:text-lg">
-								Capture any X thread, extract the operative idea, and route it into a structured intelligence workflow built
-								for repeatable thinking.
+								Rabbit Brain analyzes tweets, saves bookmarks, tracks creators, and builds daily account takeaways so useful
+								ideas are easier to revisit than the timeline they came from.
 							</p>
 							<div className="mt-10 w-full max-w-4xl">
 								<HeroTweetAnalyzer
@@ -142,7 +144,7 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 								/>
 							</div>
 							<p className="mt-4 font-label text-[10px] uppercase tracking-[0.45em] text-secondary/40">
-								Awaiting neural ingestion sequences
+								Web app, CLI, and X extension workflows
 							</p>
 						</Reveal>
 					</div>
@@ -153,45 +155,46 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 						<Reveal className="space-y-8">
 							<div className="flex items-center gap-4">
 								<span className="h-2 w-2 bg-secondary/30" />
-								<h2 className="font-label text-[11px] uppercase tracking-[0.5em] text-secondary">Raw ingest</h2>
+								<h2 className="font-label text-[11px] uppercase tracking-[0.5em] text-secondary">Input</h2>
 							</div>
 							<div className="bg-surface-container-lowest p-8 font-label text-sm leading-7 text-secondary/70">
-								<p className="mb-4 text-[10px] uppercase tracking-[0.38em] text-primary/50">
-									0x4F2... received from x.com
-								</p>
-								<p>
-									&quot;Just deployed the new neural mesh for decentralised data routing. The latency is down by 40% but
-									we&apos;re seeing some semantic drift in high-concurrency clusters. #Build #Web3&quot;
-								</p>
+								<p className="mb-4 text-[10px] uppercase tracking-[0.38em] text-primary/50">What goes in</p>
+								<ul className="space-y-3">
+									<li>Analyze any X post from a URL or status ID.</li>
+									<li>Save tagged bookmarks to build a reusable research trail.</li>
+									<li>Follow creators and subjects in the web app or from analysis results.</li>
+									<li>Refresh account takeaways from the latest 20 posts of followed accounts.</li>
+								</ul>
 							</div>
 						</Reveal>
 
 						<Reveal className="relative space-y-8">
 							<div className="flex items-center gap-4">
 								<span className="h-2 w-2 bg-primary" />
-								<h2 className="font-label text-[11px] uppercase tracking-[0.5em] text-primary">Refined intelligence</h2>
+								<h2 className="font-label text-[11px] uppercase tracking-[0.5em] text-primary">Output</h2>
 							</div>
 							<div className="emerald-glow relative overflow-hidden bg-surface-container-high p-8">
 								<div className="absolute right-6 top-6 font-label text-[10px] uppercase tracking-[0.35em] text-primary/70">
-									Verified
+									From the product
 								</div>
 								<div className="space-y-6">
 									<div>
-										<p className="mb-2 font-label text-[10px] uppercase tracking-[0.35em] text-primary/60">Core insight</p>
+										<p className="mb-2 font-label text-[10px] uppercase tracking-[0.35em] text-primary/60">
+											What comes back
+										</p>
 										<p className="font-headline text-2xl italic leading-tight text-on-surface">
-											Optimization of decentralized routing confirmed; semantic stability issues emerging at scale.
+											A post becomes a usable record: core topic, concise summary, author intent, five novel concepts, and
+											optional next-step learning.
 										</p>
 									</div>
 									<div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
 										<div className="border-l border-primary/30 pl-4">
-											<p className="mb-1 font-label text-[10px] uppercase tracking-[0.35em] text-secondary/40">Impact score</p>
-											<p className="font-label text-2xl text-primary">8.42/10</p>
+											<p className="mb-1 font-label text-[10px] uppercase tracking-[0.35em] text-secondary/40">For a post</p>
+											<p className="font-label text-2xl text-primary">Analysis + learning track</p>
 										</div>
 										<div className="border-l border-primary/30 pl-4">
-											<p className="mb-1 font-label text-[10px] uppercase tracking-[0.35em] text-secondary/40">
-												Sentiment vector
-											</p>
-											<p className="font-label text-2xl text-primary">Stable</p>
+											<p className="mb-1 font-label text-[10px] uppercase tracking-[0.35em] text-secondary/40">For an account</p>
+											<p className="font-label text-2xl text-primary">Daily takeaway history</p>
 										</div>
 									</div>
 								</div>
@@ -205,14 +208,14 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 						<Reveal className="flex flex-col gap-6 border-b border-outline-variant/10 pb-8 md:flex-row md:items-end md:justify-between">
 							<div>
 								<h2 className="font-headline text-4xl uppercase tracking-[-0.03em] text-on-surface sm:text-5xl">
-									Engine Architecture
+									Core Workflows
 								</h2>
 								<p className="mt-4 max-w-2xl font-body text-base leading-7 text-on-surface-variant">
-									The analysis stack is designed as a hard-edged technical instrument: no soft cards, no ornamental noise,
-									just layered surfaces and high-signal readouts.
+									The public product has grown past one analyzer. Rabbit Brain now connects post analysis, bookmarks,
+									following, account takeaways, and CLI refresh flows into one working system.
 								</p>
 							</div>
-							<p className="font-label text-[10px] uppercase tracking-[0.45em] text-secondary/40">Protocol version 4.0.1</p>
+							<p className="font-label text-[10px] uppercase tracking-[0.45em] text-secondary/40">Built from the current README and progress log</p>
 						</Reveal>
 
 						<div className="grid grid-cols-1 gap-px bg-outline-variant/10 md:grid-cols-2 lg:grid-cols-4">
@@ -241,11 +244,11 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 						<div className="obsidian-noise pointer-events-none absolute inset-0 opacity-15" />
 						<div className="relative z-10 flex max-w-4xl flex-col items-center">
 							<h2 className="font-headline text-[3rem] uppercase tracking-[-0.04em] text-on-surface sm:text-[4.5rem] lg:text-[5.5rem]">
-								Enter the protocol
+								Start with one post, keep the trail
 							</h2>
 							<p className="mt-6 max-w-2xl font-label text-xs uppercase tracking-[0.34em] text-secondary/60 sm:text-[13px]">
-								Access is restricted to verified nodes. Authenticate to begin neural signal synthesis and route captured
-								tweets into your private reasoning system.
+								Sign in with X to analyze posts in the web app, save bookmarks, follow creators, and build daily takeaways
+								you can inspect and refresh over time.
 							</p>
 							<Link
 								href={footerCtaHref}
@@ -257,7 +260,7 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 							</Link>
 							<div className="mt-10 flex items-center gap-6 opacity-40">
 								<div className="h-px w-16 bg-secondary" />
-								<span className="font-label text-[10px] uppercase tracking-[0.45em] text-secondary">System ready</span>
+								<span className="font-label text-[10px] uppercase tracking-[0.45em] text-secondary">Ready for the next useful post</span>
 								<div className="h-px w-16 bg-secondary" />
 							</div>
 						</div>
@@ -268,35 +271,23 @@ export default async function LandingPage({ searchParams }: Readonly<LandingPage
 			<footer className="relative z-10 border-t border-outline-variant/10 bg-surface px-6 py-10 sm:px-10 lg:px-16 lg:py-12">
 				<div className="mx-auto flex w-full max-w-[1440px] flex-col gap-8 md:flex-row md:items-center md:justify-between">
 					<div className="font-label text-[10px] uppercase tracking-[0.24em] text-secondary/60">
-						© 2026 Rabbit Brain. All rights reserved.
+						© 2026 Rabbit Brain. Built by @moeghashim as part of 10claws.com.
 					</div>
 					<div className="flex flex-wrap gap-8">
-						<Link
-							href="/app"
-							className="font-mono text-[10px] uppercase tracking-[0.24em] text-secondary/60 transition-colors hover:text-primary"
-						>
-							Terminal
-						</Link>
-						<Link
-							href="/app/bookmarks"
-							className="font-mono text-[10px] uppercase tracking-[0.24em] text-secondary/60 transition-colors hover:text-primary"
-						>
-							Bookmarks
-						</Link>
 						<Link
 							href="/privacy"
 							className="font-mono text-[10px] uppercase tracking-[0.24em] text-secondary/60 transition-colors hover:text-primary"
 						>
 							Privacy
 						</Link>
-						<Link
-							href="/support"
+						<a
+							href={githubRepoUrl}
 							className="font-mono text-[10px] uppercase tracking-[0.24em] text-secondary/60 transition-colors hover:text-primary"
 						>
-							Support
-						</Link>
+							GitHub
+						</a>
 					</div>
-					<div className="font-label text-xs font-semibold uppercase tracking-[0.2em] text-secondary">Rabbit Brain</div>
+					<div className="font-label text-xs font-semibold uppercase tracking-[0.2em] text-secondary">Rabbit Brain on X</div>
 				</div>
 			</footer>
 		</div>

@@ -31,8 +31,9 @@ const spaceMono = Space_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "Rabbit Brain | Obsidian Signal Studio",
-	description: "Transform X signals into structured intelligence with a brutalist editorial interface.",
+	title: "Rabbit Brain | Analyze X Posts, Bookmarks, and Daily Takeaways",
+	description:
+		"Rabbit Brain turns X posts into structured analysis, bookmarks, follows, and daily account takeaways across the web app, CLI, and extension.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {

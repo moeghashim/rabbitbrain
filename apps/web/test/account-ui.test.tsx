@@ -9,16 +9,21 @@ import AppHomePage from "../app/app/page.js";
 test("app home page mirrors the landing analyzer shell", async () => {
 	const page = await AppHomePage({});
 	const html = renderToStaticMarkup(page);
+	const bookmarksIndex = html.indexOf('href="/app/bookmarks"');
+	const followingIndex = html.indexOf('href="/app/following"');
+	const takeawayIndex = html.indexOf('href="/app/takeaway"');
 
 	assert.match(html, /id=\"hero-analyze-button\"/);
 	assert.match(html, /id=\"nav-cta\"[^>]*href=\"\/auth\/popup-start\?redirect_url=%2Fapp\"/);
-	assert.match(html, /href=\"\/app\/following\"[^>]*>Following<\/a>/);
 	assert.match(html, /href=\"\/app\/bookmarks\"[^>]*>Bookmarks<\/a>/);
+	assert.match(html, /href=\"\/app\/following\"[^>]*>Following<\/a>/);
+	assert.match(html, /href=\"\/app\/takeaway\"[^>]*>Takeaway<\/a>/);
 	assert.match(html, /id=\"hero-tweet-url\"/);
-	assert.match(html, /Neural ingestion terminal/);
-	assert.match(html, /Transform the <span class=\"text-glow text-primary\">signal<\/span>/);
-	assert.match(html, /Enter the protocol/);
+	assert.match(html, /X analysis workspace/);
+	assert.match(html, /Turn X posts into/);
+	assert.match(html, /Start with one post, keep the trail/);
 	assert.doesNotMatch(html, /Learning Tracks/);
+	assert.ok(bookmarksIndex >= 0 && followingIndex > bookmarksIndex && takeawayIndex > followingIndex);
 });
 
 test("account page includes preferences and sign-out actions", () => {

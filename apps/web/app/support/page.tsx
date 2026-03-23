@@ -2,17 +2,17 @@ import Link from "next/link";
 import React from "react";
 
 const installSteps = [
-	"Install Rabbitbrain for X from the Chrome Web Store on desktop Chrome.",
-	"Open x.com and click Analyze on any public post you want to capture.",
-	"Sign in with X when Rabbitbrain opens the authentication tab.",
-	"Return to x.com after sign-in. The extension resumes automatically and can save tagged bookmarks to Rabbitbrain.",
+	"Sign in with X to open the Rabbit Brain workspace on the web.",
+	"Paste an X post URL or status ID to analyze a single post into topic, summary, intent, and five novel concepts.",
+	"Save important posts to bookmarks, or follow creators and subjects from the web workflow to keep a research trail.",
+	"Use the takeaway workspace or CLI commands to follow accounts, refresh daily takeaways, and inspect the source posts behind each snapshot.",
 ];
 
 const troubleshootingSteps = [
-	"If Analyze or Save opens a sign-in tab repeatedly, confirm that cookies are allowed for rabbitbrain.app and that you completed the X sign-in flow.",
-	"If no Rabbitbrain controls appear on x.com, reload the tab after installing or updating the extension.",
-	"If analysis fails, retry on a public post and confirm Rabbitbrain and X are both reachable from your network.",
-	"If review or production issues remain, email support with the affected tweet URL, browser version, and a short description of the problem.",
+	"If sign-in opens repeatedly, confirm that cookies are allowed for rabbitbrain.app and that the X authentication flow completed successfully.",
+	"If analysis fails, retry on a public X post and confirm that both rabbitbrain.app and x.com are reachable from your network.",
+	"If extension controls do not appear on x.com, reload the tab after installing or updating the extension.",
+	"If a takeaway refresh fails, include the Request ID, the followed account, and whether the failure happened on the web app or CLI when you contact support.",
 ];
 
 export default function SupportPage() {
@@ -21,9 +21,10 @@ export default function SupportPage() {
 			<div className="mx-auto flex max-w-5xl flex-col gap-10">
 				<header className="rounded-5xl border border-white/10 bg-charcoal/90 p-8">
 					<p className="text-sm uppercase tracking-[0.24em] text-coral">Support</p>
-					<h1 className="mt-3 font-serif text-5xl text-white">Rabbitbrain for X Help Center</h1>
+					<h1 className="mt-3 font-serif text-5xl text-white">Rabbit Brain Help Center</h1>
 					<p className="mt-4 max-w-3xl text-base leading-relaxed text-peach/75">
-						Rabbitbrain for X analyzes public X posts and saves tagged insights to your Rabbitbrain workspace. Support requests are monitored at{" "}
+						Rabbit Brain supports X post analysis, bookmarks, creator follows, and daily account takeaways across the web app,
+						CLI, and extension. Support requests are monitored at{" "}
 						<a className="text-coral transition-colors hover:text-coral-hover" href="mailto:support@rabbitbrain.app">
 							support@rabbitbrain.app
 						</a>
@@ -57,7 +58,8 @@ export default function SupportPage() {
 							))}
 						</ul>
 						<p className="mt-6 text-sm leading-relaxed text-peach/70">
-							Response expectations: Rabbitbrain reviews support requests during normal business hours and aims to reply within two business days.
+							Response expectations: Rabbit Brain reviews support requests during normal business hours and aims to reply within
+							two business days.
 						</p>
 					</div>
 				</section>
