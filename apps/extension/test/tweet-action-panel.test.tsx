@@ -73,7 +73,7 @@ test("TweetActionPanel renders analysis and bookmark states", () => {
 	assert.match(html, /Saved to Rabbitbrain bookmarks/);
 	assert.match(html, /Iteration/);
 	assert.match(html, /Open Bookmarks/);
-	assert.match(html, /Copy Markdown/);
+	assert.match(html, /Copy Thread Markdown/);
 	assert.match(html, /Showing all 2 posts in the analyzed thread/);
 	assert.match(html, /Follow-up detail in the same thread/);
 });

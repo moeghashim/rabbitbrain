@@ -1,5 +1,6 @@
 import { XProviderError } from "./errors.js";
 import { toXProviderError, toXProviderErrorFromPayload } from "./provider-errors.js";
+import { toThreadPayload } from "./thread.js";
 import { toPositiveNumber, toTweetMediaType } from "./tweet-media-utils.js";
 import { parseTweetPublicMetrics } from "./tweet-public-metrics.js";
 import type {
@@ -98,21 +99,11 @@ function toNonEmptyString(value: unknown): string | undefined {
 	return trimmed.length > 0 ? trimmed : undefined;
 }
 
-function parseTimestamp(value: string | undefined): number {
-	if (!value) {
-		return Number.POSITIVE_INFINITY;
+function readPaginationToken(responseBody: unknown): string | undefined {
+	if (!isRecord(responseBody) || !isRecord(responseBody.meta)) {
+		return undefined;
 	}
-	const parsed = Date.parse(value);
-	return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed;
-}
-
-function compareTweetsChronologically(left: TweetPayload, right: TweetPayload): number {
-	const leftTimestamp = parseTimestamp(left.createdAt);
-	const rightTimestamp = parseTimestamp(right.createdAt);
-	if (leftTimestamp !== rightTimestamp) {
-		return leftTimestamp - rightTimestamp;
-	}
-	return left.id.localeCompare(right.id);
+	return toNonEmptyString(responseBody.meta.next_token);
 }
 
 function readTweetMedia({
@@ -369,61 +360,8 @@ function readTweetArrayPayload(responseBody: unknown, reportWarning: XProviderWa
 		);
 }
 
-function dedupeTweetsById(tweets: TweetPayload[]): TweetPayload[] {
-	const seen = new Set<string>();
-	const deduped: TweetPayload[] = [];
-	for (const tweet of tweets) {
-		if (seen.has(tweet.id)) {
-			continue;
-		}
-		seen.add(tweet.id);
-		deduped.push(tweet);
-	}
-	return deduped;
-}
-
-function toThreadPayload(rootTweet: TweetPayload, tweets: TweetPayload[]): ThreadPayload {
-	const deduped = dedupeTweetsById([rootTweet, ...tweets]).sort(compareTweetsChronologically);
-	return {
-		rootTweetId: rootTweet.id,
-		tweets: deduped,
-	};
-}
-
-function findRootTweet(thread: ThreadPayload): TweetPayload {
-	return (
-		thread.tweets.find((tweet) => tweet.id === thread.rootTweetId) ??
-		thread.tweets[0] ?? {
-			id: thread.rootTweetId,
-			text: "",
-			raw: thread,
-		}
-	);
-}
-
-export function buildThreadAnalysisText(thread: ThreadPayload): string {
-	return thread.tweets
-		.map((tweet, index) => {
-			const authorLabel = tweet.authorUsername ? `@${tweet.authorUsername}` : "Unknown author";
-			return `[${index + 1}/${thread.tweets.length}] ${authorLabel}\n${tweet.text.trim()}`;
-		})
-		.join("\n\n")
-		.trim();
-}
-
-export function buildThreadAnalysisPayload(thread: ThreadPayload): TweetPayload {
-	const rootTweet = findRootTweet(thread);
-	return {
-		...rootTweet,
-		text: buildThreadAnalysisText(thread),
-		raw: {
-			rootTweet: rootTweet.raw,
-			thread,
-		},
-	};
-}
-
 export class XApiV2Client implements AccountTimelineProvider {
+	private static readonly THREAD_TIMELINE_PAGE_LIMIT = 20;
 	private readonly config: XApiConfig;
 	private readonly fetchFn: FetchLike;
 	private readonly sleepFn: (ms: number) => Promise<void>;
@@ -462,30 +400,13 @@ export class XApiV2Client implements AccountTimelineProvider {
 		return url;
 	}
 
-	private createThreadSearchUrl(query: string, nextToken?: string): URL {
-		const url = new URL("https://api.x.com/2/tweets/search/recent");
-		url.searchParams.set("query", query);
-		url.searchParams.set("max_results", "100");
-		url.searchParams.set("expansions", "author_id,attachments.media_keys");
-		url.searchParams.set(
-			"tweet.fields",
-			"author_id,attachments,public_metrics,created_at,conversation_id,referenced_tweets",
-		);
-		url.searchParams.set("user.fields", "id,username,name,profile_image_url");
-		url.searchParams.set("media.fields", "type,url,preview_image_url,alt_text,width,height");
-		if (nextToken) {
-			url.searchParams.set("next_token", nextToken);
-		}
-		return url;
-	}
-
 	private createUserByUsernameUrl(username: string): URL {
 		const url = new URL(`https://api.x.com/2/users/by/username/${encodeURIComponent(username)}`);
 		url.searchParams.set("user.fields", "id,username,name,profile_image_url");
 		return url;
 	}
 
-	private createUserTweetsUrl(userId: string, limit: number): URL {
+	private createUserTweetsUrl(userId: string, limit: number, nextToken?: string): URL {
 		const url = new URL(`https://api.x.com/2/users/${encodeURIComponent(userId)}/tweets`);
 		url.searchParams.set("max_results", String(Math.max(5, Math.min(limit, 100))));
 		url.searchParams.set("expansions", "author_id,attachments.media_keys");
@@ -495,7 +416,49 @@ export class XApiV2Client implements AccountTimelineProvider {
 		);
 		url.searchParams.set("user.fields", "id,username,name,profile_image_url");
 		url.searchParams.set("media.fields", "type,url,preview_image_url,alt_text,width,height");
+		if (nextToken) {
+			url.searchParams.set("pagination_token", nextToken);
+		}
 		return url;
+	}
+
+	private async readConversationTweetsFromTimeline({
+		authorId,
+		conversationId,
+	}: {
+		authorId: string;
+		conversationId: string;
+	}): Promise<TweetPayload[]> {
+		const tweets: TweetPayload[] = [];
+		let nextToken: string | undefined;
+
+		for (let pageIndex = 0; pageIndex < XApiV2Client.THREAD_TIMELINE_PAGE_LIMIT; pageIndex += 1) {
+			const responseBody = await this.requestJson(this.createUserTweetsUrl(authorId, 100, nextToken));
+			const pageTweets = readTweetArrayPayload(responseBody, this.warningReporter);
+			let foundConversationRoot = false;
+
+			for (const tweet of pageTweets) {
+				if (tweet.conversationId !== conversationId) {
+					continue;
+				}
+
+				tweets.push(tweet);
+				if (tweet.id === conversationId) {
+					foundConversationRoot = true;
+				}
+			}
+
+			if (foundConversationRoot) {
+				break;
+			}
+
+			nextToken = readPaginationToken(responseBody);
+			if (!nextToken) {
+				break;
+			}
+		}
+
+		return tweets;
 	}
 
 	private async requestJson(url: URL): Promise<unknown> {
@@ -559,30 +522,23 @@ export class XApiV2Client implements AccountTimelineProvider {
 	}
 
 	async getThreadByUrlOrId(input: string): Promise<ThreadPayload> {
-		const rootTweet = await this.getTweetByUrlOrId(input);
-		const conversationId = rootTweet.conversationId;
-		const authorUsername = rootTweet.authorUsername;
-		if (!conversationId || !authorUsername) {
+		const entryTweet = await this.getTweetByUrlOrId(input);
+		const conversationId = entryTweet.conversationId;
+		const authorId = entryTweet.authorId;
+		if (!conversationId || !authorId) {
 			return {
-				rootTweetId: rootTweet.id,
-				tweets: [rootTweet],
+				rootTweetId: entryTweet.id,
+				tweets: [entryTweet],
 			};
 		}
 
-		const query = `conversation_id:${conversationId} from:${authorUsername}`;
-		const tweets: TweetPayload[] = [];
-		let nextToken: string | undefined;
-		do {
-			const responseBody = await this.requestJson(this.createThreadSearchUrl(query, nextToken));
-			const pageTweets = readTweetArrayPayload(responseBody, this.warningReporter);
-			tweets.push(...pageTweets);
-			nextToken =
-				isRecord(responseBody) && isRecord(responseBody.meta)
-					? toNonEmptyString(responseBody.meta.next_token)
-					: undefined;
-		} while (nextToken);
+		const conversationTweets = await this.readConversationTweetsFromTimeline({
+			authorId,
+			conversationId,
+		});
+		const rootTweet = conversationTweets.find((tweet) => tweet.id === conversationId) ?? entryTweet;
 
-		return toThreadPayload(rootTweet, tweets);
+		return toThreadPayload(rootTweet, [entryTweet, ...conversationTweets]);
 	}
 	async getUserByUsername(username: string): Promise<XUserPayload> {
 		const responseBody = await this.requestJson(this.createUserByUsernameUrl(sanitizeUsername(username)));

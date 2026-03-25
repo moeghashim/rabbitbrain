@@ -361,3 +361,104 @@ test("POST /api/analyze returns thread payload and analyzes combined thread text
 	assert.equal(payload.thread?.tweets[1]?.inReplyToTweetId, replyTweet.inReplyToTweetId);
 	assert.equal(payload.analysis.topic, analysis.topic);
 });
+
+test("POST /api/analyze returns the conversation root as the lead tweet for self-threads", async () => {
+	const rootTweet: TweetPayload = {
+		id: "2028960626685386994",
+		text: "Part one",
+		authorId: "123",
+		authorUsername: "ctatedev",
+		authorName: "Chris Tate",
+		createdAt: "2026-03-20T10:00:00.000Z",
+		conversationId: "2028960626685386994",
+		raw: {},
+	};
+	const replyTweet: TweetPayload = {
+		id: "2028960626685386995",
+		text: "Part two",
+		authorId: "123",
+		authorUsername: "ctatedev",
+		authorName: "Chris Tate",
+		createdAt: "2026-03-20T10:01:00.000Z",
+		conversationId: "2028960626685386994",
+		inReplyToTweetId: "2028960626685386994",
+		raw: {},
+	};
+	const replyThread: ThreadPayload = {
+		rootTweetId: rootTweet.id,
+		tweets: [rootTweet, replyTweet],
+	};
+	const analysis: AnalyzeTweetResult = {
+		topic: "Topic",
+		summary: "Summary",
+		intent: "Intent",
+		novelConcepts: [
+			{ name: "One", whyItMattersInTweet: "A" },
+			{ name: "Two", whyItMattersInTweet: "B" },
+			{ name: "Three", whyItMattersInTweet: "C" },
+			{ name: "Four", whyItMattersInTweet: "D" },
+			{ name: "Five", whyItMattersInTweet: "E" },
+		],
+	};
+
+	const response = await handleAnalyzePost(
+		new Request("http://localhost/api/analyze", {
+			method: "POST",
+			headers: {
+				"content-type": "application/json",
+			},
+			body: JSON.stringify({
+				tweetUrlOrId: "https://x.com/ctatedev/status/2028960626685386995",
+			}),
+		}),
+		{
+			validateStartupEnvIfNeeded: () => {},
+			getServerAuthSession: async () => ({
+				user: {
+					id: "user_1",
+					email: "user@example.com",
+					name: "User",
+				},
+			}),
+			createXClient: () => ({
+				async getTweetByUrlOrId() {
+					return replyTweet;
+				},
+				async getThreadByUrlOrId() {
+					return replyThread;
+				},
+			}),
+			getPreferencesForSession: async () => ({
+				userId: "user_1",
+				defaultProvider: "openai",
+				defaultModel: "gpt-4.1",
+				learningMinutes: 10,
+				updatedAt: 1,
+			}),
+			getProviderApiKeyForSession: async () => "sk-test",
+			analyzeTweetPayload: async () => analysis,
+			persistAnalysisForSession: async () => ({
+				id: "analysis_1",
+				userId: "user_1",
+				tweetUrlOrId: "https://x.com/ctatedev/status/2028960626685386995",
+				provider: "openai",
+				model: "gpt-4.1",
+				topic: analysis.topic,
+				summary: analysis.summary,
+				intent: analysis.intent,
+				novelConcepts: analysis.novelConcepts,
+				createdAt: 1,
+			}),
+			reportServerError: () => {},
+		},
+	);
+
+	assert.equal(response.status, 200);
+	const payload = (await response.json()) as {
+		tweet: TweetPayload;
+		thread?: ThreadPayload;
+	};
+	assert.equal(payload.tweet.id, rootTweet.id);
+	assert.equal(payload.thread?.rootTweetId, rootTweet.id);
+	assert.equal(payload.thread?.tweets.length, 2);
+});

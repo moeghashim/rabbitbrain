@@ -248,6 +248,7 @@ test("AnalysisMarkdownCopyControls renders the copy action and success feedback"
 	const html = renderToStaticMarkup(
 		<AnalysisMarkdownCopyControls
 			onCopyMarkdown={() => {}}
+			tweetCount={3}
 			feedback={{
 				kind: "success",
 				message: "Copied thread and analysis as Markdown.",
@@ -257,6 +258,7 @@ test("AnalysisMarkdownCopyControls renders the copy action and success feedback"
 
 	assert.match(html, /id="analysis-copy-controls"/);
 	assert.match(html, /id="analysis-copy-markdown-button"/);
+	assert.match(html, /Copy Thread Markdown/);
 	assert.match(html, /Copied thread and analysis as Markdown\./);
 });
 

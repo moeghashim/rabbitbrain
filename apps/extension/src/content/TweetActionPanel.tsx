@@ -46,6 +46,14 @@ export function TweetActionPanel({
 	onChangeTagsInput,
 	onSaveBookmark,
 }: Readonly<TweetActionPanelProps>) {
+	const threadCount = analysisResult?.thread?.tweets.length ?? 1;
+	const isThread = threadCount > 1;
+	const copyTitle = isThread ? "Copy Thread" : "Copy Post";
+	const copyDescription = isThread
+		? "Copy the full analyzed thread, plus Rabbitbrain's structured analysis."
+		: "Copy the analyzed post and Rabbitbrain's structured analysis.";
+	const copyButtonLabel = isThread ? "Copy Thread Markdown" : "Copy Post Markdown";
+
 	return (
 		<section className="rb-shell">
 			<div className="rb-header">
@@ -128,11 +136,28 @@ export function TweetActionPanel({
 								))}
 							</div>
 						</section>
-					</div>
+						</div>
 
-					{analysisResult.thread && analysisResult.thread.tweets.length > 1 ? (
-						<section className="rb-card rb-card--tweet">
-							<p className="rb-kicker">Thread</p>
+						<section className="rb-card rb-card--bookmark">
+							<div className="rb-bookmark-header">
+								<div>
+									<p className="rb-kicker">{copyTitle}</p>
+									<p className="rb-bookmark-copy">{copyDescription}</p>
+								</div>
+								<button type="button" className="rb-button" onClick={onCopyMarkdown}>
+									{copyButtonLabel}
+								</button>
+							</div>
+							{copyStatus ? (
+								<p className={`rb-banner ${copyStatus.kind === "error" ? "rb-banner--error" : "rb-banner--success"}`}>
+									{copyStatus.message}
+								</p>
+							) : null}
+						</section>
+
+						{analysisResult.thread && analysisResult.thread.tweets.length > 1 ? (
+							<section className="rb-card rb-card--tweet">
+								<p className="rb-kicker">Thread</p>
 							<p className="rb-bookmark-copy">
 								Showing all {analysisResult.thread.tweets.length} posts in the analyzed thread.
 							</p>
@@ -147,26 +172,7 @@ export function TweetActionPanel({
 						</section>
 					) : null}
 
-					<section className="rb-card rb-card--bookmark">
-						<div className="rb-bookmark-header">
-							<div>
-								<p className="rb-kicker">Copy Markdown</p>
-								<p className="rb-bookmark-copy">
-									Copy the analyzed post or full thread, plus Rabbitbrain&apos;s structured analysis.
-								</p>
-							</div>
-							<button type="button" className="rb-button" onClick={onCopyMarkdown}>
-								Copy Markdown
-							</button>
-						</div>
-						{copyStatus ? (
-							<p className={`rb-banner ${copyStatus.kind === "error" ? "rb-banner--error" : "rb-banner--success"}`}>
-								{copyStatus.message}
-							</p>
-						) : null}
-					</section>
-
-					<section className="rb-card rb-card--bookmark">
+						<section className="rb-card rb-card--bookmark">
 						<div className="rb-bookmark-header">
 							<div>
 								<p className="rb-kicker">Save Tweet</p>

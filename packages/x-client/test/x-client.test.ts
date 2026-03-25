@@ -131,21 +131,22 @@ test("XApiV2Client returns tweet payload on success", async () => {
 	assert.equal(requestUrl.searchParams.get("media.fields"), "type,url,preview_image_url,alt_text,width,height");
 });
 
-test("XApiV2Client returns ordered thread payload on success", async () => {
+test("XApiV2Client returns the full ordered thread from the author timeline", async () => {
 	const requestedUrls: string[] = [];
 	const fetchFn: FetchLike = async (input) => {
 		requestedUrls.push(input);
 		const url = new URL(input);
-		if (url.pathname === "/2/tweets/123") {
+		if (url.pathname === "/2/tweets/124") {
 			return responseFrom({
 				status: 200,
 				body: {
 					data: {
-						id: "123",
-						text: "Root post",
+						id: "124",
+						text: "Second post",
 						author_id: "user_1",
-						created_at: "2026-03-20T10:00:00.000Z",
+						created_at: "2026-03-20T10:01:00.000Z",
 						conversation_id: "123",
+						referenced_tweets: [{ type: "replied_to", id: "123" }],
 					},
 					includes: {
 						users: [
@@ -160,24 +161,45 @@ test("XApiV2Client returns ordered thread payload on success", async () => {
 			});
 		}
 
+		if (url.searchParams.get("pagination_token") === "page_2") {
+			return responseFrom({
+				status: 200,
+				body: {
+					data: [
+						{
+							id: "123",
+							text: "Root post",
+							author_id: "user_1",
+							created_at: "2026-03-20T10:00:00.000Z",
+							conversation_id: "123",
+						},
+					],
+					includes: {
+						users: [
+							{
+								id: "user_1",
+								username: "moe",
+								name: "Moe",
+							},
+						],
+					},
+					meta: {
+						result_count: 1,
+					},
+				},
+			});
+		}
+
 		return responseFrom({
 			status: 200,
 			body: {
 				data: [
 					{
-						id: "124",
-						text: "Second post",
+						id: "130",
+						text: "Unrelated newer post",
 						author_id: "user_1",
-						created_at: "2026-03-20T10:01:00.000Z",
-						conversation_id: "123",
-						referenced_tweets: [{ type: "replied_to", id: "123" }],
-					},
-					{
-						id: "123",
-						text: "Root post",
-						author_id: "user_1",
-						created_at: "2026-03-20T10:00:00.000Z",
-						conversation_id: "123",
+						created_at: "2026-03-20T10:10:00.000Z",
+						conversation_id: "130",
 					},
 					{
 						id: "125",
@@ -186,6 +208,14 @@ test("XApiV2Client returns ordered thread payload on success", async () => {
 						created_at: "2026-03-20T10:02:00.000Z",
 						conversation_id: "123",
 						referenced_tweets: [{ type: "replied_to", id: "124" }],
+					},
+					{
+						id: "124",
+						text: "Second post",
+						author_id: "user_1",
+						created_at: "2026-03-20T10:01:00.000Z",
+						conversation_id: "123",
+						referenced_tweets: [{ type: "replied_to", id: "123" }],
 					},
 				],
 				includes: {
@@ -199,6 +229,7 @@ test("XApiV2Client returns ordered thread payload on success", async () => {
 				},
 				meta: {
 					result_count: 3,
+					next_token: "page_2",
 				},
 			},
 		});
@@ -216,7 +247,7 @@ test("XApiV2Client returns ordered thread payload on success", async () => {
 		fetchFn,
 	});
 
-	const thread = await client.getThreadByUrlOrId("123");
+	const thread = await client.getThreadByUrlOrId("124");
 	assert.equal(thread.rootTweetId, "123");
 	assert.deepEqual(
 		thread.tweets.map((tweet) => tweet.id),
@@ -225,10 +256,14 @@ test("XApiV2Client returns ordered thread payload on success", async () => {
 	assert.equal(thread.tweets[1]?.inReplyToTweetId, "123");
 	assert.equal(thread.tweets[2]?.inReplyToTweetId, "124");
 
-	const searchUrl = new URL(requestedUrls[1] ?? "");
-	assert.equal(searchUrl.pathname, "/2/tweets/search/recent");
-	assert.equal(searchUrl.searchParams.get("query"), "conversation_id:123 from:moe");
-	assert.equal(searchUrl.searchParams.get("max_results"), "100");
+	const firstTimelineUrl = new URL(requestedUrls[1] ?? "");
+	assert.equal(firstTimelineUrl.pathname, "/2/users/user_1/tweets");
+	assert.equal(firstTimelineUrl.searchParams.get("max_results"), "100");
+	assert.equal(firstTimelineUrl.searchParams.get("pagination_token"), null);
+
+	const secondTimelineUrl = new URL(requestedUrls[2] ?? "");
+	assert.equal(secondTimelineUrl.pathname, "/2/users/user_1/tweets");
+	assert.equal(secondTimelineUrl.searchParams.get("pagination_token"), "page_2");
 });
 
 test("XApiV2Client maps 404 to NOT_FOUND", async () => {

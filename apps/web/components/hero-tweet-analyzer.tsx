@@ -747,15 +747,23 @@ export function AnalyzerFollowControls({
 export interface AnalysisMarkdownCopyControlsProps {
 	onCopyMarkdown?: () => void;
 	feedback?: CopyFeedback | null;
+	tweetCount?: number;
 	theme?: HeroTweetAnalyzerTheme;
 }
 
 export function AnalysisMarkdownCopyControls({
 	onCopyMarkdown,
 	feedback = null,
+	tweetCount = 1,
 	theme = "editorial",
 }: Readonly<AnalysisMarkdownCopyControlsProps>) {
 	const isObsidian = theme === "obsidian";
+	const isThread = tweetCount > 1;
+	const title = isThread ? "Copy Thread" : "Copy Post";
+	const description = isThread
+		? "Copy the full analyzed thread, plus the generated analysis, as Markdown."
+		: "Copy the analyzed post and analysis as Markdown.";
+	const buttonLabel = isThread ? "Copy Thread Markdown" : "Copy Post Markdown";
 	const sectionClassName = isObsidian
 		? "bg-surface-container-low p-6"
 		: "rounded-4xl border border-white/10 bg-ink/70 p-5";
@@ -770,14 +778,14 @@ export function AnalysisMarkdownCopyControls({
 	return (
 		<section id="analysis-copy-controls" className={sectionClassName}>
 			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-				<div>
-					<p className={isObsidian ? "font-label text-[10px] uppercase tracking-[0.35em] text-primary" : "text-xs font-semibold uppercase tracking-[0.2em] text-coral"}>
-						Copy Markdown
-					</p>
-					<p className={isObsidian ? "mt-2 font-body text-sm leading-7 text-on-surface-variant" : "mt-2 text-sm text-peach/70"}>
-						Copy the analyzed post or full thread, plus the generated analysis, as Markdown.
-					</p>
-				</div>
+					<div>
+						<p className={isObsidian ? "font-label text-[10px] uppercase tracking-[0.35em] text-primary" : "text-xs font-semibold uppercase tracking-[0.2em] text-coral"}>
+							{title}
+						</p>
+						<p className={isObsidian ? "mt-2 font-body text-sm leading-7 text-on-surface-variant" : "mt-2 text-sm text-peach/70"}>
+							{description}
+						</p>
+					</div>
 				<button
 					id="analysis-copy-markdown-button"
 					type="button"
@@ -785,7 +793,7 @@ export function AnalysisMarkdownCopyControls({
 					disabled={!onCopyMarkdown}
 					className={buttonClassName}
 				>
-					Copy Markdown
+					{buttonLabel}
 				</button>
 			</div>
 			{feedback ? (
@@ -1306,6 +1314,14 @@ export function HeroTweetAnalyzer({
 
 			{tweet && analysis ? (
 				<>
+					<AnalysisMarkdownCopyControls
+						onCopyMarkdown={() => {
+							void copyMarkdown();
+						}}
+						feedback={copyFeedback}
+						tweetCount={thread?.tweets.length ?? 1}
+						theme={theme}
+					/>
 					{thread && thread.tweets.length > 1 ? (
 						<ThreadPreviewSection
 							rootTweet={tweet}
@@ -1324,13 +1340,6 @@ export function HeroTweetAnalyzer({
 							theme={theme}
 						/>
 					)}
-					<AnalysisMarkdownCopyControls
-						onCopyMarkdown={() => {
-							void copyMarkdown();
-						}}
-						feedback={copyFeedback}
-						theme={theme}
-					/>
 					<section id="bookmark-save-controls" className={bookmarkSectionClassName}>
 						<div className="flex flex-col gap-4">
 							<div>
