@@ -2,6 +2,7 @@ import type {
 	AnalyzeTweetResponse,
 	SaveBookmarkInput,
 } from "@pi-starter/contracts";
+import { renderAnalyzeTweetMarkdown } from "@pi-starter/contracts";
 import React, { useEffect, useState } from "react";
 
 import type { TweetActionController } from "./controller.js";
@@ -12,6 +13,10 @@ import type { PendingAuthAction } from "../shared/messages.js";
 import { parseBookmarkTags, validateBookmarkTags } from "../shared/tag-utils.js";
 
 const BOOKMARK_ALREADY_EXISTS_ERROR_CODE = "BOOKMARK_ALREADY_EXISTS";
+type CopyStatus = {
+	kind: "success" | "error";
+	message: string;
+};
 
 function buildDefaultTags(analysisResult: AnalyzeTweetResponse): string {
 	return analysisResult.analysis.novelConcepts.map((concept) => concept.name).join(", ");
@@ -57,12 +62,14 @@ export function TweetActionApp({ tweetUrl }: Readonly<TweetActionAppProps>) {
 	const [saveMessage, setSaveMessage] = useState<string | null>(null);
 	const [tagsInput, setTagsInput] = useState("");
 	const [isSaving, setIsSaving] = useState(false);
+	const [copyStatus, setCopyStatus] = useState<CopyStatus | null>(null);
 
 	async function runAnalyze() {
 		setStatus("loading");
 		setErrorMessage(null);
 		setAuthMessage(null);
 		setSaveMessage(null);
+		setCopyStatus(null);
 
 		const response = await analyzeTweet(tweetUrl);
 		if (!response.ok) {
@@ -125,6 +132,32 @@ export function TweetActionApp({ tweetUrl }: Readonly<TweetActionAppProps>) {
 		setIsSaving(false);
 	}
 
+	async function runCopyMarkdown() {
+		if (!analysisResult) {
+			return;
+		}
+
+		try {
+			if (typeof navigator === "undefined" || typeof navigator.clipboard?.writeText !== "function") {
+				throw new Error("Clipboard is unavailable in this browser.");
+			}
+
+			await navigator.clipboard.writeText(renderAnalyzeTweetMarkdown(analysisResult));
+			setCopyStatus({
+				kind: "success",
+				message:
+					analysisResult.thread && analysisResult.thread.tweets.length > 1
+						? "Copied thread and analysis as Markdown."
+						: "Copied tweet and analysis as Markdown.",
+			});
+		} catch (error) {
+			setCopyStatus({
+				kind: "error",
+				message: error instanceof Error ? error.message : "Unable to copy Markdown right now.",
+			});
+		}
+	}
+
 	useEffect(() => {
 		const controller: TweetActionController = {
 			resumePendingAction(pendingAction: PendingAuthAction) {
@@ -139,6 +172,20 @@ export function TweetActionApp({ tweetUrl }: Readonly<TweetActionAppProps>) {
 		return registerTweetActionController(tweetUrl, controller);
 	}, [tweetUrl, analysisResult, tagsInput]);
 
+	useEffect(() => {
+		if (!copyStatus) {
+			return;
+		}
+
+		const timerId = window.setTimeout(() => {
+			setCopyStatus(null);
+		}, 3000);
+
+		return () => {
+			window.clearTimeout(timerId);
+		};
+	}, [copyStatus]);
+
 	return (
 		<TweetActionPanel
 			status={status}
@@ -148,9 +195,13 @@ export function TweetActionApp({ tweetUrl }: Readonly<TweetActionAppProps>) {
 			errorMessage={errorMessage}
 			authMessage={authMessage}
 			saveMessage={saveMessage}
+			copyStatus={copyStatus}
 			isSaving={isSaving}
 			onAnalyze={() => {
 				void runAnalyze();
+			}}
+			onCopyMarkdown={() => {
+				void runCopyMarkdown();
 			}}
 			onToggleConcept={(conceptName) => {
 				setTagsInput((currentInput) => toggleTag(currentInput, conceptName));

@@ -2,6 +2,7 @@
 
 import { PROVIDER_OPTIONS, getProviderCatalogEntry, resolveProviderCatalogModel } from "@pi-starter/ai";
 import { parseBookmarkTags, validateBookmarkTags } from "@pi-starter/contracts/bookmark-tags";
+import { renderAnalyzeTweetMarkdown } from "@pi-starter/contracts";
 import type {
 	AnalyzeTweetResult,
 	CreateFollowInput,
@@ -84,6 +85,10 @@ export interface HeroTweetAnalyzerProps {
 }
 
 type HeroTweetAnalyzerTheme = NonNullable<HeroTweetAnalyzerProps["theme"]>;
+export type CopyFeedback = {
+	kind: "success" | "error";
+	message: string;
+};
 
 function cleanAnalyzeFlagInUrl(): void {
 	if (typeof window === "undefined") {
@@ -739,6 +744,63 @@ export function AnalyzerFollowControls({
 	);
 }
 
+export interface AnalysisMarkdownCopyControlsProps {
+	onCopyMarkdown?: () => void;
+	feedback?: CopyFeedback | null;
+	theme?: HeroTweetAnalyzerTheme;
+}
+
+export function AnalysisMarkdownCopyControls({
+	onCopyMarkdown,
+	feedback = null,
+	theme = "editorial",
+}: Readonly<AnalysisMarkdownCopyControlsProps>) {
+	const isObsidian = theme === "obsidian";
+	const sectionClassName = isObsidian
+		? "bg-surface-container-low p-6"
+		: "rounded-4xl border border-white/10 bg-ink/70 p-5";
+	const buttonClassName = isObsidian
+		? "inline-flex min-w-[220px] items-center justify-center border border-outline-variant/20 bg-surface-container-lowest px-7 py-4 font-label text-xs font-semibold uppercase tracking-[0.24em] text-on-surface transition-colors hover:border-primary/50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
+		: "inline-flex min-w-[190px] items-center justify-center rounded-[20px] border border-white/20 bg-charcoal/70 px-7 py-3 text-sm font-semibold text-white transition-all duration-300 hover:border-coral/50 hover:text-coral disabled:cursor-not-allowed disabled:opacity-60";
+	const errorClassName = isObsidian
+		? "mt-4 border border-primary/30 bg-primary/10 px-4 py-3 font-body text-sm text-on-surface"
+		: "mt-4 rounded-3xl border border-coral/40 bg-coral/10 px-4 py-3 text-sm text-peach";
+	const successClassName = isObsidian ? "mt-4 font-body text-sm text-on-surface-variant" : "mt-4 text-sm text-peach/80";
+
+	return (
+		<section id="analysis-copy-controls" className={sectionClassName}>
+			<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+				<div>
+					<p className={isObsidian ? "font-label text-[10px] uppercase tracking-[0.35em] text-primary" : "text-xs font-semibold uppercase tracking-[0.2em] text-coral"}>
+						Copy Markdown
+					</p>
+					<p className={isObsidian ? "mt-2 font-body text-sm leading-7 text-on-surface-variant" : "mt-2 text-sm text-peach/70"}>
+						Copy the analyzed post or full thread, plus the generated analysis, as Markdown.
+					</p>
+				</div>
+				<button
+					id="analysis-copy-markdown-button"
+					type="button"
+					onClick={onCopyMarkdown}
+					disabled={!onCopyMarkdown}
+					className={buttonClassName}
+				>
+					Copy Markdown
+				</button>
+			</div>
+			{feedback ? (
+				<p
+					id={`analysis-copy-${feedback.kind}`}
+					role={feedback.kind === "error" ? "alert" : "status"}
+					className={feedback.kind === "error" ? errorClassName : successClassName}
+				>
+					{feedback.message}
+				</p>
+			) : null}
+		</section>
+	);
+}
+
 export function HeroTweetAnalyzer({
 	initialTweetUrlOrId = "",
 	autoAnalyze = false,
@@ -764,6 +826,7 @@ export function HeroTweetAnalyzer({
 	const [bookmarkSuccessMessage, setBookmarkSuccessMessage] = useState<string | null>(null);
 	const [followErrorMessage, setFollowErrorMessage] = useState<string | null>(null);
 	const [followSuccessMessage, setFollowSuccessMessage] = useState<string | null>(null);
+	const [copyFeedback, setCopyFeedback] = useState<CopyFeedback | null>(null);
 	const [followSummary, setFollowSummary] = useState<FollowSummary>(
 		EMPTY_FOLLOW_SUMMARY,
 	);
@@ -844,6 +907,7 @@ export function HeroTweetAnalyzer({
 		setBookmarkSuccessMessage(null);
 		setFollowErrorMessage(null);
 		setFollowSuccessMessage(null);
+		setCopyFeedback(null);
 		setThread(null);
 
 		try {
@@ -984,6 +1048,34 @@ export function HeroTweetAnalyzer({
 		}
 	}
 
+	async function copyMarkdown(): Promise<void> {
+		if (!tweet || !analysis) {
+			return;
+		}
+
+		try {
+			if (typeof navigator === "undefined" || typeof navigator.clipboard?.writeText !== "function") {
+				throw new Error("Clipboard is unavailable in this browser.");
+			}
+
+			const markdown = renderAnalyzeTweetMarkdown({
+				tweet,
+				thread: thread && thread.tweets.length > 1 ? thread : undefined,
+				analysis,
+			});
+			await navigator.clipboard.writeText(markdown);
+			setCopyFeedback({
+				kind: "success",
+				message: thread && thread.tweets.length > 1 ? "Copied thread and analysis as Markdown." : "Copied tweet and analysis as Markdown.",
+			});
+		} catch (error) {
+			setCopyFeedback({
+				kind: "error",
+				message: error instanceof Error ? error.message : "Unable to copy Markdown right now.",
+			});
+		}
+	}
+
 	async function createFollow(
 		input: CreateFollowInput,
 		successMessage: string,
@@ -1063,6 +1155,20 @@ export function HeroTweetAnalyzer({
 			authPopupCleanupRef.current = null;
 		};
 	}, []);
+
+	useEffect(() => {
+		if (!copyFeedback) {
+			return;
+		}
+
+		const timerId = window.setTimeout(() => {
+			setCopyFeedback(null);
+		}, 3000);
+
+		return () => {
+			window.clearTimeout(timerId);
+		};
+	}, [copyFeedback]);
 
 	useEffect(() => {
 		if (!autoAnalyze || hasAutoRunRef.current) {
@@ -1218,6 +1324,13 @@ export function HeroTweetAnalyzer({
 							theme={theme}
 						/>
 					)}
+					<AnalysisMarkdownCopyControls
+						onCopyMarkdown={() => {
+							void copyMarkdown();
+						}}
+						feedback={copyFeedback}
+						theme={theme}
+					/>
 					<section id="bookmark-save-controls" className={bookmarkSectionClassName}>
 						<div className="flex flex-col gap-4">
 							<div>

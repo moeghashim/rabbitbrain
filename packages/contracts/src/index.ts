@@ -2,6 +2,8 @@ import { z } from "zod";
 
 import { validateBookmarkTags } from "./bookmark-tags.js";
 
+export * from "./analyze-markdown.js";
+
 export interface ServiceHealth {
 	service: string;
 	ok: boolean;

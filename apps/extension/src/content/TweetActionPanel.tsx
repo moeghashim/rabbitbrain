@@ -11,8 +11,13 @@ export interface TweetActionPanelProps {
 	errorMessage: string | null;
 	authMessage: string | null;
 	saveMessage: string | null;
+	copyStatus: {
+		kind: "success" | "error";
+		message: string;
+	} | null;
 	isSaving: boolean;
 	onAnalyze: () => void;
+	onCopyMarkdown: () => void;
 	onToggleConcept: (conceptName: string) => void;
 	onChangeTagsInput: (value: string) => void;
 	onSaveBookmark: () => void;
@@ -33,8 +38,10 @@ export function TweetActionPanel({
 	errorMessage,
 	authMessage,
 	saveMessage,
+	copyStatus,
 	isSaving,
 	onAnalyze,
+	onCopyMarkdown,
 	onToggleConcept,
 	onChangeTagsInput,
 	onSaveBookmark,
@@ -139,6 +146,25 @@ export function TweetActionPanel({
 							</div>
 						</section>
 					) : null}
+
+					<section className="rb-card rb-card--bookmark">
+						<div className="rb-bookmark-header">
+							<div>
+								<p className="rb-kicker">Copy Markdown</p>
+								<p className="rb-bookmark-copy">
+									Copy the analyzed post or full thread, plus Rabbitbrain&apos;s structured analysis.
+								</p>
+							</div>
+							<button type="button" className="rb-button" onClick={onCopyMarkdown}>
+								Copy Markdown
+							</button>
+						</div>
+						{copyStatus ? (
+							<p className={`rb-banner ${copyStatus.kind === "error" ? "rb-banner--error" : "rb-banner--success"}`}>
+								{copyStatus.message}
+							</p>
+						) : null}
+					</section>
 
 					<section className="rb-card rb-card--bookmark">
 						<div className="rb-bookmark-header">

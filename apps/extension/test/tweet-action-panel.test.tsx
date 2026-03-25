@@ -56,8 +56,10 @@ function createProps() {
 		errorMessage: null,
 		authMessage: null,
 		saveMessage: "Saved to Rabbitbrain bookmarks.",
+		copyStatus: null,
 		isSaving: false,
 		onAnalyze: () => {},
+		onCopyMarkdown: () => {},
 		onToggleConcept: () => {},
 		onChangeTagsInput: () => {},
 		onSaveBookmark: () => {},
@@ -71,8 +73,23 @@ test("TweetActionPanel renders analysis and bookmark states", () => {
 	assert.match(html, /Saved to Rabbitbrain bookmarks/);
 	assert.match(html, /Iteration/);
 	assert.match(html, /Open Bookmarks/);
+	assert.match(html, /Copy Markdown/);
 	assert.match(html, /Showing all 2 posts in the analyzed thread/);
 	assert.match(html, /Follow-up detail in the same thread/);
+});
+
+test("TweetActionPanel renders markdown copy feedback", () => {
+	const html = renderToStaticMarkup(
+		<TweetActionPanel
+			{...createProps()}
+			copyStatus={{
+				kind: "success",
+				message: "Copied thread and analysis as Markdown.",
+			}}
+		/>,
+	);
+
+	assert.match(html, /Copied thread and analysis as Markdown\./);
 });
 
 test("TweetActionPanel renders auth-pending message", () => {

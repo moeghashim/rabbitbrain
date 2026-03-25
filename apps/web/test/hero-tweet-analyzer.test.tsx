@@ -5,6 +5,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import {
+	AnalysisMarkdownCopyControls,
 	AnalyzerFollowControls,
 	HeroTweetAnalyzer,
 	parseBookmarkTags,
@@ -213,6 +214,7 @@ test("validateBookmarkTags rejects simple singular and plural duplicates", () =>
 test("HeroTweetAnalyzer hides bookmark controls before analysis result is available", () => {
 	const html = renderToStaticMarkup(<HeroTweetAnalyzer />);
 	assert.doesNotMatch(html, /id=\"bookmark-save-controls\"/);
+	assert.doesNotMatch(html, /id=\"analysis-copy-controls\"/);
 });
 
 test("HeroTweetAnalyzer can hide provider and model selectors", () => {
@@ -240,6 +242,22 @@ test("AnalyzerFollowControls renders creator and topic follow actions from activ
 	assert.match(html, /Follow account/);
 	assert.match(html, /Follow @rhys for Strategy/);
 	assert.match(html, /Follow topic Writing/);
+});
+
+test("AnalysisMarkdownCopyControls renders the copy action and success feedback", () => {
+	const html = renderToStaticMarkup(
+		<AnalysisMarkdownCopyControls
+			onCopyMarkdown={() => {}}
+			feedback={{
+				kind: "success",
+				message: "Copied thread and analysis as Markdown.",
+			}}
+		/>,
+	);
+
+	assert.match(html, /id="analysis-copy-controls"/);
+	assert.match(html, /id="analysis-copy-markdown-button"/);
+	assert.match(html, /Copied thread and analysis as Markdown\./);
 });
 
 test("AnalyzerFollowControls shows follow status when creator or topic is already followed", () => {
