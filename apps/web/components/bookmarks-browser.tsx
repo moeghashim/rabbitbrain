@@ -45,6 +45,8 @@ interface BookmarkTagFilterOption {
 }
 
 const DEFAULT_VISIBLE_TAG_FILTERS = 6;
+export const BOOKMARK_DETAILS_PANEL_CLASS =
+	"glass-panel absolute right-0 top-0 h-full w-full overflow-y-auto overscroll-contain border-l border-outline-variant/20 bg-surface-container-high/90 p-6 shadow-2xl sm:w-[560px]";
 
 function compareBookmarksByRecency(left: Pick<SavedBookmark, "updatedAt" | "createdAt">, right: Pick<SavedBookmark, "updatedAt" | "createdAt">): number {
 	if (right.updatedAt !== left.updatedAt) {
@@ -920,7 +922,7 @@ export function BookmarksBrowser() {
 						onClick={() => setSelectedBookmark(null)}
 						className="absolute inset-0 bg-black/70"
 					/>
-					<aside className="glass-panel absolute right-0 top-0 h-full w-full border-l border-outline-variant/20 bg-surface-container-high/90 p-6 shadow-2xl sm:w-[560px]">
+					<aside className={BOOKMARK_DETAILS_PANEL_CLASS}>
 						<div className="flex items-start justify-between gap-4">
 							<div>
 								<p className="font-mono text-[11px] uppercase tracking-[0.32em] text-primary">Saved tweet</p>

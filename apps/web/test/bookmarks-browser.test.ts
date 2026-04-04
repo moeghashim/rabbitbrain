@@ -4,6 +4,7 @@ import test from "node:test";
 import type { FollowSummary, SavedBookmark } from "@pi-starter/contracts";
 
 import {
+	BOOKMARK_DETAILS_PANEL_CLASS,
 	buildCollapsedTagFilterOptions,
 	dedupeBookmarks,
 	filterBookmarksBySearch,
@@ -246,4 +247,9 @@ test("isSubjectFollowed matches subject follows case-insensitively", () => {
 	assert.equal(isSubjectFollowed(summary, "growth"), true);
 	assert.equal(isSubjectFollowed(summary, "GROWTH"), true);
 	assert.equal(isSubjectFollowed(summary, "strategy"), false);
+});
+
+test("bookmark details panel stays scrollable when expanded", () => {
+	assert.match(BOOKMARK_DETAILS_PANEL_CLASS, /\boverflow-y-auto\b/);
+	assert.match(BOOKMARK_DETAILS_PANEL_CLASS, /\boverscroll-contain\b/);
 });
