@@ -252,4 +252,5 @@ test("isSubjectFollowed matches subject follows case-insensitively", () => {
 test("bookmark details panel stays scrollable when expanded", () => {
 	assert.match(BOOKMARK_DETAILS_PANEL_CLASS, /\boverflow-y-auto\b/);
 	assert.match(BOOKMARK_DETAILS_PANEL_CLASS, /\boverscroll-contain\b/);
+	assert.match(BOOKMARK_DETAILS_PANEL_CLASS, /\btouch-pan-y\b/);
 });

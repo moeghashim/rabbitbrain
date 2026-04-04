@@ -18,6 +18,7 @@ import {
 	readResponseErrorMessage,
 } from "../src/http/read-json-response.js";
 import React, { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
 type BookmarkViewMode = "tile" | "row";
 
@@ -46,7 +47,7 @@ interface BookmarkTagFilterOption {
 
 const DEFAULT_VISIBLE_TAG_FILTERS = 6;
 export const BOOKMARK_DETAILS_PANEL_CLASS =
-	"glass-panel absolute right-0 top-0 h-full w-full overflow-y-auto overscroll-contain border-l border-outline-variant/20 bg-surface-container-high/90 p-6 shadow-2xl sm:w-[560px]";
+	"glass-panel absolute inset-y-0 right-0 z-10 h-full w-full overflow-y-auto overscroll-contain border-l border-outline-variant/20 bg-surface-container-high/90 p-6 shadow-2xl touch-pan-y sm:w-[560px]";
 
 function compareBookmarksByRecency(left: Pick<SavedBookmark, "updatedAt" | "createdAt">, right: Pick<SavedBookmark, "updatedAt" | "createdAt">): number {
 	if (right.updatedAt !== left.updatedAt) {
@@ -366,6 +367,23 @@ export function BookmarksBrowser() {
 		window.addEventListener("keydown", onKeyDown);
 		return () => {
 			window.removeEventListener("keydown", onKeyDown);
+		};
+	}, [selectedBookmark]);
+
+	useEffect(() => {
+		if (!selectedBookmark || typeof document === "undefined") {
+			return;
+		}
+
+		const { body, documentElement } = document;
+		const previousBodyOverflow = body.style.overflow;
+		const previousHtmlOverflow = documentElement.style.overflow;
+		body.style.overflow = "hidden";
+		documentElement.style.overflow = "hidden";
+
+		return () => {
+			body.style.overflow = previousBodyOverflow;
+			documentElement.style.overflow = previousHtmlOverflow;
 		};
 	}, [selectedBookmark]);
 
@@ -914,15 +932,19 @@ export function BookmarksBrowser() {
 				</div>
 			)}
 
-			{selectedBookmark ? (
-				<div className="fixed inset-0 z-50">
-					<button
-						type="button"
-						aria-label="Close bookmark details"
-						onClick={() => setSelectedBookmark(null)}
-						className="absolute inset-0 bg-black/70"
-					/>
-					<aside className={BOOKMARK_DETAILS_PANEL_CLASS}>
+			{selectedBookmark && typeof document !== "undefined"
+				? createPortal(
+					<div className="fixed inset-0 z-50 overflow-hidden">
+						<button
+							type="button"
+							aria-label="Close bookmark details"
+							onClick={() => setSelectedBookmark(null)}
+							className="absolute inset-0 z-0 bg-black/70"
+						/>
+						<aside
+							className={BOOKMARK_DETAILS_PANEL_CLASS}
+							style={{ WebkitOverflowScrolling: "touch" }}
+						>
 						<div className="flex items-start justify-between gap-4">
 							<div>
 								<p className="font-mono text-[11px] uppercase tracking-[0.32em] text-primary">Saved tweet</p>
@@ -1150,9 +1172,11 @@ export function BookmarksBrowser() {
 						>
 							Open on X
 						</a>
-					</aside>
-				</div>
-			) : null}
+						</aside>
+					</div>,
+					document.body,
+				)
+				: null}
 		</div>
 	);
 }
