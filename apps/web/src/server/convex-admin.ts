@@ -42,6 +42,7 @@ import {
 	type ProviderCredentialSummary,
 	type ProviderId,
 	type Suggestion,
+	SuggestionSchema,
 	SuggestionActionResponseSchema,
 	type SuggestionFeedback,
 	SuggestionFeedbackSchema,

@@ -170,10 +170,13 @@ export const recordFeedbackForCurrentUser = mutationGeneric({
 		}
 
 		const createdAt = Date.now();
-		const existing = await ctx.db
-			.query("suggestionFeedback")
-			.withIndex("by_user_id_suggestion_id", (query) => query.eq("userId", user._id).eq("suggestionId", suggestionId))
-			.unique();
+		const existing = pickLatestRecord(
+			await ctx.db
+				.query("suggestionFeedback")
+				.withIndex("by_user_id_suggestion_id", (query) => query.eq("userId", user._id))
+				.filter((query) => query.eq(query.field("suggestionId"), suggestionId))
+				.collect(),
+		);
 		if (existing) {
 			await ctx.db.delete(existing._id);
 		}
