@@ -30,7 +30,7 @@ test("buildAuthOptions returns X-only provider config", () => {
 	assert.equal(options.pages?.signIn, "/sign-in");
 	assert.equal(options.session?.strategy, "jwt");
 	assert.equal(provider?.id, "twitter");
-	assert.equal(authorization?.params?.scope, "users.read tweet.read");
+	assert.equal(authorization?.params?.scope, "users.read tweet.read bookmark.read offline.access");
 });
 
 test("buildAuthOptions supports non-strict env for build-time route initialization", () => {

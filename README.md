@@ -1,10 +1,19 @@
 # Rabbitbrain
 
-Rabbitbrain is a CLI-focused project for analyzing tweets and turning them into personalized learning tracks.
+Rabbitbrain is an X research workspace for analyzing posts, importing bookmarks, tracking followed accounts, and surfacing suggested posts from your saved signal.
 
 ## Features
 
 - Tweet analysis from X URLs/IDs via `xurl`
+- Daily X bookmark sync in the web app:
+  - Reads a signed-in user’s X bookmarks once per day
+  - Imports only new bookmarked posts into Rabbitbrain
+  - Applies suggested tags automatically, while keeping tags editable
+- Suggested posts in the web app and API:
+  - Recommends posts from followed creators
+  - Uses subject/tag-based search
+  - Uses takeaway themes as a light ranking signal
+  - Supports save and dismiss feedback loops
 - Account takeaways from followed X accounts:
   - Follow an account in the web app or CLI
   - Analyze the latest 20 posts into a concise summary plus bullet takeaways
@@ -27,6 +36,7 @@ Rabbitbrain is a CLI-focused project for analyzing tweets and turning them into 
 - Node.js 20+
 - `xurl` installed and authenticated for X API access
 - OpenAI API key configured
+- X OAuth app configured for web sign-in
 
 ## Setup
 
@@ -34,6 +44,12 @@ Rabbitbrain is a CLI-focused project for analyzing tweets and turning them into 
 npm install
 npm run onboarding
 npm run xurl:analyze:auth
+```
+
+For the web app bookmark sync flow, the X OAuth app must request:
+
+```text
+users.read tweet.read bookmark.read offline.access
 ```
 
 ## Usage
@@ -92,11 +108,31 @@ Show full takeaway history for an account:
 npm run xurl:takeaway -- show ctatedev --history
 ```
 
+Inspect bookmark sync status or work with suggestions from the CLI:
+
+```bash
+RABBITBRAIN_AUTH_COOKIE='next-auth.session-token=...' npm run xurl:suggestions -- status
+RABBITBRAIN_AUTH_COOKIE='next-auth.session-token=...' npm run xurl:suggestions -- list
+RABBITBRAIN_AUTH_COOKIE='next-auth.session-token=...' npm run xurl:suggestions -- save <suggestion_id>
+RABBITBRAIN_AUTH_COOKIE='next-auth.session-token=...' npm run xurl:suggestions -- dismiss <suggestion_id>
+```
+
 ## Web App
 
+- `/app/bookmarks` now shows imported X bookmarks with source labeling and suggested tags
+- `/app/suggestions` is the workspace for ranked post recommendations
 - `/app/takeaway` is the dedicated workspace for account takeaways
-- The page lets a signed-in user follow an account, manually refresh its takeaway, inspect source posts, and browse daily history
-- Daily refreshes are triggered by the internal cron route `/api/internal/takeaways/refresh`
+- Daily X bookmark imports are triggered by `/api/internal/bookmarks/sync`
+- Daily account takeaway refreshes are triggered by `/api/internal/takeaways/refresh`
+
+End-user workflow:
+
+1. Sign in with X in the web app.
+2. Rabbitbrain stores the X OAuth credentials needed for bookmark sync.
+3. A daily cron imports new X bookmarks into `/app/bookmarks`.
+4. Imported bookmarks arrive with suggested tags that can be edited later.
+5. `/app/suggestions` recommends posts based on follows, bookmark patterns, and takeaway themes.
+6. Saving or dismissing a suggestion immediately feeds back into future ranking.
 
 ## Development
 
@@ -107,9 +143,25 @@ npm test
 
 ## Deployment Notes
 
-- Web account takeaways require the existing X API credentials plus a `CRON_SECRET` value for the internal refresh route
-- Vercel cron is configured to call the takeaway refresh route once per day
+- Web account takeaways and bookmark sync require the existing X API credentials plus a `CRON_SECRET` value for the internal scheduled routes
+- Vercel cron should call both `/api/internal/takeaways/refresh` and `/api/internal/bookmarks/sync` once per day
+- Web bookmark sync also requires:
+  - `AUTH_X_ID`
+  - `AUTH_X_SECRET`
+  - `AUTH_SECRET`
+  - `USER_SECRETS_ENCRYPTION_KEY`
 - CLI takeaway state is stored locally in the Rabbitbrain config directory alongside provider config
+
+Developer notes:
+
+- Bookmark sync uses the signed-in user’s X OAuth token plus stored refresh token to read `/2/users/:id/bookmarks`.
+- Imported bookmarks are deduplicated by post ID and persisted with source metadata.
+- Suggested tags are generated deterministically from existing bookmark tags and subject follows, then stored as editable bookmark tags.
+- Suggestions are built from:
+  - followed creators’ recent posts
+  - subject/tag-based recent search
+  - recent takeaway themes with light ranking weight
+- Suggestion save and dismiss actions write user feedback that immediately affects the next ranked suggestion set.
 
 ## Releases
 

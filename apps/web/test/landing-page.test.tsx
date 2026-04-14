@@ -22,11 +22,13 @@ test("landing page ctas route to auth pages", async () => {
 	const bookmarksIndex = html.indexOf('href="/app/bookmarks"');
 	const followingIndex = html.indexOf('href="/app/following"');
 	const takeawayIndex = html.indexOf('href="/app/takeaway"');
+	const suggestionsIndex = html.indexOf('href="/app/suggestions"');
 
 	assert.match(html, /id=\"nav-cta\"[^>]*href=\"\/auth\/popup-start\?redirect_url=%2Fapp\"/);
 	assert.match(html, /href=\"\/app\/bookmarks\"[^>]*>Bookmarks<\/a>/);
 	assert.match(html, /href=\"\/app\/following\"[^>]*>Following<\/a>/);
 	assert.match(html, /href=\"\/app\/takeaway\"[^>]*>Takeaway<\/a>/);
+	assert.match(html, /href=\"\/app\/suggestions\"[^>]*>Suggestions<\/a>/);
 	assert.match(html, /href=\"\/privacy\"[^>]*>Privacy<\/a>/);
 	assert.match(html, /id=\"hero-analyze-button\"/);
 	assert.match(html, /Connect<\/a>/);
@@ -36,7 +38,7 @@ test("landing page ctas route to auth pages", async () => {
 	assert.doesNotMatch(html, /Rabbit Brain on X/);
 	assert.doesNotMatch(html, /href=\"https:\/\/x\.com\/moeghashim\"/);
 	assert.doesNotMatch(html, /href=\"https:\/\/10claws\.com\"/);
-	assert.ok(bookmarksIndex >= 0 && followingIndex > bookmarksIndex && takeawayIndex > followingIndex);
+	assert.ok(bookmarksIndex >= 0 && followingIndex > bookmarksIndex && takeawayIndex > followingIndex && suggestionsIndex > takeawayIndex);
 });
 
 test("landing page analyzer keeps the tweet input but hides provider and model selectors", async () => {

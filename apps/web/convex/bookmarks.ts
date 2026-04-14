@@ -27,6 +27,9 @@ interface BookmarkRecord {
 	authorAvatarUrl?: string;
 	thread?: SavedBookmark["thread"];
 	tags: string[];
+	source: SavedBookmark["source"];
+	importedAt?: number;
+	systemSuggestedTags?: string[];
 	createdAt: number;
 	updatedAt: number;
 }
@@ -45,6 +48,9 @@ function toSavedBookmark(
 		authorAvatarUrl: record.authorAvatarUrl,
 		thread: record.thread,
 		tags: record.tags,
+		source: record.source,
+		importedAt: record.importedAt,
+		systemSuggestedTags: record.systemSuggestedTags,
 		createdAt: record.createdAt,
 		updatedAt: record.updatedAt,
 	});
@@ -68,6 +74,9 @@ function toBookmarkRecord(record: {
 	authorAvatarUrl?: string;
 	thread?: SavedBookmark["thread"];
 	tags: string[];
+	source: SavedBookmark["source"];
+	importedAt?: number;
+	systemSuggestedTags?: string[];
 	createdAt: number;
 	updatedAt: number;
 }): BookmarkRecord {
@@ -82,6 +91,9 @@ function toBookmarkRecord(record: {
 		authorAvatarUrl: record.authorAvatarUrl,
 		thread: record.thread,
 		tags: record.tags,
+		source: record.source,
+		importedAt: record.importedAt,
+		systemSuggestedTags: record.systemSuggestedTags,
 		createdAt: record.createdAt,
 		updatedAt: record.updatedAt,
 	};
@@ -137,6 +149,9 @@ export const save = mutationGeneric({
 			}),
 		),
 		tags: v.array(v.string()),
+		source: v.optional(v.union(v.literal("manual"), v.literal("x_sync"), v.literal("suggestion"))),
+		importedAt: v.optional(v.number()),
+		systemSuggestedTags: v.optional(v.array(v.string())),
 	},
 	handler: async (ctx, args) => {
 		const user = await requireUserBySession(ctx);
@@ -171,6 +186,9 @@ export const save = mutationGeneric({
 			authorAvatarUrl: validated.authorAvatarUrl,
 			thread: validated.thread,
 			tags: validated.tags,
+			source: validated.source ?? "manual",
+			importedAt: validated.importedAt,
+			systemSuggestedTags: validated.systemSuggestedTags,
 			createdAt: now,
 			updatedAt: now,
 		});
@@ -179,6 +197,7 @@ export const save = mutationGeneric({
 			id: String(bookmarkId),
 			userId: String(user._id),
 			...validated,
+			source: validated.source ?? "manual",
 			createdAt: now,
 			updatedAt: now,
 		});
@@ -233,6 +252,9 @@ export const updateTags = mutationGeneric({
 			authorAvatarUrl: existing.authorAvatarUrl,
 			thread: existing.thread,
 			tags: validated.tags,
+			source: existing.source,
+			importedAt: existing.importedAt,
+			systemSuggestedTags: existing.systemSuggestedTags,
 			createdAt: existing.createdAt,
 			updatedAt: now,
 		});

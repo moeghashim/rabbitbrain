@@ -2,6 +2,8 @@ import { type NextAuthOptions, getServerSession } from "next-auth";
 import * as TwitterProviderModule from "next-auth/providers/twitter";
 import type { TwitterProfile } from "next-auth/providers/twitter";
 
+import { upsertXAccountCredentialForSession } from "../server/convex-admin.js";
+
 interface AuthEnv {
 	AUTH_X_ID?: string;
 	AUTH_X_SECRET?: string;
@@ -21,8 +23,16 @@ interface TwitterProviderInit {
 
 type AuthProvider = NonNullable<NextAuthOptions["providers"]>[number];
 type TwitterProviderFactory = (options: TwitterProviderInit) => AuthProvider;
-const TWITTER_OAUTH_SCOPE = "users.read tweet.read";
+const TWITTER_OAUTH_SCOPE = "users.read tweet.read bookmark.read offline.access";
 const TWITTER_OAUTH_URL = "https://x.com/i/oauth2/authorize";
+
+interface TwitterAccountLike {
+	access_token?: string | null;
+	refresh_token?: string | null;
+	expires_at?: number | null;
+	token_type?: string | null;
+	scope?: string | null;
+}
 
 interface ProviderAuthorization {
 	url: string;
@@ -82,6 +92,13 @@ function enforceTwitterOauthScope(provider: AuthProvider): AuthProvider {
 	return provider;
 }
 
+function normalizeTokenExpiresAt(value: number | null | undefined): number | undefined {
+	if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+		return undefined;
+	}
+	return value > 1_000_000_000_000 ? Math.trunc(value) : Math.trunc(value * 1000);
+}
+
 export function buildAuthOptions(
 	env: AuthEnv = process.env,
 	options: { strictEnv?: boolean } = {},
@@ -111,7 +128,7 @@ export function buildAuthOptions(
 			signIn: "/sign-in",
 		},
 		callbacks: {
-			async jwt({ token, profile }) {
+			async jwt({ token, profile, account }) {
 				const twitterProfile = profile as TwitterProfile | undefined;
 				const xUserId = twitterProfile?.data?.id;
 				if (typeof xUserId === "string" && xUserId.length > 0) {
@@ -127,6 +144,54 @@ export function buildAuthOptions(
 				const image = twitterProfile?.data?.profile_image_url;
 				if (typeof image === "string" && image.length > 0) {
 					token.picture = image;
+				}
+
+				const twitterAccount = account as TwitterAccountLike | undefined;
+				const accessToken = twitterAccount?.access_token?.trim();
+				if (accessToken) {
+					token.xAccessToken = accessToken;
+				}
+				const refreshToken = twitterAccount?.refresh_token?.trim();
+				if (refreshToken) {
+					token.xRefreshToken = refreshToken;
+				}
+				const expiresAt = normalizeTokenExpiresAt(twitterAccount?.expires_at);
+				if (expiresAt) {
+					token.xAccessTokenExpiresAt = expiresAt;
+				}
+				const tokenType = twitterAccount?.token_type?.trim();
+				if (tokenType) {
+					token.xTokenType = tokenType;
+				}
+				const scope = twitterAccount?.scope?.trim();
+				if (scope) {
+					token.xScope = scope;
+				}
+
+				const persistedXUserId = typeof token.xUserId === "string" ? token.xUserId : undefined;
+				const persistedAccessToken = typeof token.xAccessToken === "string" ? token.xAccessToken : undefined;
+				if (persistedXUserId && persistedAccessToken) {
+					try {
+						await upsertXAccountCredentialForSession({
+							sessionUser: {
+								id: persistedXUserId,
+							},
+							xUserId: persistedXUserId,
+							accessToken: persistedAccessToken,
+							refreshToken: typeof token.xRefreshToken === "string" ? token.xRefreshToken : undefined,
+							tokenType: typeof token.xTokenType === "string" ? token.xTokenType : undefined,
+							scope: typeof token.xScope === "string" ? token.xScope : undefined,
+							expiresAt: typeof token.xAccessTokenExpiresAt === "number" ? token.xAccessTokenExpiresAt : undefined,
+						});
+					} catch (error) {
+						console.error(
+							JSON.stringify({
+								scope: "auth.persist_x_account_credential_failure",
+								message: error instanceof Error ? error.message : String(error),
+								xUserId: persistedXUserId,
+							}),
+						);
+					}
 				}
 
 				return token;

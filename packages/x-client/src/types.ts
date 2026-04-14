@@ -51,6 +51,11 @@ export interface ThreadPayload {
 	tweets: ThreadTweetPayload[];
 }
 
+export interface TweetPage {
+	tweets: TweetPayload[];
+	nextToken?: string;
+}
+
 export type XProviderWarningCode = "MEDIA_METADATA_MISSING" | "MEDIA_KEYS_UNRESOLVED";
 
 export interface XProviderWarningEvent {
@@ -71,6 +76,7 @@ export interface AccountTimelineProvider extends TweetSourceProvider {
 	getUserByUsername(username: string): Promise<XUserPayload>;
 	getLatestPostsByUserId(userId: string, limit: number): Promise<TweetPayload[]>;
 	getLatestPostsByUsername(username: string, limit: number): Promise<TweetPayload[]>;
+	searchRecentPosts(query: string, limit: number): Promise<TweetPage>;
 }
 
 export interface FetchHeadersLike {

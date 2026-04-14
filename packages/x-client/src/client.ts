@@ -8,6 +8,7 @@ import type {
 	FetchLike,
 	ThreadPayload,
 	TweetMedia,
+	TweetPage,
 	TweetPayload,
 	XApiConfig,
 	XProviderWarningReporter,
@@ -78,7 +79,7 @@ async function defaultSleep(ms: number): Promise<void> {
 	});
 }
 
-function defaultWarningReporter(event: {
+export function defaultWarningReporter(event: {
 	code: string;
 	tweetId?: string;
 	mediaKeys: string[];
@@ -99,7 +100,7 @@ function toNonEmptyString(value: unknown): string | undefined {
 	return trimmed.length > 0 ? trimmed : undefined;
 }
 
-function readPaginationToken(responseBody: unknown): string | undefined {
+export function readPaginationToken(responseBody: unknown): string | undefined {
 	if (!isRecord(responseBody) || !isRecord(responseBody.meta)) {
 		return undefined;
 	}
@@ -327,7 +328,7 @@ function readUserPayload(responseBody: unknown): XUserPayload {
 	};
 }
 
-function readTweetArrayPayload(responseBody: unknown, reportWarning: XProviderWarningReporter): TweetPayload[] {
+export function readTweetArrayPayload(responseBody: unknown, reportWarning: XProviderWarningReporter): TweetPayload[] {
 	if (!isRecord(responseBody)) {
 		throw new XProviderError({
 			code: "UPSTREAM_ERROR",
@@ -418,6 +419,23 @@ export class XApiV2Client implements AccountTimelineProvider {
 		url.searchParams.set("media.fields", "type,url,preview_image_url,alt_text,width,height");
 		if (nextToken) {
 			url.searchParams.set("pagination_token", nextToken);
+		}
+		return url;
+	}
+
+	private createSearchRecentUrl(query: string, limit: number, nextToken?: string): URL {
+		const url = new URL("https://api.x.com/2/tweets/search/recent");
+		url.searchParams.set("query", query.trim());
+		url.searchParams.set("max_results", String(Math.max(10, Math.min(limit, 100))));
+		url.searchParams.set("expansions", "author_id,attachments.media_keys");
+		url.searchParams.set(
+			"tweet.fields",
+			"author_id,attachments,public_metrics,created_at,conversation_id,referenced_tweets",
+		);
+		url.searchParams.set("user.fields", "id,username,name,profile_image_url");
+		url.searchParams.set("media.fields", "type,url,preview_image_url,alt_text,width,height");
+		if (nextToken) {
+			url.searchParams.set("next_token", nextToken);
 		}
 		return url;
 	}
@@ -551,5 +569,17 @@ export class XApiV2Client implements AccountTimelineProvider {
 
 	async getLatestPostsByUsername(username: string, limit: number): Promise<TweetPayload[]> {
 		return this.getLatestPostsByUserId((await this.getUserByUsername(username)).id, limit);
+	}
+
+	async searchRecentPosts(query: string, limit: number): Promise<TweetPage> {
+		const trimmedQuery = query.trim();
+		if (!trimmedQuery) {
+			return { tweets: [] };
+		}
+		const responseBody = await this.requestJson(this.createSearchRecentUrl(trimmedQuery, limit));
+		return {
+			tweets: readTweetArrayPayload(responseBody, this.warningReporter).slice(0, Math.max(1, limit)),
+			nextToken: readPaginationToken(responseBody),
+		};
 	}
 }

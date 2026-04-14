@@ -28,6 +28,7 @@
 		"xurl:analyze:auth": "node scripts/configure-openai.mjs",
 		"xurl:analyze": "tsx apps/cli/src/analyze-tweet.ts",
 		"xurl:takeaway": "tsx apps/cli/src/takeaway.ts",
+		"xurl:suggestions": "tsx apps/cli/src/suggestions.ts",
 		"prepare": "husky"
 	},
 	"devDependencies": {

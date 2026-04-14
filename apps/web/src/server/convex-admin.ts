@@ -3,6 +3,8 @@ import {
 	type AccountTakeawaySnapshot,
 	type AnalyzeTweetInput,
 	type AnalyzeTweetResult,
+	BookmarkSyncStateSchema,
+	BookmarkSyncStatusResponseSchema,
 	type CreatorFollow,
 	type CreateCreatorFollowInput,
 	type CreateSubjectFollowInput,
@@ -39,6 +41,11 @@ import {
 	SubjectFollowSchema,
 	type ProviderCredentialSummary,
 	type ProviderId,
+	type Suggestion,
+	SuggestionActionResponseSchema,
+	type SuggestionFeedback,
+	SuggestionFeedbackSchema,
+	SuggestionsResponseSchema,
 	type UpdateBookmarkTagsInput,
 	type UserPreferencesInput,
 	UserPreferencesInputSchema,
@@ -55,6 +62,16 @@ interface SessionUserIdentity {
 	id: string;
 	email?: string | null;
 	name?: string | null;
+}
+
+export interface XAccountCredentialRecord {
+	xUserId: string;
+	accessToken: string;
+	refreshToken?: string;
+	tokenType?: string;
+	scope?: string;
+	expiresAt?: number;
+	updatedAt: number;
 }
 
 interface ConvexActingIdentity {
@@ -201,6 +218,95 @@ const listDueTakeawayRefreshJobsRef = makeFunctionReference<
 	{ dateKey: string; limit: number },
 	Array<{ userId: string; followId: string; accountUsername: string }>
 >("takeaways:listDueRefreshJobs");
+const upsertXAccountCredentialForCurrentUserRef = makeFunctionReference<
+	"mutation",
+	{
+		xUserId: string;
+		encryptedAccessToken: string;
+		encryptedRefreshToken?: string;
+		tokenType?: string;
+		scope?: string;
+		expiresAt?: number;
+	},
+	{ xUserId: string; updatedAt: number; expiresAt?: number }
+>("x_account_credentials:upsertForCurrentUser");
+const getXAccountCredentialForCurrentUserRef = makeFunctionReference<
+	"query",
+	Record<string, never>,
+	{
+		xUserId: string;
+		encryptedAccessToken: string;
+		encryptedRefreshToken?: string;
+		tokenType?: string;
+		scope?: string;
+		expiresAt?: number;
+		updatedAt: number;
+	} | null
+>("x_account_credentials:getForCurrentUser");
+const getXAccountCredentialByUserIdRef = makeFunctionReference<
+	"query",
+	{ userId: string },
+	{
+		xUserId: string;
+		encryptedAccessToken: string;
+		encryptedRefreshToken?: string;
+		tokenType?: string;
+		scope?: string;
+		expiresAt?: number;
+		updatedAt: number;
+	} | null
+>("x_account_credentials:getByUserId");
+const getBookmarkSyncStatusRef = makeFunctionReference<
+	"query",
+	Record<string, never>,
+	{ state?: { userId: string; lastSyncedAt?: number; lastError?: string; importedCount: number; updatedAt: number } }
+>("bookmark_sync:getStatus");
+const upsertBookmarkSyncStatusRef = makeFunctionReference<
+	"mutation",
+	{ lastSyncedAt?: number; lastError?: string; importedCount: number; cursor?: string },
+	{ userId: string; lastSyncedAt?: number; lastError?: string; importedCount: number; updatedAt: number }
+>("bookmark_sync:upsertStatusForCurrentUser");
+const listDueBookmarkSyncJobsRef = makeFunctionReference<
+	"query",
+	{ beforeTimestamp: number; limit: number },
+	Array<{ userId: string; xUserId: string; lastSyncedAt?: number }>
+>("bookmark_sync:listDueSyncJobs");
+const listSuggestionsForCurrentUserRef = makeFunctionReference<
+	"query",
+	Record<string, never>,
+	{ suggestions: Suggestion[] }
+>("suggestions:listForCurrentUser");
+const upsertSuggestionsForCurrentUserRef = makeFunctionReference<
+	"mutation",
+	{
+		suggestions: Array<{
+			tweetId: string;
+			tweetText: string;
+			tweetUrlOrId: string;
+			authorUsername: string;
+			authorName?: string;
+			authorAvatarUrl?: string;
+			score: number;
+			reasons: Suggestion["reasons"];
+			sourceSignals: string[];
+			suggestedTags: string[];
+		}>;
+	},
+	{ suggestions: Suggestion[] }
+>("suggestions:upsertManyForCurrentUser");
+const recordSuggestionFeedbackForCurrentUserRef = makeFunctionReference<
+	"mutation",
+	{ suggestionId: string; status: "saved" | "dismissed" },
+	SuggestionFeedback
+>("suggestions:recordFeedbackForCurrentUser");
+const listDismissedSuggestionTweetIdsRef = makeFunctionReference<"query", Record<string, never>, string[]>(
+	"suggestions:listDismissedTweetIdsForCurrentUser",
+);
+const getSuggestionByIdForCurrentUserRef = makeFunctionReference<
+	"query",
+	{ suggestionId: string },
+	Suggestion | null
+>("suggestions:getSuggestionByIdForCurrentUser");
 
 function readRequiredEnv(name: keyof ConvexEnv, env: ConvexEnv): string {
 	const value = env[name];
@@ -358,6 +464,209 @@ export async function deleteProviderCredentialForSession({
 	await client.mutation(removeProviderCredentialRef, {
 		provider: ProviderIdSchema.parse(provider),
 	});
+}
+
+export async function upsertXAccountCredentialForSession({
+	sessionUser,
+	xUserId,
+	accessToken,
+	refreshToken,
+	tokenType,
+	scope,
+	expiresAt,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	xUserId: string;
+	accessToken: string;
+	refreshToken?: string;
+	tokenType?: string;
+	scope?: string;
+	expiresAt?: number;
+	env?: ConvexEnv;
+}): Promise<void> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	await client.mutation(upsertXAccountCredentialForCurrentUserRef, {
+		xUserId: xUserId.trim(),
+		encryptedAccessToken: encryptSecret(accessToken.trim()),
+		encryptedRefreshToken: refreshToken?.trim() ? encryptSecret(refreshToken.trim()) : undefined,
+		tokenType: tokenType?.trim(),
+		scope: scope?.trim(),
+		expiresAt,
+	});
+}
+
+export async function getXAccountCredentialForSession({
+	sessionUser,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	env?: ConvexEnv;
+}): Promise<XAccountCredentialRecord | null> {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	const record = await client.query(getXAccountCredentialForCurrentUserRef, {});
+	if (!record) {
+		return null;
+	}
+	return {
+		xUserId: record.xUserId,
+		accessToken: decryptSecret(record.encryptedAccessToken),
+		refreshToken: record.encryptedRefreshToken ? decryptSecret(record.encryptedRefreshToken) : undefined,
+		tokenType: record.tokenType,
+		scope: record.scope,
+		expiresAt: record.expiresAt,
+		updatedAt: record.updatedAt,
+	};
+}
+
+export async function getXAccountCredentialByUserId({
+	userId,
+	env,
+}: {
+	userId: string;
+	env?: ConvexEnv;
+}): Promise<XAccountCredentialRecord | null> {
+	const client = createDeployKeyAdminClient(env);
+	const record = await client.query(getXAccountCredentialByUserIdRef, { userId });
+	if (!record) {
+		return null;
+	}
+	return {
+		xUserId: record.xUserId,
+		accessToken: decryptSecret(record.encryptedAccessToken),
+		refreshToken: record.encryptedRefreshToken ? decryptSecret(record.encryptedRefreshToken) : undefined,
+		tokenType: record.tokenType,
+		scope: record.scope,
+		expiresAt: record.expiresAt,
+		updatedAt: record.updatedAt,
+	};
+}
+
+export async function getBookmarkSyncStatusForSession({
+	sessionUser,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	env?: ConvexEnv;
+}) {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return BookmarkSyncStatusResponseSchema.parse(await client.query(getBookmarkSyncStatusRef, {}));
+}
+
+export async function upsertBookmarkSyncStatusForSession({
+	sessionUser,
+	lastSyncedAt,
+	lastError,
+	importedCount,
+	cursor,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	lastSyncedAt?: number;
+	lastError?: string;
+	importedCount: number;
+	cursor?: string;
+	env?: ConvexEnv;
+}) {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return BookmarkSyncStateSchema.parse(
+		await client.mutation(upsertBookmarkSyncStatusRef, {
+			lastSyncedAt,
+			lastError,
+			importedCount,
+			cursor,
+		}),
+	);
+}
+
+export async function listDueBookmarkSyncJobs({
+	beforeTimestamp,
+	limit,
+	env,
+}: {
+	beforeTimestamp: number;
+	limit: number;
+	env?: ConvexEnv;
+}) {
+	const client = createDeployKeyAdminClient(env);
+	return await client.query(listDueBookmarkSyncJobsRef, { beforeTimestamp, limit });
+}
+
+export async function listSuggestionsForSession({
+	sessionUser,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	env?: ConvexEnv;
+}) {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return SuggestionsResponseSchema.parse(await client.query(listSuggestionsForCurrentUserRef, {}));
+}
+
+export async function upsertSuggestionsForSession({
+	sessionUser,
+	suggestions,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	suggestions: Array<{
+		tweetId: string;
+		tweetText: string;
+		tweetUrlOrId: string;
+		authorUsername: string;
+		authorName?: string;
+		authorAvatarUrl?: string;
+		score: number;
+		reasons: Suggestion["reasons"];
+		sourceSignals: string[];
+		suggestedTags: string[];
+	}>;
+	env?: ConvexEnv;
+}) {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return SuggestionsResponseSchema.parse(await client.mutation(upsertSuggestionsForCurrentUserRef, { suggestions }));
+}
+
+export async function recordSuggestionFeedbackForSession({
+	sessionUser,
+	suggestionId,
+	status,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	suggestionId: string;
+	status: "saved" | "dismissed";
+	env?: ConvexEnv;
+}) {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return SuggestionFeedbackSchema.parse(
+		await client.mutation(recordSuggestionFeedbackForCurrentUserRef, { suggestionId, status }),
+	);
+}
+
+export async function listDismissedSuggestionTweetIdsForSession({
+	sessionUser,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	env?: ConvexEnv;
+}) {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	return await client.query(listDismissedSuggestionTweetIdsRef, {});
+}
+
+export async function getSuggestionByIdForSession({
+	sessionUser,
+	suggestionId,
+	env,
+}: {
+	sessionUser: SessionUserIdentity;
+	suggestionId: string;
+	env?: ConvexEnv;
+}) {
+	const { client } = await createAuthedAdminClient({ sessionUser, env });
+	const suggestion = await client.query(getSuggestionByIdForCurrentUserRef, { suggestionId });
+	return suggestion ? SuggestionSchema.parse(suggestion) : null;
 }
 
 export async function persistAnalysisForSession({

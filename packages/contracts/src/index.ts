@@ -222,8 +222,13 @@ export const BookmarkedTweetSchema = z.object({
 	thread: ThreadPreviewSchema.optional(),
 });
 
+export const BookmarkSourceSchema = z.enum(["manual", "x_sync", "suggestion"]);
+
 export const SaveBookmarkInputSchema = BookmarkedTweetSchema.extend({
 	tags: BookmarkTagsSchema,
+	source: BookmarkSourceSchema.optional(),
+	importedAt: z.number().int().nonnegative().optional(),
+	systemSuggestedTags: BookmarkTagsSchema.optional(),
 });
 
 export const UpdateBookmarkTagsInputSchema = z.object({
@@ -242,8 +247,70 @@ export const DeleteBookmarkResultSchema = z.object({
 export const SavedBookmarkSchema = SaveBookmarkInputSchema.extend({
 	id: z.string().min(1),
 	userId: z.string().min(1),
+	source: BookmarkSourceSchema.optional(),
 	createdAt: z.number().int().nonnegative(),
 	updatedAt: z.number().int().nonnegative(),
+});
+
+export const BookmarkSyncStateSchema = z.object({
+	userId: z.string().min(1),
+	lastSyncedAt: z.number().int().nonnegative().optional(),
+	lastError: z.string().min(1).optional(),
+	importedCount: z.number().int().nonnegative(),
+	updatedAt: z.number().int().nonnegative(),
+});
+
+export const BookmarkSyncStatusResponseSchema = z.object({
+	state: BookmarkSyncStateSchema.optional(),
+});
+
+export const SuggestionReasonSchema = z.object({
+	code: z.enum(["followed_creator", "subject_search", "bookmark_affinity", "takeaway_theme"]),
+	label: z.string().min(1),
+});
+
+export const SuggestionSchema = z.object({
+	id: z.string().min(1),
+	userId: z.string().min(1),
+	tweetId: z.string().min(1),
+	tweetText: z.string().min(1),
+	tweetUrlOrId: z.string().min(1),
+	authorUsername: z.string().min(1),
+	authorName: z.string().min(1).optional(),
+	authorAvatarUrl: z.string().url().optional(),
+	score: z.number(),
+	reasons: z.array(SuggestionReasonSchema).min(1),
+	sourceSignals: z.array(z.string().min(1)).min(1),
+	suggestedTags: BookmarkTagsSchema,
+	createdAt: z.number().int().nonnegative(),
+	updatedAt: z.number().int().nonnegative(),
+});
+
+export const SuggestionFeedbackStatusSchema = z.enum(["saved", "dismissed"]);
+
+export const SuggestionFeedbackSchema = z.object({
+	id: z.string().min(1),
+	userId: z.string().min(1),
+	suggestionId: z.string().min(1),
+	status: SuggestionFeedbackStatusSchema,
+	createdAt: z.number().int().nonnegative(),
+});
+
+export const SuggestionsResponseSchema = z.object({
+	suggestions: z.array(SuggestionSchema),
+});
+
+export const SaveSuggestionInputSchema = z.object({
+	suggestionId: z.string().min(1, "suggestionId is required"),
+});
+
+export const DismissSuggestionInputSchema = z.object({
+	suggestionId: z.string().min(1, "suggestionId is required"),
+});
+
+export const SuggestionActionResponseSchema = z.object({
+	suggestion: SuggestionSchema.optional(),
+	suggestions: z.array(SuggestionSchema),
 });
 
 export const FollowScopeSchema = z.enum(["subject", "all_feed"]);

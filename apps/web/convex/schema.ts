@@ -150,11 +150,36 @@ export default defineSchema({
 			}),
 		),
 		tags: v.array(v.string()),
+		source: v.union(v.literal("manual"), v.literal("x_sync"), v.literal("suggestion")),
+		importedAt: v.optional(v.number()),
+		systemSuggestedTags: v.optional(v.array(v.string())),
 		createdAt: v.number(),
 		updatedAt: v.number(),
 	})
 		.index("by_user_id_updated_at", ["userId", "updatedAt"])
 		.index("by_user_id_tweet_id", ["userId", "tweetId"]),
+	xAccountCredentials: defineTable({
+		userId: v.id("users"),
+		xUserId: v.string(),
+		encryptedAccessToken: v.string(),
+		encryptedRefreshToken: v.optional(v.string()),
+		tokenType: v.optional(v.string()),
+		scope: v.optional(v.string()),
+		expiresAt: v.optional(v.number()),
+		updatedAt: v.number(),
+	})
+		.index("by_user_id", ["userId"])
+		.index("by_x_user_id", ["xUserId"]),
+	bookmarkSyncStates: defineTable({
+		userId: v.id("users"),
+		lastSyncedAt: v.optional(v.number()),
+		lastError: v.optional(v.string()),
+		importedCount: v.number(),
+		cursor: v.optional(v.string()),
+		updatedAt: v.number(),
+	})
+		.index("by_user_id", ["userId"])
+		.index("by_updated_at", ["updatedAt"]),
 	creatorFollows: defineTable({
 		userId: v.id("users"),
 		creatorUsername: v.string(),
@@ -248,4 +273,39 @@ export default defineSchema({
 		.index("by_user_id_created_at", ["userId", "createdAt"])
 		.index("by_follow_id_created_at", ["followId", "createdAt"])
 		.index("by_follow_id_snapshot_date_key", ["followId", "snapshotDateKey"]),
+	suggestions: defineTable({
+		userId: v.id("users"),
+		tweetId: v.string(),
+		tweetText: v.string(),
+		tweetUrlOrId: v.string(),
+		authorUsername: v.string(),
+		authorName: v.optional(v.string()),
+		authorAvatarUrl: v.optional(v.string()),
+		score: v.number(),
+		reasons: v.array(
+			v.object({
+				code: v.union(
+					v.literal("followed_creator"),
+					v.literal("subject_search"),
+					v.literal("bookmark_affinity"),
+					v.literal("takeaway_theme"),
+				),
+				label: v.string(),
+			}),
+		),
+		sourceSignals: v.array(v.string()),
+		suggestedTags: v.array(v.string()),
+		createdAt: v.number(),
+		updatedAt: v.number(),
+	})
+		.index("by_user_id_updated_at", ["userId", "updatedAt"])
+		.index("by_user_id_tweet_id", ["userId", "tweetId"]),
+	suggestionFeedback: defineTable({
+		userId: v.id("users"),
+		suggestionId: v.id("suggestions"),
+		status: v.union(v.literal("saved"), v.literal("dismissed")),
+		createdAt: v.number(),
+	})
+		.index("by_user_id_suggestion_id", ["userId", "suggestionId"])
+		.index("by_user_id_created_at", ["userId", "createdAt"]),
 });

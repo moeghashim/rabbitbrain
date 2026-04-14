@@ -26,6 +26,14 @@ interface BookmarksResponseSuccess {
 	bookmarks: SavedBookmark[];
 }
 
+interface BookmarkSyncStatusResponseSuccess {
+	state?: {
+		lastSyncedAt?: number;
+		lastError?: string;
+		importedCount: number;
+	};
+}
+
 interface FollowsResponseSuccess extends FollowSummary {}
 
 interface BookmarksResponseError {
@@ -77,6 +85,16 @@ function truncateForPreview(text: string, maxLength = 170): string {
 		return text;
 	}
 	return `${text.slice(0, maxLength).trimEnd()}…`;
+}
+
+function describeBookmarkSource(bookmark: SavedBookmark): string | null {
+	if (bookmark.source === "x_sync") {
+		return "Synced from X";
+	}
+	if (bookmark.source === "suggestion") {
+		return "Saved from suggestion";
+	}
+	return null;
 }
 
 function bookmarkAvatarLabel(bookmark: SavedBookmark): string {
@@ -235,6 +253,7 @@ export function BookmarksBrowser() {
 	const [followSummary, setFollowSummary] = useState<FollowSummary>(
 		EMPTY_FOLLOW_SUMMARY,
 	);
+	const [bookmarkSyncState, setBookmarkSyncState] = useState<BookmarkSyncStatusResponseSuccess["state"]>();
 
 	async function readFollowSummary(): Promise<FollowSummary> {
 		try {
@@ -256,6 +275,24 @@ export function BookmarksBrowser() {
 			return payload;
 		} catch {
 			return EMPTY_FOLLOW_SUMMARY;
+		}
+	}
+
+	async function readBookmarkSyncStatus(): Promise<BookmarkSyncStatusResponseSuccess["state"]> {
+		try {
+			const response = await fetch("/api/me/bookmark-sync", {
+				method: "GET",
+				headers: {
+					"content-type": "application/json",
+				},
+			});
+			const payload = (await response.json()) as BookmarkSyncStatusResponseSuccess;
+			if (!response.ok || !payload || !("state" in payload)) {
+				return undefined;
+			}
+			return payload.state;
+		} catch {
+			return undefined;
 		}
 	}
 
@@ -315,9 +352,10 @@ export function BookmarksBrowser() {
 		let isCancelled = false;
 
 		async function loadFollowSummary(): Promise<void> {
-			const summary = await readFollowSummary();
+			const [summary, syncState] = await Promise.all([readFollowSummary(), readBookmarkSyncStatus()]);
 			if (!isCancelled) {
 				setFollowSummary(summary);
+				setBookmarkSyncState(syncState);
 			}
 		}
 
@@ -662,6 +700,21 @@ export function BookmarksBrowser() {
 
 			{exportMessage ? <p className="font-body text-sm text-secondary/70">{exportMessage}</p> : null}
 			{followMessage ? <p className="font-body text-sm text-on-surface-variant">{followMessage}</p> : null}
+			{bookmarkSyncState ? (
+				<div className="border border-outline-variant/10 bg-surface-container-low p-4">
+					<p className="font-mono text-[11px] uppercase tracking-[0.28em] text-primary">X bookmark sync</p>
+					<p className="mt-2 font-body text-sm text-secondary/70">
+						{bookmarkSyncState.lastSyncedAt
+							? `Last synced ${formatBookmarkDate(bookmarkSyncState.lastSyncedAt)} • Imported ${bookmarkSyncState.importedCount} new bookmark${
+									bookmarkSyncState.importedCount === 1 ? "" : "s"
+								}`
+							: "Waiting for the first daily X bookmark sync."}
+					</p>
+					{bookmarkSyncState.lastError ? (
+						<p className="mt-2 font-body text-sm text-primary">{bookmarkSyncState.lastError}</p>
+					) : null}
+				</div>
+			) : null}
 
 			{tagFilterOptions.length > 0 ? (
 				<div className="border border-outline-variant/10 bg-surface-container-low p-4">
@@ -833,6 +886,11 @@ export function BookmarksBrowser() {
 								>
 									<div className="flex items-start justify-between gap-3">
 										<div className="flex flex-wrap gap-2">
+											{describeBookmarkSource(bookmark) ? (
+												<span className="border border-outline-variant/20 bg-surface-container-lowest px-2.5 py-1 font-mono text-[11px] uppercase tracking-[0.24em] text-secondary/75">
+													{describeBookmarkSource(bookmark)}
+												</span>
+											) : null}
 											{bookmark.tags.map((tag) => (
 												<span
 													key={tag}
