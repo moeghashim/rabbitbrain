@@ -10,7 +10,10 @@ import {
 	recordSuggestionFeedbackForSession,
 	saveBookmarkForSession,
 } from "../../../../../src/server/convex-admin.js";
-import { buildSuggestionsForSession } from "../../../../../src/suggestions/build-suggestions.js";
+import {
+	buildSuggestionsForSession,
+	listRenderableSuggestionsForSession,
+} from "../../../../../src/suggestions/build-suggestions.js";
 import { reportServerError } from "../../../../../src/telemetry/report-error.js";
 
 interface SessionUserLike {
@@ -23,7 +26,35 @@ interface SessionLike {
 	user?: SessionUserLike | null;
 }
 
-function readSessionUser(session: SessionLike | null) {
+interface AuthenticatedSessionUser {
+	id: string;
+	email?: string | null;
+	name?: string | null;
+}
+
+interface SaveSuggestionsRouteDependencies {
+	validateStartupEnvIfNeeded: () => void;
+	getServerAuthSession: () => Promise<SessionLike | null>;
+	getSuggestionByIdForSession: typeof getSuggestionByIdForSession;
+	saveBookmarkForSession: typeof saveBookmarkForSession;
+	recordSuggestionFeedbackForSession: typeof recordSuggestionFeedbackForSession;
+	buildSuggestionsForSession: typeof buildSuggestionsForSession;
+	listRenderableSuggestionsForSession: typeof listRenderableSuggestionsForSession;
+	reportServerError: typeof reportServerError;
+}
+
+const defaultDependencies: SaveSuggestionsRouteDependencies = {
+	validateStartupEnvIfNeeded,
+	getServerAuthSession,
+	getSuggestionByIdForSession,
+	saveBookmarkForSession,
+	recordSuggestionFeedbackForSession,
+	buildSuggestionsForSession,
+	listRenderableSuggestionsForSession,
+	reportServerError,
+};
+
+function readSessionUser(session: SessionLike | null): AuthenticatedSessionUser | null {
 	const user = session?.user;
 	const id = user?.id?.trim() ?? "";
 	if (!user || !id) {
@@ -36,16 +67,20 @@ function readSessionUser(session: SessionLike | null) {
 	};
 }
 
-export async function POST(req: Request) {
+export async function handleSuggestionsSavePost(
+	req: Request,
+	_context?: unknown,
+	dependencies: SaveSuggestionsRouteDependencies = defaultDependencies,
+) {
 	try {
-		validateStartupEnvIfNeeded();
-		const sessionUser = readSessionUser(await getServerAuthSession());
+		dependencies.validateStartupEnvIfNeeded();
+		const sessionUser = readSessionUser(await dependencies.getServerAuthSession());
 		if (!sessionUser) {
 			return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });
 		}
 
 		const input = SaveSuggestionInputSchema.parse(await req.json());
-		const suggestion = await getSuggestionByIdForSession({
+		const suggestion = await dependencies.getSuggestionByIdForSession({
 			sessionUser,
 			suggestionId: input.suggestionId,
 		});
@@ -54,7 +89,7 @@ export async function POST(req: Request) {
 		}
 
 		try {
-			await saveBookmarkForSession({
+			await dependencies.saveBookmarkForSession({
 				sessionUser,
 				input: {
 					tweetId: suggestion.tweetId,
@@ -74,16 +109,27 @@ export async function POST(req: Request) {
 			}
 		}
 
-		await recordSuggestionFeedbackForSession({
+		await dependencies.recordSuggestionFeedbackForSession({
 			sessionUser,
 			suggestionId: input.suggestionId,
 			status: "saved",
 		});
 
-		return NextResponse.json({
-			suggestion,
-			...(await buildSuggestionsForSession({ sessionUser })),
-		});
+		try {
+			return NextResponse.json({
+				suggestion,
+				...(await dependencies.buildSuggestionsForSession({ sessionUser })),
+			});
+		} catch (error) {
+			dependencies.reportServerError({
+				scope: "api.suggestions.save_refresh_failure",
+				error,
+			});
+			return NextResponse.json({
+				suggestion,
+				...(await dependencies.listRenderableSuggestionsForSession({ sessionUser })),
+			});
+		}
 	} catch (error) {
 		if (error instanceof ZodError) {
 			return NextResponse.json(
@@ -91,7 +137,7 @@ export async function POST(req: Request) {
 				{ status: 400 },
 			);
 		}
-		reportServerError({
+		dependencies.reportServerError({
 			scope: "api.suggestions.save_failure",
 			error,
 		});
@@ -100,4 +146,8 @@ export async function POST(req: Request) {
 			{ status: 500 },
 		);
 	}
+}
+
+export async function POST(request: Request, context?: unknown) {
+	return handleSuggestionsSavePost(request, context);
 }

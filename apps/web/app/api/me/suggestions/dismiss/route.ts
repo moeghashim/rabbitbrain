@@ -5,7 +5,10 @@ import { ZodError } from "zod";
 import { getServerAuthSession } from "../../../../../src/auth/auth.js";
 import { validateStartupEnvIfNeeded } from "../../../../../src/config/startup-env.js";
 import { recordSuggestionFeedbackForSession } from "../../../../../src/server/convex-admin.js";
-import { buildSuggestionsForSession } from "../../../../../src/suggestions/build-suggestions.js";
+import {
+	buildSuggestionsForSession,
+	listRenderableSuggestionsForSession,
+} from "../../../../../src/suggestions/build-suggestions.js";
 import { reportServerError } from "../../../../../src/telemetry/report-error.js";
 
 interface SessionUserLike {
@@ -18,7 +21,31 @@ interface SessionLike {
 	user?: SessionUserLike | null;
 }
 
-function readSessionUser(session: SessionLike | null) {
+interface AuthenticatedSessionUser {
+	id: string;
+	email?: string | null;
+	name?: string | null;
+}
+
+interface DismissSuggestionsRouteDependencies {
+	validateStartupEnvIfNeeded: () => void;
+	getServerAuthSession: () => Promise<SessionLike | null>;
+	recordSuggestionFeedbackForSession: typeof recordSuggestionFeedbackForSession;
+	buildSuggestionsForSession: typeof buildSuggestionsForSession;
+	listRenderableSuggestionsForSession: typeof listRenderableSuggestionsForSession;
+	reportServerError: typeof reportServerError;
+}
+
+const defaultDependencies: DismissSuggestionsRouteDependencies = {
+	validateStartupEnvIfNeeded,
+	getServerAuthSession,
+	recordSuggestionFeedbackForSession,
+	buildSuggestionsForSession,
+	listRenderableSuggestionsForSession,
+	reportServerError,
+};
+
+function readSessionUser(session: SessionLike | null): AuthenticatedSessionUser | null {
 	const user = session?.user;
 	const id = user?.id?.trim() ?? "";
 	if (!user || !id) {
@@ -31,22 +58,34 @@ function readSessionUser(session: SessionLike | null) {
 	};
 }
 
-export async function POST(req: Request) {
+export async function handleSuggestionsDismissPost(
+	req: Request,
+	_context?: unknown,
+	dependencies: DismissSuggestionsRouteDependencies = defaultDependencies,
+) {
 	try {
-		validateStartupEnvIfNeeded();
-		const sessionUser = readSessionUser(await getServerAuthSession());
+		dependencies.validateStartupEnvIfNeeded();
+		const sessionUser = readSessionUser(await dependencies.getServerAuthSession());
 		if (!sessionUser) {
 			return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });
 		}
 
 		const input = DismissSuggestionInputSchema.parse(await req.json());
-		await recordSuggestionFeedbackForSession({
+		await dependencies.recordSuggestionFeedbackForSession({
 			sessionUser,
 			suggestionId: input.suggestionId,
 			status: "dismissed",
 		});
 
-		return NextResponse.json(await buildSuggestionsForSession({ sessionUser }));
+		try {
+			return NextResponse.json(await dependencies.buildSuggestionsForSession({ sessionUser }));
+		} catch (error) {
+			dependencies.reportServerError({
+				scope: "api.suggestions.dismiss_refresh_failure",
+				error,
+			});
+			return NextResponse.json(await dependencies.listRenderableSuggestionsForSession({ sessionUser }));
+		}
 	} catch (error) {
 		if (error instanceof ZodError) {
 			return NextResponse.json(
@@ -54,7 +93,7 @@ export async function POST(req: Request) {
 				{ status: 400 },
 			);
 		}
-		reportServerError({
+		dependencies.reportServerError({
 			scope: "api.suggestions.dismiss_failure",
 			error,
 		});
@@ -63,4 +102,8 @@ export async function POST(req: Request) {
 			{ status: 500 },
 		);
 	}
+}
+
+export async function POST(request: Request, context?: unknown) {
+	return handleSuggestionsDismissPost(request, context);
 }

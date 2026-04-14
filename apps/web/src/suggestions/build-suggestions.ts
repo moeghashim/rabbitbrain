@@ -7,9 +7,11 @@ import {
 	listBookmarksForSession,
 	listDismissedSuggestionTweetIdsForSession,
 	listFollowsForSession,
+	listSuggestionsForSession,
 	listTakeawayWorkspaceForSession,
 	upsertSuggestionsForSession,
 } from "../server/convex-admin.js";
+import { reportServerError } from "../telemetry/report-error.js";
 
 interface SessionUserIdentity {
 	id: string;
@@ -23,6 +25,18 @@ interface Candidate {
 	sourceSignals: string[];
 }
 
+interface SuggestionsClient {
+	getLatestPostsByUsername(username: string, limit: number): Promise<TweetPayload[]>;
+	searchRecentPosts(
+		query: string,
+		limit: number,
+	): Promise<{
+		tweets: TweetPayload[];
+	}>;
+}
+
+const MAX_SUGGESTION_QUERY_LENGTH = 128;
+
 function buildTweetUrl(tweet: TweetPayload): string {
 	const username = tweet.authorUsername?.trim().replace(/^@+/, "");
 	return username ? `https://x.com/${username}/status/${tweet.id}` : `https://x.com/i/web/status/${tweet.id}`;
@@ -30,6 +44,18 @@ function buildTweetUrl(tweet: TweetPayload): string {
 
 function normalize(value: string): string {
 	return value.trim().toLowerCase();
+}
+
+function toSuggestionSearchQuery(value: string): string | null {
+	const normalized = value
+		.trim()
+		.replace(/\s+/g, " ")
+		.replace(/^["'`#\s]+/g, "")
+		.replace(/["'`\s]+$/g, "");
+	if (normalized.length < 2) {
+		return null;
+	}
+	return normalized.slice(0, MAX_SUGGESTION_QUERY_LENGTH);
 }
 
 function deriveTopBookmarkTags(textTags: string[], limit: number): string[] {
@@ -113,9 +139,11 @@ function scoreCandidate({
 export async function buildSuggestionsForSession({
 	sessionUser,
 	limit = 20,
+	xClient = new XApiV2Client(),
 }: {
 	sessionUser: SessionUserIdentity;
 	limit?: number;
+	xClient?: SuggestionsClient;
 }) {
 	const [bookmarks, followSummary, takeawayWorkspace, dismissedTweetIds] = await Promise.all([
 		listBookmarksForSession({ sessionUser }),
@@ -123,14 +151,26 @@ export async function buildSuggestionsForSession({
 		listTakeawayWorkspaceForSession({ sessionUser }),
 		listDismissedSuggestionTweetIdsForSession({ sessionUser }),
 	]);
-	const xClient = new XApiV2Client();
 	const bookmarkedTweetIds = new Set(bookmarks.map((bookmark) => bookmark.tweetId));
 	const dismissedTweetIdSet = new Set(dismissedTweetIds);
 	const candidateById = new Map<string, Candidate>();
 	const followedCreators = new Set(followSummary.creatorFollows.map((follow) => normalize(follow.creatorUsername)));
 
 	for (const follow of followSummary.creatorFollows.slice(0, 4)) {
-		const tweets = await xClient.getLatestPostsByUsername(follow.creatorUsername, 5);
+		let tweets: TweetPayload[];
+		try {
+			tweets = await xClient.getLatestPostsByUsername(follow.creatorUsername, 5);
+		} catch (error) {
+			reportServerError({
+				scope: "suggestions.followed_creator_fetch_failure",
+				error,
+				metadata: {
+					userId: sessionUser.id,
+					creatorUsername: follow.creatorUsername,
+				},
+			});
+			continue;
+		}
 		for (const tweet of tweets) {
 			mergeCandidate(
 				candidateById,
@@ -141,12 +181,34 @@ export async function buildSuggestionsForSession({
 		}
 	}
 
-	const subjectQueries = new Set<string>(followSummary.subjectFollows.map((follow) => follow.subjectTag));
-	for (const tag of deriveTopBookmarkTags(bookmarks.flatMap((bookmark) => bookmark.tags), 3)) {
-		subjectQueries.add(tag);
+	const subjectQueryEntries = new Map<string, string>();
+	for (const follow of followSummary.subjectFollows) {
+		const query = toSuggestionSearchQuery(follow.subjectTag);
+		if (query) {
+			subjectQueryEntries.set(normalize(query), query);
+		}
 	}
-	for (const query of Array.from(subjectQueries).slice(0, 5)) {
-		const page = await xClient.searchRecentPosts(query, 8);
+	for (const tag of deriveTopBookmarkTags(bookmarks.flatMap((bookmark) => bookmark.tags), 3)) {
+		const query = toSuggestionSearchQuery(tag);
+		if (query) {
+			subjectQueryEntries.set(normalize(query), query);
+		}
+	}
+	for (const query of Array.from(subjectQueryEntries.values()).slice(0, 5)) {
+		let page: { tweets: TweetPayload[] };
+		try {
+			page = await xClient.searchRecentPosts(query, 8);
+		} catch (error) {
+			reportServerError({
+				scope: "suggestions.subject_search_failure",
+				error,
+				metadata: {
+					userId: sessionUser.id,
+					query,
+				},
+			});
+			continue;
+		}
 		for (const tweet of page.tweets) {
 			mergeCandidate(
 				candidateById,
@@ -158,17 +220,45 @@ export async function buildSuggestionsForSession({
 	}
 
 	for (const follow of takeawayWorkspace.follows.slice(0, 3)) {
-		const history = await getTakeawayHistoryForSession({ sessionUser, followId: follow.id });
+		let history: Awaited<ReturnType<typeof getTakeawayHistoryForSession>>;
+		try {
+			history = await getTakeawayHistoryForSession({ sessionUser, followId: follow.id });
+		} catch (error) {
+			reportServerError({
+				scope: "suggestions.takeaway_history_failure",
+				error,
+				metadata: {
+					userId: sessionUser.id,
+					followId: follow.id,
+					accountUsername: follow.accountUsername,
+				},
+			});
+			continue;
+		}
 		const latest = history.latest;
 		if (!latest) {
 			continue;
 		}
 		for (const takeaway of latest.takeaways.slice(0, 2)) {
-			const query = takeaway.split(/[.!?]/)[0]?.trim();
+			const query = toSuggestionSearchQuery(takeaway.split(/[.!?]/)[0] ?? "");
 			if (!query) {
 				continue;
 			}
-			const page = await xClient.searchRecentPosts(query, 5);
+			let page: { tweets: TweetPayload[] };
+			try {
+				page = await xClient.searchRecentPosts(query, 5);
+			} catch (error) {
+				reportServerError({
+					scope: "suggestions.takeaway_search_failure",
+					error,
+					metadata: {
+						userId: sessionUser.id,
+						accountUsername: follow.accountUsername,
+						query,
+					},
+				});
+				continue;
+			}
 			for (const tweet of page.tweets) {
 				mergeCandidate(
 					candidateById,
@@ -219,4 +309,24 @@ export async function buildSuggestionsForSession({
 		sessionUser,
 		suggestions: ranked,
 	});
+}
+
+export async function listRenderableSuggestionsForSession({
+	sessionUser,
+}: {
+	sessionUser: SessionUserIdentity;
+}) {
+	const [stored, bookmarks, dismissedTweetIds] = await Promise.all([
+		listSuggestionsForSession({ sessionUser }),
+		listBookmarksForSession({ sessionUser }),
+		listDismissedSuggestionTweetIdsForSession({ sessionUser }),
+	]);
+	const bookmarkedTweetIds = new Set(bookmarks.map((bookmark) => bookmark.tweetId));
+	const dismissedTweetIdSet = new Set(dismissedTweetIds);
+
+	return {
+		suggestions: stored.suggestions.filter(
+			(suggestion) => !bookmarkedTweetIds.has(suggestion.tweetId) && !dismissedTweetIdSet.has(suggestion.tweetId),
+		),
+	};
 }
