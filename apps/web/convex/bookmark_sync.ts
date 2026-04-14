@@ -31,6 +31,9 @@ export const getStatus = queryGeneric({
 				lastSyncedAt: record.lastSyncedAt,
 				lastError: record.lastError,
 				importedCount: record.importedCount,
+				cursor: record.cursor,
+				mode: record.mode,
+				backfillComplete: record.backfillComplete,
 				updatedAt: record.updatedAt,
 			},
 		});
@@ -43,6 +46,8 @@ export const upsertStatusForCurrentUser = mutationGeneric({
 		lastError: v.optional(v.string()),
 		importedCount: v.number(),
 		cursor: v.optional(v.string()),
+		mode: v.optional(v.union(v.literal("initial_backfill"), v.literal("incremental"))),
+		backfillComplete: v.optional(v.boolean()),
 	},
 	handler: async (ctx, args) => {
 		const user = await requireUserBySession(ctx);
@@ -60,6 +65,8 @@ export const upsertStatusForCurrentUser = mutationGeneric({
 				lastError: args.lastError,
 				importedCount: args.importedCount,
 				cursor: args.cursor,
+				mode: args.mode,
+				backfillComplete: args.backfillComplete,
 				updatedAt,
 			});
 			return BookmarkSyncStateSchema.parse({
@@ -67,6 +74,9 @@ export const upsertStatusForCurrentUser = mutationGeneric({
 				lastSyncedAt: args.lastSyncedAt,
 				lastError: args.lastError,
 				importedCount: args.importedCount,
+				cursor: args.cursor,
+				mode: args.mode,
+				backfillComplete: args.backfillComplete,
 				updatedAt,
 			});
 		}
@@ -77,6 +87,8 @@ export const upsertStatusForCurrentUser = mutationGeneric({
 			lastError: args.lastError,
 			importedCount: args.importedCount,
 			cursor: args.cursor,
+			mode: args.mode,
+			backfillComplete: args.backfillComplete,
 			updatedAt,
 		});
 		return BookmarkSyncStateSchema.parse({
@@ -84,6 +96,9 @@ export const upsertStatusForCurrentUser = mutationGeneric({
 			lastSyncedAt: args.lastSyncedAt,
 			lastError: args.lastError,
 			importedCount: args.importedCount,
+			cursor: args.cursor,
+			mode: args.mode,
+			backfillComplete: args.backfillComplete,
 			updatedAt,
 		});
 	},
@@ -112,6 +127,9 @@ export const listDueSyncJobs = queryGeneric({
 				userId: String(credential.userId),
 				xUserId: credential.xUserId,
 				lastSyncedAt: syncState?.lastSyncedAt,
+				cursor: syncState?.cursor,
+				mode: syncState?.mode,
+				backfillComplete: syncState?.backfillComplete,
 			});
 		}
 

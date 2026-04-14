@@ -1,10 +1,11 @@
-import type { SavedBookmark } from "@pi-starter/contracts";
+import type { BookmarkSyncMode, BookmarkSyncState, SavedBookmark } from "@pi-starter/contracts";
 import { XUserOAuthClient } from "@pi-starter/x-client";
 
 import { isBookmarkAlreadyExistsError } from "./errors.js";
 import { suggestBookmarkTags } from "./suggest-tags.js";
 import {
 	type XAccountCredentialRecord,
+	getBookmarkSyncStatusForSession,
 	getXAccountCredentialByUserId,
 	listBookmarksForSession,
 	listDueBookmarkSyncJobs,
@@ -28,9 +29,28 @@ interface RefreshedTokenPayload {
 	expires_in?: number;
 }
 
+export const X_BOOKMARK_PAGE_SIZE = 100;
+export const INITIAL_BACKFILL_PAGE_LIMIT = 10;
+export const INCREMENTAL_PAGE_LIMIT = 3;
+
 function buildTweetUrl(authorUsername: string | undefined, tweetId: string): string {
 	const username = authorUsername?.trim().replace(/^@+/, "");
 	return username ? `https://x.com/${username}/status/${tweetId}` : `https://x.com/i/web/status/${tweetId}`;
+}
+
+export function resolveBookmarkSyncMode(syncState?: Pick<BookmarkSyncState, "mode" | "backfillComplete">): BookmarkSyncMode {
+	if (syncState?.backfillComplete) {
+		return "incremental";
+	}
+	return syncState?.mode ?? "initial_backfill";
+}
+
+export function resolveBookmarkSyncPageLimit(mode: BookmarkSyncMode): number {
+	return mode === "incremental" ? INCREMENTAL_PAGE_LIMIT : INITIAL_BACKFILL_PAGE_LIMIT;
+}
+
+export function isFullyKnownBookmarkPage(tweetIds: string[], knownTweetIds: ReadonlySet<string>): boolean {
+	return tweetIds.length > 0 && tweetIds.every((tweetId) => knownTweetIds.has(tweetId));
 }
 
 async function refreshXAccessToken(record: XAccountCredentialRecord): Promise<RefreshedTokenPayload> {
@@ -102,19 +122,28 @@ export async function syncXBookmarksForUser({
 
 	const sessionUser = { id: xUserId };
 	const accessToken = await resolveAccessTokenForSync({ record: credential, sessionUser });
-	const [existingBookmarks, followSummary] = await Promise.all([
+	const [syncStatus, existingBookmarks, followSummary] = await Promise.all([
+		getBookmarkSyncStatusForSession({ sessionUser }),
 		listBookmarksForSession({ sessionUser }),
 		listFollowsForSession({ sessionUser }),
 	]);
+	const syncState = syncStatus.state;
 	const knownTweetIds = new Set(existingBookmarks.map((bookmark) => bookmark.tweetId));
 	const xClient = new XUserOAuthClient({ accessToken });
 
-	let nextToken: string | undefined;
+	const syncMode = resolveBookmarkSyncMode(syncState);
+	const maxPages = resolveBookmarkSyncPageLimit(syncMode);
+
+	let nextToken = syncMode === "initial_backfill" ? syncState?.cursor : undefined;
 	let importedCount = 0;
+	let pageCount = 0;
 	const importedBookmarks: SavedBookmark[] = [];
 
-	do {
-		const page = await xClient.getBookmarkedPostsByUserId(xUserId, 100, nextToken);
+	while (pageCount < maxPages) {
+		const page = await xClient.getBookmarkedPostsByUserId(xUserId, X_BOOKMARK_PAGE_SIZE, nextToken);
+		pageCount += 1;
+		const pageTweetIds = page.tweets.map((tweet) => tweet.id);
+		const fullyKnownPage = isFullyKnownBookmarkPage(pageTweetIds, knownTweetIds);
 		for (const tweet of page.tweets) {
 			if (knownTweetIds.has(tweet.id)) {
 				continue;
@@ -152,15 +181,31 @@ export async function syncXBookmarksForUser({
 				throw error;
 			}
 		}
+		if (!page.nextToken) {
+			nextToken = undefined;
+			break;
+		}
+
+		if (syncMode === "incremental" && fullyKnownPage) {
+			nextToken = undefined;
+			break;
+		}
+
 		nextToken = page.nextToken;
-	} while (nextToken);
+	}
+
+	const nextCursor = syncMode === "initial_backfill" ? nextToken : undefined;
+	const nextMode: BookmarkSyncMode = nextCursor ? "initial_backfill" : "incremental";
+	const nextBackfillComplete = nextMode === "incremental";
 
 	await upsertBookmarkSyncStatusForSession({
 		sessionUser,
 		lastSyncedAt: Date.now(),
 		lastError: undefined,
 		importedCount,
-		cursor: undefined,
+		cursor: nextCursor,
+		mode: nextMode,
+		backfillComplete: nextBackfillComplete,
 	});
 
 	return { importedCount };
@@ -199,6 +244,9 @@ export async function syncDueXBookmarks({
 				lastSyncedAt: job.lastSyncedAt,
 				lastError: error instanceof Error ? error.message : "Unable to sync X bookmarks.",
 				importedCount: 0,
+				cursor: job.cursor,
+				mode: job.mode ?? (job.backfillComplete ? "incremental" : "initial_backfill"),
+				backfillComplete: job.backfillComplete ?? false,
 			});
 			results.push({
 				userId: job.userId,

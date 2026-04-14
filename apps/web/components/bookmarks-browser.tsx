@@ -31,6 +31,8 @@ interface BookmarkSyncStatusResponseSuccess {
 		lastSyncedAt?: number;
 		lastError?: string;
 		importedCount: number;
+		mode?: "initial_backfill" | "incremental";
+		backfillComplete?: boolean;
 	};
 }
 
@@ -710,6 +712,9 @@ export function BookmarksBrowser() {
 								}`
 							: "Waiting for the first daily X bookmark sync."}
 					</p>
+					{bookmarkSyncState.mode === "initial_backfill" && bookmarkSyncState.backfillComplete === false ? (
+						<p className="mt-2 font-body text-sm text-secondary/70">Backfilling older X bookmarks over future daily syncs.</p>
+					) : null}
 					{bookmarkSyncState.lastError ? (
 						<p className="mt-2 font-body text-sm text-primary">{bookmarkSyncState.lastError}</p>
 					) : null}

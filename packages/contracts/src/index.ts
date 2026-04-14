@@ -252,11 +252,16 @@ export const SavedBookmarkSchema = SaveBookmarkInputSchema.extend({
 	updatedAt: z.number().int().nonnegative(),
 });
 
+export const BookmarkSyncModeSchema = z.enum(["initial_backfill", "incremental"]);
+
 export const BookmarkSyncStateSchema = z.object({
 	userId: z.string().min(1),
 	lastSyncedAt: z.number().int().nonnegative().optional(),
 	lastError: z.string().min(1).optional(),
 	importedCount: z.number().int().nonnegative(),
+	cursor: z.string().min(1).optional(),
+	mode: BookmarkSyncModeSchema.optional(),
+	backfillComplete: z.boolean().optional(),
 	updatedAt: z.number().int().nonnegative(),
 });
 
@@ -449,6 +454,7 @@ export type ProviderCredentialSummary = z.infer<typeof ProviderCredentialSummary
 export type ProviderCredentialInput = z.infer<typeof ProviderCredentialInputSchema>;
 export type SaveBookmarkInput = z.infer<typeof SaveBookmarkInputSchema>;
 export type SavedBookmark = z.infer<typeof SavedBookmarkSchema>;
+export type BookmarkSyncMode = z.infer<typeof BookmarkSyncModeSchema>;
 export type BookmarkSyncState = z.infer<typeof BookmarkSyncStateSchema>;
 export type BookmarkSyncStatusResponse = z.infer<typeof BookmarkSyncStatusResponseSchema>;
 export type SuggestionReason = z.infer<typeof SuggestionReasonSchema>;

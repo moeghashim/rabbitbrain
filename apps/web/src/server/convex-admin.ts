@@ -3,6 +3,7 @@ import {
 	type AccountTakeawaySnapshot,
 	type AnalyzeTweetInput,
 	type AnalyzeTweetResult,
+	type BookmarkSyncMode,
 	BookmarkSyncStateSchema,
 	BookmarkSyncStatusResponseSchema,
 	type CreatorFollow,
@@ -260,17 +261,51 @@ const getXAccountCredentialByUserIdRef = makeFunctionReference<
 const getBookmarkSyncStatusRef = makeFunctionReference<
 	"query",
 	Record<string, never>,
-	{ state?: { userId: string; lastSyncedAt?: number; lastError?: string; importedCount: number; updatedAt: number } }
+	{
+		state?: {
+			userId: string;
+			lastSyncedAt?: number;
+			lastError?: string;
+			importedCount: number;
+			cursor?: string;
+			mode?: BookmarkSyncMode;
+			backfillComplete?: boolean;
+			updatedAt: number;
+		};
+	}
 >("bookmark_sync:getStatus");
 const upsertBookmarkSyncStatusRef = makeFunctionReference<
 	"mutation",
-	{ lastSyncedAt?: number; lastError?: string; importedCount: number; cursor?: string },
-	{ userId: string; lastSyncedAt?: number; lastError?: string; importedCount: number; updatedAt: number }
+	{
+		lastSyncedAt?: number;
+		lastError?: string;
+		importedCount: number;
+		cursor?: string;
+		mode?: BookmarkSyncMode;
+		backfillComplete?: boolean;
+	},
+	{
+		userId: string;
+		lastSyncedAt?: number;
+		lastError?: string;
+		importedCount: number;
+		cursor?: string;
+		mode?: BookmarkSyncMode;
+		backfillComplete?: boolean;
+		updatedAt: number;
+	}
 >("bookmark_sync:upsertStatusForCurrentUser");
 const listDueBookmarkSyncJobsRef = makeFunctionReference<
 	"query",
 	{ beforeTimestamp: number; limit: number },
-	Array<{ userId: string; xUserId: string; lastSyncedAt?: number }>
+	Array<{
+		userId: string;
+		xUserId: string;
+		lastSyncedAt?: number;
+		cursor?: string;
+		mode?: BookmarkSyncMode;
+		backfillComplete?: boolean;
+	}>
 >("bookmark_sync:listDueSyncJobs");
 const listSuggestionsForCurrentUserRef = makeFunctionReference<
 	"query",
@@ -560,6 +595,8 @@ export async function upsertBookmarkSyncStatusForSession({
 	lastError,
 	importedCount,
 	cursor,
+	mode,
+	backfillComplete,
 	env,
 }: {
 	sessionUser: SessionUserIdentity;
@@ -567,6 +604,8 @@ export async function upsertBookmarkSyncStatusForSession({
 	lastError?: string;
 	importedCount: number;
 	cursor?: string;
+	mode?: BookmarkSyncMode;
+	backfillComplete?: boolean;
 	env?: ConvexEnv;
 }) {
 	const { client } = await createAuthedAdminClient({ sessionUser, env });
@@ -576,6 +615,8 @@ export async function upsertBookmarkSyncStatusForSession({
 			lastError,
 			importedCount,
 			cursor,
+			mode,
+			backfillComplete,
 		}),
 	);
 }

@@ -176,6 +176,8 @@ export default defineSchema({
 		lastError: v.optional(v.string()),
 		importedCount: v.number(),
 		cursor: v.optional(v.string()),
+		mode: v.optional(v.union(v.literal("initial_backfill"), v.literal("incremental"))),
+		backfillComplete: v.optional(v.boolean()),
 		updatedAt: v.number(),
 	})
 		.index("by_user_id", ["userId"])
