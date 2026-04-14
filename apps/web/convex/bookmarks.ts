@@ -27,11 +27,15 @@ interface BookmarkRecord {
 	authorAvatarUrl?: string;
 	thread?: SavedBookmark["thread"];
 	tags: string[];
-	source: SavedBookmark["source"];
+	source?: SavedBookmark["source"];
 	importedAt?: number;
 	systemSuggestedTags?: string[];
 	createdAt: number;
 	updatedAt: number;
+}
+
+function normalizeBookmarkSource(source: SavedBookmark["source"] | undefined): NonNullable<SavedBookmark["source"]> {
+	return source ?? "manual";
 }
 
 function toSavedBookmark(
@@ -48,7 +52,7 @@ function toSavedBookmark(
 		authorAvatarUrl: record.authorAvatarUrl,
 		thread: record.thread,
 		tags: record.tags,
-		source: record.source,
+		source: normalizeBookmarkSource(record.source),
 		importedAt: record.importedAt,
 		systemSuggestedTags: record.systemSuggestedTags,
 		createdAt: record.createdAt,
@@ -74,7 +78,7 @@ function toBookmarkRecord(record: {
 	authorAvatarUrl?: string;
 	thread?: SavedBookmark["thread"];
 	tags: string[];
-	source: SavedBookmark["source"];
+	source?: SavedBookmark["source"];
 	importedAt?: number;
 	systemSuggestedTags?: string[];
 	createdAt: number;
@@ -91,7 +95,7 @@ function toBookmarkRecord(record: {
 		authorAvatarUrl: record.authorAvatarUrl,
 		thread: record.thread,
 		tags: record.tags,
-		source: record.source,
+		source: normalizeBookmarkSource(record.source),
 		importedAt: record.importedAt,
 		systemSuggestedTags: record.systemSuggestedTags,
 		createdAt: record.createdAt,
@@ -252,7 +256,7 @@ export const updateTags = mutationGeneric({
 			authorAvatarUrl: existing.authorAvatarUrl,
 			thread: existing.thread,
 			tags: validated.tags,
-			source: existing.source,
+			source: normalizeBookmarkSource(existing.source),
 			importedAt: existing.importedAt,
 			systemSuggestedTags: existing.systemSuggestedTags,
 			createdAt: existing.createdAt,

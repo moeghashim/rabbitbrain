@@ -150,7 +150,7 @@ export default defineSchema({
 			}),
 		),
 		tags: v.array(v.string()),
-		source: v.union(v.literal("manual"), v.literal("x_sync"), v.literal("suggestion")),
+		source: v.optional(v.union(v.literal("manual"), v.literal("x_sync"), v.literal("suggestion"))),
 		importedAt: v.optional(v.number()),
 		systemSuggestedTags: v.optional(v.array(v.string())),
 		createdAt: v.number(),
