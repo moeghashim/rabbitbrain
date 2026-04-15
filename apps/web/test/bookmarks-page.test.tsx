@@ -10,6 +10,7 @@ test("bookmarks page renders view toggle and list shell", () => {
 	assert.match(html, /Bookmarks<\/h1>/);
 	assert.match(html, /id=\"bookmarks-search-input\"/);
 	assert.match(html, /id=\"bookmarks-export-button\"/);
+	assert.match(html, /id=\"bookmarks-sync-now-button\"/);
 	assert.match(html, /id=\"bookmarks-view-tile\"/);
 	assert.match(html, /id=\"bookmarks-view-row\"/);
 	assert.match(html, /Loading bookmarks/);

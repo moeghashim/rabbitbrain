@@ -6,6 +6,7 @@ import { suggestBookmarkTags } from "./suggest-tags.js";
 import {
 	type XAccountCredentialRecord,
 	getBookmarkSyncStatusForSession,
+	getXAccountCredentialForSession,
 	getXAccountCredentialByUserId,
 	listBookmarksForSession,
 	listDueBookmarkSyncJobs,
@@ -53,74 +54,13 @@ export function isFullyKnownBookmarkPage(tweetIds: string[], knownTweetIds: Read
 	return tweetIds.length > 0 && tweetIds.every((tweetId) => knownTweetIds.has(tweetId));
 }
 
-async function refreshXAccessToken(record: XAccountCredentialRecord): Promise<RefreshedTokenPayload> {
-	const clientId = process.env.AUTH_X_ID?.trim();
-	if (!clientId || !record.refreshToken) {
-		throw new Error("X account refresh token is unavailable.");
-	}
-
-	const response = await fetch("https://api.x.com/2/oauth2/token", {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/x-www-form-urlencoded",
-		},
-		body: new URLSearchParams({
-			refresh_token: record.refreshToken,
-			grant_type: "refresh_token",
-			client_id: clientId,
-		}).toString(),
-	});
-	const payload = (await response.json()) as Partial<RefreshedTokenPayload> & { error?: string; error_description?: string };
-	if (!response.ok || !payload.access_token) {
-		throw new Error(payload.error_description ?? payload.error ?? "Unable to refresh X access token.");
-	}
-	return {
-		access_token: payload.access_token,
-		refresh_token: payload.refresh_token,
-		token_type: payload.token_type,
-		scope: payload.scope,
-		expires_in: payload.expires_in,
-	};
-}
-
-async function resolveAccessTokenForSync({
-	record,
+async function syncXBookmarksWithCredential({
+	credential,
 	sessionUser,
 }: {
-	record: XAccountCredentialRecord;
+	credential: XAccountCredentialRecord;
 	sessionUser: SessionUserIdentity;
-}): Promise<string> {
-	if (!record.expiresAt || record.expiresAt > Date.now() + 60_000) {
-		return record.accessToken;
-	}
-
-	const refreshed = await refreshXAccessToken(record);
-	const nextExpiresAt = typeof refreshed.expires_in === "number" ? Date.now() + refreshed.expires_in * 1000 : undefined;
-	await upsertXAccountCredentialForSession({
-		sessionUser,
-		xUserId: record.xUserId,
-		accessToken: refreshed.access_token,
-		refreshToken: refreshed.refresh_token ?? record.refreshToken,
-		tokenType: refreshed.token_type ?? record.tokenType,
-		scope: refreshed.scope ?? record.scope,
-		expiresAt: nextExpiresAt,
-	});
-	return refreshed.access_token;
-}
-
-export async function syncXBookmarksForUser({
-	userId,
-	xUserId,
-}: {
-	userId: string;
-	xUserId: string;
 }): Promise<{ importedCount: number }> {
-	const credential = await getXAccountCredentialByUserId({ userId });
-	if (!credential) {
-		return { importedCount: 0 };
-	}
-
-	const sessionUser = { id: xUserId };
 	const accessToken = await resolveAccessTokenForSync({ record: credential, sessionUser });
 	const [syncStatus, existingBookmarks, followSummary] = await Promise.all([
 		getBookmarkSyncStatusForSession({ sessionUser }),
@@ -140,7 +80,7 @@ export async function syncXBookmarksForUser({
 	const importedBookmarks: SavedBookmark[] = [];
 
 	while (pageCount < maxPages) {
-		const page = await xClient.getBookmarkedPostsByUserId(xUserId, X_BOOKMARK_PAGE_SIZE, nextToken);
+		const page = await xClient.getBookmarkedPostsByUserId(credential.xUserId, X_BOOKMARK_PAGE_SIZE, nextToken);
 		pageCount += 1;
 		const pageTweetIds = page.tweets.map((tweet) => tweet.id);
 		const fullyKnownPage = isFullyKnownBookmarkPage(pageTweetIds, knownTweetIds);
@@ -209,6 +149,96 @@ export async function syncXBookmarksForUser({
 	});
 
 	return { importedCount };
+}
+
+async function refreshXAccessToken(record: XAccountCredentialRecord): Promise<RefreshedTokenPayload> {
+	const clientId = process.env.AUTH_X_ID?.trim();
+	if (!clientId || !record.refreshToken) {
+		throw new Error("X account refresh token is unavailable.");
+	}
+
+	const response = await fetch("https://api.x.com/2/oauth2/token", {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/x-www-form-urlencoded",
+		},
+		body: new URLSearchParams({
+			refresh_token: record.refreshToken,
+			grant_type: "refresh_token",
+			client_id: clientId,
+		}).toString(),
+	});
+	const payload = (await response.json()) as Partial<RefreshedTokenPayload> & { error?: string; error_description?: string };
+	if (!response.ok || !payload.access_token) {
+		throw new Error(payload.error_description ?? payload.error ?? "Unable to refresh X access token.");
+	}
+	return {
+		access_token: payload.access_token,
+		refresh_token: payload.refresh_token,
+		token_type: payload.token_type,
+		scope: payload.scope,
+		expires_in: payload.expires_in,
+	};
+}
+
+async function resolveAccessTokenForSync({
+	record,
+	sessionUser,
+}: {
+	record: XAccountCredentialRecord;
+	sessionUser: SessionUserIdentity;
+}): Promise<string> {
+	if (!record.expiresAt || record.expiresAt > Date.now() + 60_000) {
+		return record.accessToken;
+	}
+
+	const refreshed = await refreshXAccessToken(record);
+	const nextExpiresAt = typeof refreshed.expires_in === "number" ? Date.now() + refreshed.expires_in * 1000 : undefined;
+	await upsertXAccountCredentialForSession({
+		sessionUser,
+		xUserId: record.xUserId,
+		accessToken: refreshed.access_token,
+		refreshToken: refreshed.refresh_token ?? record.refreshToken,
+		tokenType: refreshed.token_type ?? record.tokenType,
+		scope: refreshed.scope ?? record.scope,
+		expiresAt: nextExpiresAt,
+	});
+	return refreshed.access_token;
+}
+
+export async function syncXBookmarksForSession({
+	sessionUser,
+}: {
+	sessionUser: SessionUserIdentity;
+}): Promise<{ importedCount: number }> {
+	const credential = await getXAccountCredentialForSession({ sessionUser });
+	if (!credential) {
+		throw new Error("X bookmark sync is not connected. Sign in with X again to enable bookmark imports.");
+	}
+
+	return await syncXBookmarksWithCredential({
+		credential,
+		sessionUser,
+	});
+}
+
+export async function syncXBookmarksForUser({
+	userId,
+	xUserId,
+}: {
+	userId: string;
+	xUserId: string;
+}): Promise<{ importedCount: number }> {
+	const credential = await getXAccountCredentialByUserId({ userId });
+	if (!credential) {
+		return { importedCount: 0 };
+	}
+
+	const sessionUser = { id: xUserId };
+	return await syncXBookmarksWithCredential({
+		credential,
+		sessionUser,
+	});
 }
 
 export async function syncDueXBookmarks({

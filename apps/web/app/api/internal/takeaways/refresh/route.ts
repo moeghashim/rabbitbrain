@@ -6,6 +6,7 @@ import { buildTakeawayDateKey, refreshTakeawayForSession } from "../../../../../
 import { reportServerError } from "../../../../../src/telemetry/report-error.js";
 
 export const maxDuration = 60;
+export const dynamic = "force-dynamic";
 
 function isAuthorized(req: Request): boolean {
 	const cronSecret = process.env.CRON_SECRET?.trim();
@@ -16,7 +17,7 @@ function isAuthorized(req: Request): boolean {
 	return req.headers.get("authorization") === `Bearer ${cronSecret}`;
 }
 
-export async function POST(req: Request) {
+async function handleTakeawayRefreshCron(req: Request) {
 	if (!isAuthorized(req)) {
 		return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });
 	}
@@ -79,4 +80,12 @@ export async function POST(req: Request) {
 			{ status: 500 },
 		);
 	}
+}
+
+export async function GET(req: Request) {
+	return handleTakeawayRefreshCron(req);
+}
+
+export async function POST(req: Request) {
+	return handleTakeawayRefreshCron(req);
 }

@@ -144,7 +144,8 @@ npm test
 ## Deployment Notes
 
 - Web account takeaways and bookmark sync require the existing X API credentials plus a `CRON_SECRET` value for the internal scheduled routes
-- Vercel cron should call both `/api/internal/takeaways/refresh` and `/api/internal/bookmarks/sync` once per day
+- `vercel.json` should register both `/api/internal/takeaways/refresh` and `/api/internal/bookmarks/sync` once per day
+- Vercel invokes cron routes with `GET`; the internal routes also accept `POST` for manual server-side triggering
 - Web bookmark sync also requires:
   - `AUTH_X_ID`
   - `AUTH_X_SECRET`

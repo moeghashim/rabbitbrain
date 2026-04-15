@@ -6,6 +6,10 @@
     {
       "path": "/api/internal/takeaways/refresh",
       "schedule": "0 8 * * *"
+    },
+    {
+      "path": "/api/internal/bookmarks/sync",
+      "schedule": "0 8 * * *"
     }
   ]
 }

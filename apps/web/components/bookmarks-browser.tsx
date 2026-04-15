@@ -36,6 +36,10 @@ interface BookmarkSyncStatusResponseSuccess {
 	};
 }
 
+interface BookmarkSyncManualResponse extends BookmarkSyncStatusResponseSuccess {
+	importedCount: number;
+}
+
 interface FollowsResponseSuccess extends FollowSummary {}
 
 interface BookmarksResponseError {
@@ -250,7 +254,9 @@ export function BookmarksBrowser() {
 	const [isDeletingBookmark, setIsDeletingBookmark] = useState(false);
 	const [isCreatingFollow, setIsCreatingFollow] = useState(false);
 	const [isExporting, setIsExporting] = useState(false);
+	const [isSyncingBookmarks, setIsSyncingBookmarks] = useState(false);
 	const [exportMessage, setExportMessage] = useState<string | null>(null);
+	const [bookmarkSyncMessage, setBookmarkSyncMessage] = useState<string | null>(null);
 	const [followMessage, setFollowMessage] = useState<string | null>(null);
 	const [followSummary, setFollowSummary] = useState<FollowSummary>(
 		EMPTY_FOLLOW_SUMMARY,
@@ -298,6 +304,25 @@ export function BookmarksBrowser() {
 		}
 	}
 
+	async function readBookmarks(): Promise<SavedBookmark[]> {
+		const response = await fetch("/api/bookmarks", {
+			method: "GET",
+			headers: {
+				"content-type": "application/json",
+			},
+		});
+		const payload = (await response.json()) as BookmarksResponseSuccess | BookmarksResponseError;
+		if (!response.ok) {
+			const fallbackMessage = "Unable to load bookmarks right now.";
+			throw new Error("error" in payload && payload.error?.message ? payload.error.message : fallbackMessage);
+		}
+		if (!("bookmarks" in payload)) {
+			throw new Error("Unexpected bookmarks response.");
+		}
+
+		return payload.bookmarks;
+	}
+
 	useEffect(() => {
 		let isCancelled = false;
 
@@ -305,32 +330,9 @@ export function BookmarksBrowser() {
 			setIsLoading(true);
 			setErrorMessage(null);
 			try {
-				const response = await fetch("/api/bookmarks", {
-					method: "GET",
-					headers: {
-						"content-type": "application/json",
-					},
-				});
-				const payload = (await response.json()) as BookmarksResponseSuccess | BookmarksResponseError;
-				if (!response.ok) {
-					const fallbackMessage = "Unable to load bookmarks right now.";
-					const message = "error" in payload && payload.error?.message ? payload.error.message : fallbackMessage;
-					if (!isCancelled) {
-						setErrorMessage(message);
-						setBookmarks([]);
-					}
-					return;
-				}
-				if (!("bookmarks" in payload)) {
-					if (!isCancelled) {
-						setErrorMessage("Unexpected bookmarks response.");
-						setBookmarks([]);
-					}
-					return;
-				}
-
+				const nextBookmarks = await readBookmarks();
 				if (!isCancelled) {
-					setBookmarks(dedupeBookmarks(payload.bookmarks));
+					setBookmarks(dedupeBookmarks(nextBookmarks));
 				}
 			} catch (error) {
 				if (!isCancelled) {
@@ -508,6 +510,37 @@ export function BookmarksBrowser() {
 			setExportMessage(error instanceof Error ? error.message : "Unexpected export failure.");
 		} finally {
 			setIsExporting(false);
+		}
+	}
+
+	async function syncBookmarksNow(): Promise<void> {
+		setIsSyncingBookmarks(true);
+		setBookmarkSyncMessage(null);
+		try {
+			const response = await fetch("/api/me/bookmark-sync", {
+				method: "POST",
+				headers: {
+					"content-type": "application/json",
+				},
+			});
+			const payload = await readJsonResponse<BookmarkSyncManualResponse | BookmarksResponseError>(response);
+			if (!response.ok) {
+				throw new Error(readResponseErrorMessage(payload, "Unable to sync X bookmarks right now."));
+			}
+			if (!payload || !("importedCount" in payload)) {
+				throw new Error("Unexpected bookmark sync response.");
+			}
+
+			const [nextBookmarks, nextSyncState] = await Promise.all([readBookmarks(), readBookmarkSyncStatus()]);
+			setBookmarks(dedupeBookmarks(nextBookmarks));
+			setBookmarkSyncState(nextSyncState ?? payload.state);
+			setBookmarkSyncMessage(
+				`Synced X bookmarks. Imported ${payload.importedCount} new bookmark${payload.importedCount === 1 ? "" : "s"}.`,
+			);
+		} catch (error) {
+			setBookmarkSyncMessage(error instanceof Error ? error.message : "Unexpected network failure while syncing bookmarks.");
+		} finally {
+			setIsSyncingBookmarks(false);
 		}
 	}
 
@@ -702,24 +735,38 @@ export function BookmarksBrowser() {
 
 			{exportMessage ? <p className="font-body text-sm text-secondary/70">{exportMessage}</p> : null}
 			{followMessage ? <p className="font-body text-sm text-on-surface-variant">{followMessage}</p> : null}
-			{bookmarkSyncState ? (
-				<div className="border border-outline-variant/10 bg-surface-container-low p-4">
-					<p className="font-mono text-[11px] uppercase tracking-[0.28em] text-primary">X bookmark sync</p>
-					<p className="mt-2 font-body text-sm text-secondary/70">
-						{bookmarkSyncState.lastSyncedAt
-							? `Last synced ${formatBookmarkDate(bookmarkSyncState.lastSyncedAt)} • Imported ${bookmarkSyncState.importedCount} new bookmark${
-									bookmarkSyncState.importedCount === 1 ? "" : "s"
-								}`
-							: "Waiting for the first daily X bookmark sync."}
-					</p>
-					{bookmarkSyncState.mode === "initial_backfill" && bookmarkSyncState.backfillComplete === false ? (
-						<p className="mt-2 font-body text-sm text-secondary/70">Backfilling older X bookmarks over future daily syncs.</p>
-					) : null}
-					{bookmarkSyncState.lastError ? (
-						<p className="mt-2 font-body text-sm text-primary">{bookmarkSyncState.lastError}</p>
-					) : null}
+			<div className="border border-outline-variant/10 bg-surface-container-low p-4">
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+					<div>
+						<p className="font-mono text-[11px] uppercase tracking-[0.28em] text-primary">X bookmark sync</p>
+						<p className="mt-2 font-body text-sm text-secondary/70">
+							{bookmarkSyncState?.lastSyncedAt
+								? `Last synced ${formatBookmarkDate(bookmarkSyncState.lastSyncedAt)} • Imported ${bookmarkSyncState.importedCount} new bookmark${
+										bookmarkSyncState.importedCount === 1 ? "" : "s"
+									}`
+								: "Waiting for the first X bookmark sync."}
+						</p>
+					</div>
+					<button
+						id="bookmarks-sync-now-button"
+						type="button"
+						disabled={isSyncingBookmarks}
+						onClick={() => {
+							void syncBookmarksNow();
+						}}
+						className="border border-outline-variant/20 px-4 py-3 font-mono text-[11px] font-semibold uppercase tracking-[0.24em] text-secondary transition-colors hover:border-primary/40 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60"
+					>
+						{isSyncingBookmarks ? "Syncing..." : "Sync now"}
+					</button>
 				</div>
-			) : null}
+				{bookmarkSyncState?.mode === "initial_backfill" && bookmarkSyncState.backfillComplete === false ? (
+					<p className="mt-2 font-body text-sm text-secondary/70">Backfilling older X bookmarks over future syncs.</p>
+				) : null}
+				{bookmarkSyncMessage ? <p className="mt-2 font-body text-sm text-secondary/70">{bookmarkSyncMessage}</p> : null}
+				{bookmarkSyncState?.lastError ? (
+					<p className="mt-2 font-body text-sm text-primary">{bookmarkSyncState.lastError}</p>
+				) : null}
+			</div>
 
 			{tagFilterOptions.length > 0 ? (
 				<div className="border border-outline-variant/10 bg-surface-container-low p-4">

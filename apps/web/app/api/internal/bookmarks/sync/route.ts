@@ -4,6 +4,7 @@ import { reportServerError } from "../../../../../src/telemetry/report-error.js"
 import { syncDueXBookmarks } from "../../../../../src/bookmarks/sync-x-bookmarks.js";
 
 export const maxDuration = 60;
+export const dynamic = "force-dynamic";
 
 function isAuthorized(req: Request): boolean {
 	const cronSecret = process.env.CRON_SECRET?.trim();
@@ -14,7 +15,7 @@ function isAuthorized(req: Request): boolean {
 	return req.headers.get("authorization") === `Bearer ${cronSecret}`;
 }
 
-export async function POST(req: Request) {
+async function handleBookmarkSyncCron(req: Request) {
 	if (!isAuthorized(req)) {
 		return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });
 	}
@@ -32,4 +33,12 @@ export async function POST(req: Request) {
 			{ status: 500 },
 		);
 	}
+}
+
+export async function GET(req: Request) {
+	return handleBookmarkSyncCron(req);
+}
+
+export async function POST(req: Request) {
+	return handleBookmarkSyncCron(req);
 }
