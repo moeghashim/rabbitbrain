@@ -3,8 +3,15 @@ import { NextResponse } from "next/server";
 import { getServerAuthSession } from "../../../../src/auth/auth.js";
 import { syncXBookmarksForSession } from "../../../../src/bookmarks/sync-x-bookmarks.js";
 import { validateStartupEnvIfNeeded } from "../../../../src/config/startup-env.js";
-import { getBookmarkSyncStatusForSession } from "../../../../src/server/convex-admin.js";
+import {
+	getBookmarkSyncStatusForSession,
+	getXAccountCredentialForSession,
+} from "../../../../src/server/convex-admin.js";
 import { reportServerError } from "../../../../src/telemetry/report-error.js";
+
+const X_SYNC_NOT_CONNECTED_CODE = "X_SYNC_NOT_CONNECTED";
+const X_SYNC_NOT_CONNECTED_MESSAGE =
+	"X bookmark sync needs a fresh X connection. Sign in with X again to grant bookmark access.";
 
 interface SessionUserLike {
 	id?: string | null;
@@ -33,6 +40,7 @@ interface BookmarkSyncRouteDependencies {
 	validateStartupEnvIfNeeded: () => void;
 	getServerAuthSession: () => Promise<SessionLike | null>;
 	getBookmarkSyncStatusForSession: typeof getBookmarkSyncStatusForSession;
+	getXAccountCredentialForSession: typeof getXAccountCredentialForSession;
 	syncXBookmarksForSession: typeof syncXBookmarksForSession;
 	reportServerError: typeof reportServerError;
 }
@@ -42,6 +50,7 @@ function createDefaultDependencies(): BookmarkSyncRouteDependencies {
 		validateStartupEnvIfNeeded,
 		getServerAuthSession,
 		getBookmarkSyncStatusForSession,
+		getXAccountCredentialForSession,
 		syncXBookmarksForSession,
 		reportServerError,
 	};
@@ -55,7 +64,16 @@ export async function handleBookmarkSyncGet(dependencies: BookmarkSyncRouteDepen
 			return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });
 		}
 
-		return NextResponse.json(await dependencies.getBookmarkSyncStatusForSession({ sessionUser }));
+		const [status, credential] = await Promise.all([
+			dependencies.getBookmarkSyncStatusForSession({ sessionUser }),
+			dependencies.getXAccountCredentialForSession({ sessionUser }),
+		]);
+
+		return NextResponse.json({
+			...status,
+			connected: Boolean(credential),
+			requiresReconnect: !credential,
+		});
 	} catch (error) {
 		dependencies.reportServerError({
 			scope: "api.bookmark_sync.get_failure",
@@ -76,11 +94,28 @@ export async function handleBookmarkSyncPost(dependencies: BookmarkSyncRouteDepe
 			return NextResponse.json({ error: { message: "Unauthorized" } }, { status: 401 });
 		}
 
+		const credential = await dependencies.getXAccountCredentialForSession({ sessionUser });
+		if (!credential) {
+			return NextResponse.json(
+				{
+					error: {
+						code: X_SYNC_NOT_CONNECTED_CODE,
+						message: X_SYNC_NOT_CONNECTED_MESSAGE,
+					},
+					connected: false,
+					requiresReconnect: true,
+				},
+				{ status: 409 },
+			);
+		}
+
 		const result = await dependencies.syncXBookmarksForSession({ sessionUser });
 		const status = await dependencies.getBookmarkSyncStatusForSession({ sessionUser });
 		return NextResponse.json({
 			...result,
 			state: status.state,
+			connected: true,
+			requiresReconnect: false,
 		});
 	} catch (error) {
 		dependencies.reportServerError({

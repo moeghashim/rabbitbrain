@@ -29,6 +29,13 @@ function createDependencies(overrides: Partial<BookmarkSyncRouteDependencies> = 
 		getBookmarkSyncStatusForSession: async () => ({
 			state: syncState,
 		}),
+		getXAccountCredentialForSession: async () => ({
+			xUserId: "user_1",
+			accessToken: "access_token",
+			refreshToken: "refresh_token",
+			scope: "users.read tweet.read bookmark.read offline.access",
+			updatedAt: 100,
+		}),
 		syncXBookmarksForSession: async () => ({
 			importedCount: 2,
 		}),
@@ -43,6 +50,23 @@ test("GET /api/me/bookmark-sync returns current sync state", async () => {
 	assert.equal(response.status, 200);
 	assert.deepEqual(await response.json(), {
 		state: syncState,
+		connected: true,
+		requiresReconnect: false,
+	});
+});
+
+test("GET /api/me/bookmark-sync reports when reconnect is required", async () => {
+	const response = await handleBookmarkSyncGet(
+		createDependencies({
+			getXAccountCredentialForSession: async () => null,
+		}),
+	);
+
+	assert.equal(response.status, 200);
+	assert.deepEqual(await response.json(), {
+		state: syncState,
+		connected: false,
+		requiresReconnect: true,
 	});
 });
 
@@ -71,6 +95,26 @@ test("POST /api/me/bookmark-sync runs manual sync for the signed-in user", async
 			...syncState,
 			importedCount: 3,
 		},
+		connected: true,
+		requiresReconnect: false,
+	});
+});
+
+test("POST /api/me/bookmark-sync asks authenticated users to reconnect when X credentials are missing", async () => {
+	const response = await handleBookmarkSyncPost(
+		createDependencies({
+			getXAccountCredentialForSession: async () => null,
+		}),
+	);
+
+	assert.equal(response.status, 409);
+	assert.deepEqual(await response.json(), {
+		error: {
+			code: "X_SYNC_NOT_CONNECTED",
+			message: "X bookmark sync needs a fresh X connection. Sign in with X again to grant bookmark access.",
+		},
+		connected: false,
+		requiresReconnect: true,
 	});
 });
 

@@ -34,10 +34,17 @@ interface BookmarkSyncStatusResponseSuccess {
 		mode?: "initial_backfill" | "incremental";
 		backfillComplete?: boolean;
 	};
+	connected?: boolean;
+	requiresReconnect?: boolean;
 }
 
 interface BookmarkSyncManualResponse extends BookmarkSyncStatusResponseSuccess {
 	importedCount: number;
+}
+
+interface BookmarkSyncErrorResponse extends BookmarksResponseError {
+	connected?: boolean;
+	requiresReconnect?: boolean;
 }
 
 interface FollowsResponseSuccess extends FollowSummary {}
@@ -60,6 +67,7 @@ interface BookmarkTagFilterOption {
 }
 
 const DEFAULT_VISIBLE_TAG_FILTERS = 6;
+const BOOKMARK_SYNC_RECONNECT_PATH = "/auth/popup-start?redirect_url=%2Fapp%2Fbookmarks";
 export const BOOKMARK_DETAILS_PANEL_CLASS =
 	"glass-panel absolute inset-y-0 right-0 z-10 h-full w-full overflow-y-auto overscroll-contain border-l border-outline-variant/20 bg-surface-container-high/90 p-6 shadow-2xl touch-pan-y sm:w-[560px]";
 
@@ -257,6 +265,7 @@ export function BookmarksBrowser() {
 	const [isSyncingBookmarks, setIsSyncingBookmarks] = useState(false);
 	const [exportMessage, setExportMessage] = useState<string | null>(null);
 	const [bookmarkSyncMessage, setBookmarkSyncMessage] = useState<string | null>(null);
+	const [bookmarkSyncRequiresReconnect, setBookmarkSyncRequiresReconnect] = useState(false);
 	const [followMessage, setFollowMessage] = useState<string | null>(null);
 	const [followSummary, setFollowSummary] = useState<FollowSummary>(
 		EMPTY_FOLLOW_SUMMARY,
@@ -286,7 +295,7 @@ export function BookmarksBrowser() {
 		}
 	}
 
-	async function readBookmarkSyncStatus(): Promise<BookmarkSyncStatusResponseSuccess["state"]> {
+	async function readBookmarkSyncStatus(): Promise<BookmarkSyncStatusResponseSuccess> {
 		try {
 			const response = await fetch("/api/me/bookmark-sync", {
 				method: "GET",
@@ -295,12 +304,12 @@ export function BookmarksBrowser() {
 				},
 			});
 			const payload = (await response.json()) as BookmarkSyncStatusResponseSuccess;
-			if (!response.ok || !payload || !("state" in payload)) {
-				return undefined;
+			if (!response.ok || !payload) {
+				return {};
 			}
-			return payload.state;
+			return payload;
 		} catch {
-			return undefined;
+			return {};
 		}
 	}
 
@@ -356,10 +365,11 @@ export function BookmarksBrowser() {
 		let isCancelled = false;
 
 		async function loadFollowSummary(): Promise<void> {
-			const [summary, syncState] = await Promise.all([readFollowSummary(), readBookmarkSyncStatus()]);
+			const [summary, syncStatus] = await Promise.all([readFollowSummary(), readBookmarkSyncStatus()]);
 			if (!isCancelled) {
 				setFollowSummary(summary);
-				setBookmarkSyncState(syncState);
+				setBookmarkSyncState(syncStatus.state);
+				setBookmarkSyncRequiresReconnect(syncStatus.requiresReconnect ?? false);
 			}
 		}
 
@@ -523,17 +533,21 @@ export function BookmarksBrowser() {
 					"content-type": "application/json",
 				},
 			});
-			const payload = await readJsonResponse<BookmarkSyncManualResponse | BookmarksResponseError>(response);
+			const payload = await readJsonResponse<BookmarkSyncManualResponse | BookmarkSyncErrorResponse>(response);
 			if (!response.ok) {
+				if (payload && "requiresReconnect" in payload) {
+					setBookmarkSyncRequiresReconnect(payload.requiresReconnect ?? false);
+				}
 				throw new Error(readResponseErrorMessage(payload, "Unable to sync X bookmarks right now."));
 			}
 			if (!payload || !("importedCount" in payload)) {
 				throw new Error("Unexpected bookmark sync response.");
 			}
 
-			const [nextBookmarks, nextSyncState] = await Promise.all([readBookmarks(), readBookmarkSyncStatus()]);
+			const [nextBookmarks, nextSyncStatus] = await Promise.all([readBookmarks(), readBookmarkSyncStatus()]);
 			setBookmarks(dedupeBookmarks(nextBookmarks));
-			setBookmarkSyncState(nextSyncState ?? payload.state);
+			setBookmarkSyncState(nextSyncStatus.state ?? payload.state);
+			setBookmarkSyncRequiresReconnect(nextSyncStatus.requiresReconnect ?? payload.requiresReconnect ?? false);
 			setBookmarkSyncMessage(
 				`Synced X bookmarks. Imported ${payload.importedCount} new bookmark${payload.importedCount === 1 ? "" : "s"}.`,
 			);
@@ -740,7 +754,9 @@ export function BookmarksBrowser() {
 					<div>
 						<p className="font-mono text-[11px] uppercase tracking-[0.28em] text-primary">X bookmark sync</p>
 						<p className="mt-2 font-body text-sm text-secondary/70">
-							{bookmarkSyncState?.lastSyncedAt
+							{bookmarkSyncRequiresReconnect
+								? "Reconnect X to grant bookmark access before syncing."
+								: bookmarkSyncState?.lastSyncedAt
 								? `Last synced ${formatBookmarkDate(bookmarkSyncState.lastSyncedAt)} • Imported ${bookmarkSyncState.importedCount} new bookmark${
 										bookmarkSyncState.importedCount === 1 ? "" : "s"
 									}`
@@ -750,7 +766,7 @@ export function BookmarksBrowser() {
 					<button
 						id="bookmarks-sync-now-button"
 						type="button"
-						disabled={isSyncingBookmarks}
+						disabled={isSyncingBookmarks || bookmarkSyncRequiresReconnect}
 						onClick={() => {
 							void syncBookmarksNow();
 						}}
@@ -758,6 +774,15 @@ export function BookmarksBrowser() {
 					>
 						{isSyncingBookmarks ? "Syncing..." : "Sync now"}
 					</button>
+					{bookmarkSyncRequiresReconnect ? (
+						<a
+							id="bookmarks-reconnect-x-link"
+							href={BOOKMARK_SYNC_RECONNECT_PATH}
+							className="border border-primary/30 px-4 py-3 text-center font-mono text-[11px] font-semibold uppercase tracking-[0.24em] text-primary transition-colors hover:bg-primary-container hover:text-on-primary-container"
+						>
+							Reconnect X
+						</a>
+					) : null}
 				</div>
 				{bookmarkSyncState?.mode === "initial_backfill" && bookmarkSyncState.backfillComplete === false ? (
 					<p className="mt-2 font-body text-sm text-secondary/70">Backfilling older X bookmarks over future syncs.</p>
