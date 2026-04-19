@@ -30,6 +30,12 @@ interface RefreshedTokenPayload {
 	expires_in?: number;
 }
 
+interface XTokenRefreshRequestOptions {
+	clientId: string;
+	clientSecret: string;
+	refreshToken: string;
+}
+
 export const X_BOOKMARK_PAGE_SIZE = 100;
 export const INITIAL_BACKFILL_PAGE_LIMIT = 10;
 export const INCREMENTAL_PAGE_LIMIT = 3;
@@ -153,20 +159,17 @@ async function syncXBookmarksWithCredential({
 
 async function refreshXAccessToken(record: XAccountCredentialRecord): Promise<RefreshedTokenPayload> {
 	const clientId = process.env.AUTH_X_ID?.trim();
-	if (!clientId || !record.refreshToken) {
+	const clientSecret = process.env.AUTH_X_SECRET?.trim();
+	if (!clientId || !clientSecret || !record.refreshToken) {
 		throw new Error("X account refresh token is unavailable.");
 	}
 
 	const response = await fetch("https://api.x.com/2/oauth2/token", {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/x-www-form-urlencoded",
-		},
-		body: new URLSearchParams({
-			refresh_token: record.refreshToken,
-			grant_type: "refresh_token",
-			client_id: clientId,
-		}).toString(),
+		...buildXTokenRefreshRequest({
+			clientId,
+			clientSecret,
+			refreshToken: record.refreshToken,
+		}),
 	});
 	const payload = (await response.json()) as Partial<RefreshedTokenPayload> & { error?: string; error_description?: string };
 	if (!response.ok || !payload.access_token) {
@@ -178,6 +181,25 @@ async function refreshXAccessToken(record: XAccountCredentialRecord): Promise<Re
 		token_type: payload.token_type,
 		scope: payload.scope,
 		expires_in: payload.expires_in,
+	};
+}
+
+export function buildXTokenRefreshRequest({
+	clientId,
+	clientSecret,
+	refreshToken,
+}: XTokenRefreshRequestOptions): RequestInit {
+	return {
+		method: "POST",
+		headers: {
+			Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+			"Content-Type": "application/x-www-form-urlencoded",
+		},
+		body: new URLSearchParams({
+			refresh_token: refreshToken,
+			grant_type: "refresh_token",
+			client_id: clientId,
+		}).toString(),
 	};
 }
 

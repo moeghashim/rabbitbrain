@@ -4,6 +4,7 @@ import test from "node:test";
 import {
 	INITIAL_BACKFILL_PAGE_LIMIT,
 	INCREMENTAL_PAGE_LIMIT,
+	buildXTokenRefreshRequest,
 	isFullyKnownBookmarkPage,
 	resolveBookmarkSyncMode,
 	resolveBookmarkSyncPageLimit,
@@ -44,4 +45,19 @@ test("isFullyKnownBookmarkPage returns true only when every tweet is already kno
 	assert.equal(isFullyKnownBookmarkPage(["tweet_1", "tweet_2"], knownTweetIds), true);
 	assert.equal(isFullyKnownBookmarkPage(["tweet_1", "tweet_4"], knownTweetIds), false);
 	assert.equal(isFullyKnownBookmarkPage([], knownTweetIds), false);
+});
+
+test("buildXTokenRefreshRequest sends client auth for token refresh", () => {
+	const request = buildXTokenRefreshRequest({
+		clientId: "x_client_id",
+		clientSecret: "x_client_secret",
+		refreshToken: "refresh_token",
+	});
+
+	assert.equal(request.method, "POST");
+	assert.deepEqual(request.headers, {
+		Authorization: "Basic eF9jbGllbnRfaWQ6eF9jbGllbnRfc2VjcmV0",
+		"Content-Type": "application/x-www-form-urlencoded",
+	});
+	assert.equal(request.body, "refresh_token=refresh_token&grant_type=refresh_token&client_id=x_client_id");
 });
